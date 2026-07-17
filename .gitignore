@@ -1,0 +1,36 @@
+# Godot-specific ignores
+.godot/
+.nomedia
+*.translation
+
+# Mono/C# specific ignores (only if using Godot Mono/C# edition)
+.mono/
+data_*/
+mono_crash.*.json
+[Dd]ebug/
+[Rr]elease/
+bld/
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Export files
+# You might want to track export_presets.cfg if it doesn't contain private keys/keystore passwords.
+# export_presets.cfg
+# Credentials file containing sensitive android keystore paths etc.
+export_credentials.cfg
+
+# Build/export outputs (uncomment or edit based on your export directory name)
+# builds/
+# dist/
+# bin/
+
+# System / OS-specific ignores
+.DS_Store
+.directory
+Thumbs.db
+desktop.ini
