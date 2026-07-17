@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://bo4gkqlryldgc"]
+
+[ext_resource type="Script" uid="uid://b5f5d45agc0ec" path="res://_res/scripts/player.gd" id="1_54ydy"]
+[ext_resource type="Texture2D" uid="uid://bgtehkyx8mdk2" path="res://_res/assets/Simple-Platformer-Asset-Pack/1 Main Characters/1/Idle.png" id="2_s621u"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_34jcp"]
+radius = 15.0
+
+[node name="Player" type="CharacterBody2D" unique_id=1709359331]
+script = ExtResource("1_54ydy")
+
+[node name="PlayerSprite2D" type="Sprite2D" parent="." unique_id=1540280487]
+texture = ExtResource("2_s621u")
+region_enabled = true
+region_rect = Rect2(0, 0, 32, 32)
+
+[node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="." unique_id=445639945]
+shape = SubResource("CircleShape2D_34jcp")
+
+[node name="PlayerCamera2D" type="Camera2D" parent="." unique_id=1580026639]
+position_smoothing_enabled = true
+
+[node name="PlayerArea2D" type="Area2D" parent="." unique_id=550897856]
+
+[node name="PlayerAreaShape2D" type="CollisionShape2D" parent="PlayerArea2D" unique_id=2073686371]
+shape = SubResource("CircleShape2D_34jcp")
