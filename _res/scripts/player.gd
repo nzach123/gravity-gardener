@@ -5,15 +5,16 @@ class_name Player
 @onready var player_sprite_2d: Sprite2D = $PlayerSprite2D
 @onready var player_area_2d: Area2D = $Area2D
 @onready var player_camera_2d: Camera2D = $Camera2D
+@onready var invert_zone: Area2D = $"../InvertZone"
 
-
+signal gravity_area_entered
 const SPEED = 300.0
 
 var direction: float = 0.0
 var gravity: Vector2 = Vector2.ZERO
 
 var gravity_inverted = false
-
+var custom_gravity: Vector2 = Vector2(0.0, 980.0)
 func _ready() -> void:
 	pass
 	
@@ -21,10 +22,10 @@ func _process(delta: float) -> void:
 	pass
 
 func _physics_process(delta: float) -> void:
-	gravity = get_gravity()
-	velocity += gravity * delta
-	print(velocity)
-	
+	#gravity = get_gravity()
+	velocity += custom_gravity * delta
+	up_direction = -custom_gravity.normalized()
+
 
 
 
@@ -53,10 +54,6 @@ func flip_sprite(move_dir: Vector2) -> void:
 	
 
 
-func _on_main_inverted_gravity(is_inverted: bool) -> void:
-	if is_inverted:
-		print("inverted")
-		gravity_inverted = true
-		
-	else:
-		print("normal")
+func _on_player_area_2d_body_entered(body: Node2D) -> void:
+	gravity_area_entered.emit()
+	print("gravity_area_entered")
