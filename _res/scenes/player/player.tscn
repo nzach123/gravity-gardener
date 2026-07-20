@@ -24,5 +24,3 @@ position_smoothing_enabled = true
 
 [node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="PlayerArea2D" unique_id=2063023771]
 shape = SubResource("CircleShape2D_34jcp")
-
-[connection signal="body_entered" from="PlayerArea2D" to="." method="_on_player_area_2d_body_entered"]
