@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://cxd13ibbqt2xb" path="res://_res/assets/Simple-Platformer-Asset-Pack/2 Locations/Tiles/Tileset.png" id="2_dkr77"]
 [ext_resource type="PackedScene" uid="uid://bghklys61ve02" path="res://_res/scenes/gravity_zone.tscn" id="4_qmvpl"]
 [ext_resource type="Script" uid="uid://fl0qx0pi7okk" path="res://_res/scripts/gravity_zone.gd" id="5_unce3"]
+[ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="6_kawig"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_5wcx2"]
 texture = ExtResource("2_dkr77")
@@ -271,6 +272,9 @@ zone_gravity_direction = Vector2(0, -1)
 [node name="CollisionShape2D" parent="GravityZone3" index="0" unique_id=1000997428]
 position = Vector2(-289, -223.5)
 shape = SubResource("RectangleShape2D_rf6v1")
+
+[node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("6_kawig")]
+position = Vector2(51, 119)
 
 [connection signal="body_entered" from="GravityZone" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone" to="GravityZone" method="_on_body_entered"]

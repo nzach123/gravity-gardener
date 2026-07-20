@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://wju5q3rs7h5a"]
+
+[ext_resource type="Script" uid="uid://dtfk37r56nr3d" path="res://_res/scripts/goal.gd" id="1_1xy8y"]
+[ext_resource type="Texture2D" uid="uid://dbma2do7mvdot" path="res://_res/assets/Simple-Platformer-Asset-Pack/3 Objects/Gems/4.png" id="1_sabs0"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1xy8y"]
+radius = 9.055386
+
+[node name="Goal" type="Node2D" unique_id=1054379182 groups=["goal"]]
+script = ExtResource("1_1xy8y")
+
+[node name="GoalSprite2D" type="Sprite2D" parent="." unique_id=1386134341]
+texture = ExtResource("1_sabs0")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="GoalArea2D" type="Area2D" parent="." unique_id=1245713606]
+
+[node name="GoalCollisionShape2D" type="CollisionShape2D" parent="GoalArea2D" unique_id=457568777]
+shape = SubResource("CircleShape2D_1xy8y")
