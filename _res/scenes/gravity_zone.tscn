@@ -1,12 +1,21 @@
 [gd_scene format=3 uid="uid://bghklys61ve02"]
 
+[ext_resource type="Script" uid="uid://fl0qx0pi7okk" path="res://_res/scripts/gravity_zone.gd" id="1_d8c3d"]
+[ext_resource type="Texture2D" uid="uid://4xwyixvh73k" path="res://_res/assets/Simple-Platformer-Asset-Pack/5 GUI/Icons/Icon_11.png" id="2_jubgv"]
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_34jcp"]
-size = Vector2(206, 222)
+size = Vector2(50, 50)
 
 [node name="GravityZone" type="Area2D" unique_id=1204872970]
 gravity_space_override = 3
 gravity = -980.0
+script = ExtResource("1_d8c3d")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1000997428]
-position = Vector2(185, 0)
 shape = SubResource("RectangleShape2D_34jcp")
+
+[node name="ArrowSprite2D" type="Sprite2D" parent="." unique_id=659253368]
+texture_filter = 1
+rotation = -1.5707964
+scale = Vector2(2, 2)
+texture = ExtResource("2_jubgv")

@@ -17,9 +17,6 @@ region_rect = Rect2(0, 0, 32, 32)
 [node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="." unique_id=445639945]
 shape = SubResource("CircleShape2D_34jcp")
 
-[node name="PlayerCamera2D" type="Camera2D" parent="." unique_id=1580026639]
-position_smoothing_enabled = true
-
 [node name="PlayerArea2D" type="Area2D" parent="." unique_id=550897856]
 
 [node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="PlayerArea2D" unique_id=2063023771]
