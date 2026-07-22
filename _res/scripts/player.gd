@@ -4,24 +4,31 @@ class_name Player
 
 @onready var player_sprite_2d: Sprite2D = $PlayerSprite2D
 @onready var player_area_2d: Area2D = $PlayerArea2D
-
+@onready var terminal_velocity: float = 1000
 @export var jump_force: float = -100.0
+@export var _speed = 350.0
+@export var _friction: float = 1200.0
+@export var _acceleration: float = 1800.0
 
-const SPEED = 300.0
-const FRICTION: float = 1800.0
-const ACCELERATION: float = 1800.0
 const ROT_SPEED: float = 12.0
 
 var gravity_inverted = false
 var custom_gravity: Vector2 = Vector2(0.0, 980.0)
-
+var player_score: int = 0
 var camera: Camera2D
 var _target_rotation: float = 0.0
 
 func _ready() -> void:
 	up_direction = -custom_gravity.normalized()
 	var camera = get_tree().get_first_node_in_group("MainCamera")
-	print(camera)
+	
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("slick"):
+		_friction = 0.0
+		print('friciton')
+	if event.is_action_released("slick"):
+		_friction = 1200.0
+		print("frictin normal")
 func _process(delta: float) -> void:
 	pass
 
@@ -30,15 +37,14 @@ func _physics_process(delta: float) -> void:
 	var right_dir: Vector2 = Vector2(-up_dir.y, up_dir.x)
 	
 	up_direction = up_dir
-	
 	velocity += custom_gravity * delta
-	
-	
+
 	var raw_axis:= Input.get_axis("move_left", "move_right")
-	var world_right: Vector2 = Vector2.RIGHT
-	var alignment:float = right_dir.dot(world_right)
 	var input_axis: float = 0.0
-	
+	var world_right: Vector2 = Vector2.RIGHT
+
+	var alignment:float = right_dir.dot(world_right)
+
 	if not is_equal_approx(alignment, 0.0):
 		input_axis = raw_axis * sign(alignment)
 	else:
@@ -48,11 +54,12 @@ func _physics_process(delta: float) -> void:
 	var vel_perp: float = velocity.dot(up_dir)
 
 	if input_axis != 0.0:
-		vel_along = move_toward(vel_along, input_axis * SPEED, ACCELERATION * delta)
+		vel_along = move_toward(vel_along, input_axis * _speed, _acceleration * delta)
 	else:
-		vel_along = move_toward(vel_along, 0.0, FRICTION * delta)
-		
+		vel_along = move_toward(vel_along, 0.0, _friction * delta)
 	velocity = right_dir * vel_along + up_dir * vel_perp
+	
+	
 	move_and_slide()
 	_flip_sprite(up_dir, delta, input_axis)
 	
@@ -70,12 +77,11 @@ func _flip_sprite(up_dir: Vector2, delta:float, input_axis: float) -> void:
 
 
 func win_level() -> void:
-	print("Win Level")
-
+	player_score +=1
+ 
 func set_gravity(vector: Vector2) -> Vector2:
 	custom_gravity = vector
 	up_direction = -custom_gravity.normalized()
-	print(up_direction)
 	print("[Player] Gravity changed to: ", custom_gravity)
 	return custom_gravity
 

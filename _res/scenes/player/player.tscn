@@ -7,9 +7,11 @@
 radius = 15.0
 
 [node name="Player" type="CharacterBody2D" unique_id=1709359331]
+scale = Vector2(2, 2)
 script = ExtResource("1_54ydy")
 
 [node name="PlayerSprite2D" type="Sprite2D" parent="." unique_id=1540280487]
+texture_filter = 1
 texture = ExtResource("2_s621u")
 region_enabled = true
 region_rect = Rect2(0, 0, 32, 32)

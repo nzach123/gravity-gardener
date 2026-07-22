@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://cxd13ibbqt2xb" path="res://_res/assets/Simple-Platformer-Asset-Pack/2 Locations/Tiles/Tileset.png" id="2_v2d2p"]
 [ext_resource type="PackedScene" uid="uid://bo4gkqlryldgc" path="res://_res/scenes/player/player.tscn" id="3_fo1dc"]
 [ext_resource type="PackedScene" uid="uid://bghklys61ve02" path="res://_res/scenes/gravity_zone.tscn" id="4_cur1c"]
+[ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="5_v2d2p"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_y68me"]
 texture = ExtResource("2_v2d2p")
@@ -262,38 +263,13 @@ shape = SubResource("RectangleShape2D_veu4t")
 [node name="ArrowSprite2D" parent="GravityZone2" index="1" unique_id=659253368]
 position = Vector2(-314, -279)
 
-[node name="GravityZone3" parent="." unique_id=1478789846 instance=ExtResource("4_cur1c")]
-position = Vector2(2, -1)
-zone_gravity_direction = Vector2(1, 0)
-
-[node name="CollisionShape2D" parent="GravityZone3" index="0" unique_id=1000997428]
-position = Vector2(-65, 56)
-shape = SubResource("RectangleShape2D_veu4t")
-
-[node name="ArrowSprite2D" parent="GravityZone3" index="1" unique_id=659253368]
-position = Vector2(-65, 56)
-
-[node name="GravityZone4" parent="." unique_id=885964632 instance=ExtResource("4_cur1c")]
-position = Vector2(2, -1)
-zone_gravity_direction = Vector2(-1, 0)
-
-[node name="CollisionShape2D" parent="GravityZone4" index="0" unique_id=1000997428]
-position = Vector2(535, -181)
-shape = SubResource("RectangleShape2D_veu4t")
-
-[node name="ArrowSprite2D" parent="GravityZone4" index="1" unique_id=659253368]
-position = Vector2(535, -181)
+[node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("5_v2d2p")]
+position = Vector2(471, -282)
 
 [connection signal="body_entered" from="GravityZone" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone" to="GravityZone" method="_on_body_entered"]
 [connection signal="body_entered" from="GravityZone2" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone2" to="GravityZone2" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone3" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone3" to="GravityZone3" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone4" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone4" to="GravityZone4" method="_on_body_entered"]
 
 [editable path="GravityZone"]
 [editable path="GravityZone2"]
-[editable path="GravityZone3"]
-[editable path="GravityZone4"]
