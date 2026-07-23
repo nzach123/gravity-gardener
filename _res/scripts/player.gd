@@ -28,9 +28,12 @@ var bounce_threshold: float = 0.75
 var bounce_restitution: float = 0.25
 var chaos_factor: float = 180.0
 
+var _is_dead = false
+var starting
 func _ready() -> void:
 	up_direction = -custom_gravity.normalized()
 	camera = get_tree().get_first_node_in_group("MainCamera")
+	
 	
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("slick"):
@@ -85,7 +88,7 @@ func _physics_process(delta: float) -> void:
 	player_bounce(pre_slide_along, vel_along, pre_slide_perp, vel_perp, up_dir, right_dir)
 				
 	_flip_sprite(up_dir, delta, input_axis)
-	
+
 func _flip_sprite(up_dir: Vector2, delta:float, input_axis: float) -> void:
 	var down_dir: Vector2 = -up_dir
 	_target_rotation = down_dir.angle() - (PI * 0.5)

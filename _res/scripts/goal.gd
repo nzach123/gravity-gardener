@@ -11,6 +11,6 @@ func _ready() -> void:
 	
 	
 func _on_body_entered(body: Node2D) -> void:
-	if body.name == "Player":
+	if body is Player:
 		player_reached_goal.emit()
 		queue_free()

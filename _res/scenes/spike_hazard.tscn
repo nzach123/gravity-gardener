@@ -6,7 +6,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_a5nrt"]
 size = Vector2(31, 24)
 
-[node name="SpikeHazard" type="Node2D" unique_id=2099886572]
+[node name="SpikeHazard" type="Area2D" unique_id=1963317586 groups=["hazards"]]
 script = ExtResource("1_fq57d")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1614283958]
@@ -17,8 +17,6 @@ texture = ExtResource("1_tej6p")
 region_enabled = true
 region_rect = Rect2(104, 24, 32, 24)
 
-[node name="Area2D" type="Area2D" parent="." unique_id=102038228]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=2134628388]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2134628388]
 position = Vector2(0.5, 0)
 shape = SubResource("RectangleShape2D_a5nrt")

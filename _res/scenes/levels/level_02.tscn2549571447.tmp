@@ -1,13 +1,14 @@
-[gd_scene format=4 uid="uid://uw1b76r8wxj5"]
+[gd_scene format=4 uid="uid://gxlbwdmhfehx"]
 
-[ext_resource type="Script" uid="uid://cc4j3134bl0k4" path="res://_res/scripts/main.gd" id="1_g5xrh"]
-[ext_resource type="PackedScene" uid="uid://bo4gkqlryldgc" path="res://_res/scenes/player/player.tscn" id="2_e5lf1"]
-[ext_resource type="Texture2D" uid="uid://cxd13ibbqt2xb" path="res://_res/assets/Simple-Platformer-Asset-Pack/2 Locations/Tiles/Tileset.png" id="3_i5c28"]
-[ext_resource type="PackedScene" uid="uid://bghklys61ve02" path="res://_res/scenes/gravity_zone.tscn" id="4_lbve7"]
-[ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="6_mkexn"]
+[ext_resource type="Script" uid="uid://cc4j3134bl0k4" path="res://_res/scripts/main.gd" id="1_iydkr"]
+[ext_resource type="Texture2D" uid="uid://cxd13ibbqt2xb" path="res://_res/assets/Simple-Platformer-Asset-Pack/2 Locations/Tiles/Tileset.png" id="2_gyvyh"]
+[ext_resource type="PackedScene" uid="uid://bo4gkqlryldgc" path="res://_res/scenes/player/player.tscn" id="3_sqn6i"]
+[ext_resource type="PackedScene" uid="uid://bghklys61ve02" path="res://_res/scenes/gravity_zone.tscn" id="4_6tssv"]
+[ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="5_l5h7l"]
+[ext_resource type="PackedScene" uid="uid://ctea5gbpyfrl5" path="res://_res/scenes/spike_hazard.tscn" id="6_gyvyh"]
 
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ef2ub"]
-texture = ExtResource("3_i5c28")
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_y68me"]
+texture = ExtResource("2_gyvyh")
 0:0/0 = 0
 0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 1:0/0 = 0
@@ -225,137 +226,54 @@ texture = ExtResource("3_i5c28")
 14:10/0 = 0
 14:10/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 
-[sub_resource type="TileSet" id="TileSet_34jcp"]
+[sub_resource type="TileSet" id="TileSet_7sfby"]
 physics_layer_0/collision_layer = 1
-sources/0 = SubResource("TileSetAtlasSource_ef2ub")
+sources/0 = SubResource("TileSetAtlasSource_y68me")
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_j27la"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_veu4t"]
 size = Vector2(50, 50)
 
-[node name="TestMain" type="Node2D" unique_id=528025370]
-script = ExtResource("1_g5xrh")
+[node name="Level02" type="Node2D" unique_id=368539408]
+script = ExtResource("1_iydkr")
 
-[node name="Player" parent="." unique_id=1709359331 instance=ExtResource("2_e5lf1")]
-position = Vector2(574, 324)
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 
-[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1074950436]
-position = Vector2(656, 324)
-tile_map_data = PackedByteArray("AADX/xMAAAABAAQAAADY/xMAAAABAAQAAADZ/xMAAAABAAQAAADa/xMAAAABAAQAAADb/xMAAAABAAQAAADc/xMAAAABAAQAAADd/xMAAAABAAQAAADe/xMAAAABAAQAAADf/xMAAAABAAQAAADg/xMAAAABAAQAAADh/xMAAAABAAQAAADi/xMAAAABAAQAAADj/xMAAAABAAQAAADk/xMAAAABAAQAAADl/xMAAAABAAQAAADm/xMAAAABAAQAAADn/xMAAAABAAQAAADo/xMAAAABAAQAAADp/xMAAAABAAQAAADq/xMAAAABAAQAAADr/xMAAAABAAQAAADs/xMAAAABAAQAAADt/xMAAAABAAQAAADu/xMAAAABAAQAAADv/xMAAAABAAQAAADw/xMAAAABAAQAAADx/xMAAAABAAQAAADy/xMAAAABAAQAAADz/xMAAAABAAQAAAD0/xMAAAABAAQAAAD1/xMAAAABAAQAAAD2/xMAAAABAAQAAAD3/xMAAAABAAQAAAD4/xMAAAABAAQAAAD5/xMAAAABAAQAAAD6/xMAAAABAAQAAAD7/xMAAAABAAQAAAD8/xMAAAABAAQAAAD9/xMAAAABAAQAAAD+/xMAAAABAAQAAAD//xMAAAABAAQAAAAAABMAAAABAAQAAAABABMAAAABAAQAAAACABMAAAABAAQAAAADABMAAAABAAQAAAAEABMAAAABAAQAAAAFABMAAAABAAQAAAAGABMAAAABAAQAAAAHABMAAAABAAQAAAAIABMAAAABAAQAAAAJABMAAAABAAQAAAAKABMAAAABAAQAAAALABMAAAABAAQAAAAMABMAAAABAAQAAAANABMAAAABAAQAAAAOABMAAAABAAQAAAAPABMAAAABAAQAAAAQABMAAAABAAQAAAARABMAAAABAAQAAAASABMAAAABAAQAAAATABMAAAABAAQAAAAUABMAAAABAAQAAAAVABMAAAABAAQAAAAWABMAAAABAAQAAAAXABMAAAABAAQAAAAYABMAAAABAAQAAAAZABMAAAABAAQAAAAaABMAAAABAAQAAAAbABMAAAABAAQAAAAcABMAAAABAAQAAAAdABMAAAABAAQAAAAeABMAAAABAAQAAAAeAOz/AAABAAQAAAAeAO3/AAABAAQAAAAeAO7/AAABAAQAAAAeAO//AAABAAQAAAAeAPD/AAABAAQAAAAeAPH/AAABAAQAAAAeAPL/AAABAAQAAAAeAPP/AAABAAQAAAAeAPT/AAABAAQAAAAeAPX/AAABAAQAAAAeAPb/AAABAAQAAAAeAPf/AAABAAQAAAAeAPj/AAABAAQAAAAeAPn/AAABAAQAAAAeAPr/AAABAAQAAAAeAPv/AAABAAQAAAAeAPz/AAABAAQAAAAeAP3/AAABAAQAAAAeAP7/AAABAAQAAAAeAP//AAABAAQAAAAeAAAAAAABAAQAAAAeAAEAAAABAAQAAAAeAAIAAAABAAQAAAAeAAMAAAABAAQAAAAeAAQAAAABAAQAAAAeAAUAAAABAAQAAAAeAAYAAAABAAQAAAAeAAcAAAABAAQAAAAeAAgAAAABAAQAAAAeAAkAAAABAAQAAAAeAAoAAAABAAQAAAAeAAsAAAABAAQAAAAeAAwAAAABAAQAAAAeAA0AAAABAAQAAAAeAA4AAAABAAQAAAAeAA8AAAABAAQAAAAeABAAAAABAAQAAAAeABEAAAABAAQAAAAeABIAAAABAAQAAADX/xIAAAABAAQAAADX/xEAAAABAAQAAADX/xAAAAABAAQAAADX/w8AAAABAAQAAADX/w4AAAABAAQAAADX/w0AAAABAAQAAADX/wwAAAABAAQAAADX/wsAAAABAAQAAADX/woAAAABAAQAAADX/wkAAAABAAQAAADX/wgAAAABAAQAAADX/wcAAAABAAQAAADX/wYAAAABAAQAAADX/wUAAAABAAQAAADX/wQAAAABAAQAAADX/wMAAAABAAQAAADX/wIAAAABAAQAAADX/wEAAAABAAQAAADX/wAAAAABAAQAAADX////AAABAAQAAADX//7/AAABAAQAAADX//3/AAABAAQAAADX//z/AAABAAQAAADX//v/AAABAAQAAADX//r/AAABAAQAAADX//n/AAABAAQAAADX//j/AAABAAQAAADX//f/AAABAAQAAADX//b/AAABAAQAAADX//X/AAABAAQAAADX//T/AAABAAQAAADX//P/AAABAAQAAADX//L/AAABAAQAAADX//H/AAABAAQAAADX//D/AAABAAQAAADX/+//AAABAAQAAADX/+7/AAABAAQAAADX/+3/AAABAAQAAADX/+z/AAABAAQAAADY/+z/AAABAAQAAADZ/+z/AAABAAQAAADa/+z/AAABAAQAAADb/+z/AAABAAQAAADc/+z/AAABAAQAAADd/+z/AAABAAQAAADe/+z/AAABAAQAAADf/+z/AAABAAQAAADg/+z/AAABAAQAAADh/+z/AAABAAQAAADi/+z/AAABAAQAAADj/+z/AAABAAQAAADk/+z/AAABAAQAAADl/+z/AAABAAQAAADm/+z/AAABAAQAAADn/+z/AAABAAQAAADo/+z/AAABAAQAAADp/+z/AAABAAQAAADq/+z/AAABAAQAAADr/+z/AAABAAQAAADs/+z/AAABAAQAAADt/+z/AAABAAQAAADu/+z/AAABAAQAAADv/+z/AAABAAQAAADw/+z/AAABAAQAAADx/+z/AAABAAQAAADy/+z/AAABAAQAAADz/+z/AAABAAQAAAD0/+z/AAABAAQAAAD1/+z/AAABAAQAAAD2/+z/AAABAAQAAAD3/+z/AAABAAQAAAD4/+z/AAABAAQAAAD5/+z/AAABAAQAAAD6/+z/AAABAAQAAAD7/+z/AAABAAQAAAD8/+z/AAABAAQAAAD9/+z/AAABAAQAAAD+/+z/AAABAAQAAAD//+z/AAABAAQAAAAAAOz/AAABAAQAAAABAOz/AAABAAQAAAACAOz/AAABAAQAAAADAOz/AAABAAQAAAAEAOz/AAABAAQAAAAFAOz/AAABAAQAAAAGAOz/AAABAAQAAAAHAOz/AAABAAQAAAAIAOz/AAABAAQAAAAJAOz/AAABAAQAAAAKAOz/AAABAAQAAAALAOz/AAABAAQAAAAMAOz/AAABAAQAAAANAOz/AAABAAQAAAAOAOz/AAABAAQAAAAPAOz/AAABAAQAAAAQAOz/AAABAAQAAAARAOz/AAABAAQAAAASAOz/AAABAAQAAAATAOz/AAABAAQAAAAUAOz/AAABAAQAAAAVAOz/AAABAAQAAAAWAOz/AAABAAQAAAAXAOz/AAABAAQAAAAYAOz/AAABAAQAAAAZAOz/AAABAAQAAAAaAOz/AAABAAQAAAAbAOz/AAABAAQAAAAcAOz/AAABAAQAAAAdAOz/AAABAAQAAADl/xIAAAABAAQAAADl/xEAAAABAAQAAADl/xAAAAABAAQAAADl/w8AAAABAAQAAADl/w4AAAABAAQAAADl/w0AAAABAAQAAADl/wwAAAABAAQAAADl/wsAAAABAAQAAADl/woAAAABAAQAAADl/wkAAAABAAQAAADl/wgAAAABAAQAAADl/wcAAAABAAQAAADl/wYAAAABAAQAAADl/wUAAAABAAQAAADl/wQAAAABAAQAAADl/wMAAAABAAQAAADl/wIAAAABAAQAAADl/wEAAAABAAQAAADl/wAAAAABAAQAAADk/wYAAAABAAQAAADj/wYAAAABAAQAAADi/wYAAAABAAQAAADh/wYAAAABAAQAAADg/wYAAAABAAQAAADf/wYAAAABAAQAAADe/wYAAAABAAQAAADd/wYAAAABAAQAAADY//f/AAABAAQAAADZ//f/AAABAAQAAADa//f/AAABAAQAAADb//f/AAABAAQAAADc//f/AAABAAQAAADd//f/AAABAAQAAADe//f/AAABAAQAAADf//f/AAABAAQAAADg//f/AAABAAQAAADh//f/AAABAAQAAADi//f/AAABAAQAAADj//f/AAABAAQAAADk//f/AAABAAQAAADl//f/AAABAAQAAADm//f/AAABAAQAAADn//f/AAABAAQAAADo//f/AAABAAQAAADp//f/AAABAAQAAADq//f/AAABAAQAAADr//f/AAABAAQAAADs//f/AAABAAQAAADt//f/AAABAAQAAADu//f/AAABAAQAAADv//f/AAABAAQAAADw//f/AAABAAQAAADx//f/AAABAAQAAADy//f/AAABAAQAAADz//f/AAABAAQAAAD0//f/AAABAAQAAAD1//f/AAABAAQAAAD2//f/AAABAAQAAAD3//f/AAABAAQAAAD4//f/AAABAAQAAAD5//f/AAABAAQAAAD6//f/AAABAAQAAAD7//f/AAABAAQAAAD8//f/AAABAAQAAAD9//f/AAABAAQAAAD+//f/AAABAAQAAAD///f/AAABAAQAAAAAAPf/AAABAAQAAAABAPf/AAABAAQAAAACAPf/AAABAAQAAAADAPf/AAABAAQAAAAEAPf/AAABAAQAAAAFAPf/AAABAAQAAAD9/xIAAAABAAQAAAD9/xEAAAABAAQAAAD9/xAAAAABAAQAAAD9/w8AAAABAAQAAAD9/w4AAAABAAQAAAD9/w0AAAABAAQAAAD9/wwAAAABAAQAAAD9/wsAAAABAAQAAAD9/woAAAABAAQAAAD9/wkAAAABAAQAAAAdAA0AAAABAAQAAAAcAA0AAAABAAQAAAAbAA0AAAABAAQAAAAaAA0AAAABAAQAAAAZAA0AAAABAAQAAAAYAA0AAAABAAQAAAAXAA0AAAABAAQAAAD+/wkAAAABAAQAAAD//wkAAAABAAQAAAAAAAkAAAABAAQAAAABAAkAAAABAAQAAAACAAkAAAABAAQAAAADAAkAAAABAAQAAAAEAAkAAAABAAQAAAAFAAkAAAABAAQAAAAGAAkAAAABAAQAAAAHAAkAAAABAAQAAAAIAAkAAAABAAQAAAAJAAkAAAABAAQAAAAKAAkAAAABAAQAAAALAAkAAAABAAQAAAAMAAkAAAABAAQAAAANAAkAAAABAAQAAAAOAAkAAAABAAQAAAAPAAkAAAABAAQAAAAQAAkAAAABAAQAAAARAAkAAAABAAQAAAASAAkAAAABAAQAAAA=")
-tile_set = SubResource("TileSet_34jcp")
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=672883762]
+tile_map_data = PackedByteArray("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")
+tile_set = SubResource("TileSet_7sfby")
 
-[node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("6_mkexn")]
-position = Vector2(206, 162)
+[node name="Player" parent="." unique_id=1709359331 instance=ExtResource("3_sqn6i")]
+position = Vector2(-464, 275)
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=838191659]
-position = Vector2(577, 324)
-
-[node name="GravityZone" parent="." unique_id=1204872970 instance=ExtResource("4_lbve7")]
-position = Vector2(332, 602)
+[node name="GravityZone" parent="." unique_id=1204872970 instance=ExtResource("4_6tssv")]
 zone_gravity_direction = Vector2(0, -1)
 
 [node name="CollisionShape2D" parent="GravityZone" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
+position = Vector2(-329, 280)
+shape = SubResource("RectangleShape2D_veu4t")
 
 [node name="ArrowSprite2D" parent="GravityZone" index="1" unique_id=659253368]
-position = Vector2(1, 0)
+position = Vector2(-329, 280)
 
-[node name="GravityZone4" parent="." unique_id=1736910788 instance=ExtResource("4_lbve7")]
-position = Vector2(149, 602)
-zone_gravity_direction = Vector2(0, -1)
-
-[node name="CollisionShape2D" parent="GravityZone4" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
-
-[node name="ArrowSprite2D" parent="GravityZone4" index="1" unique_id=659253368]
-position = Vector2(1, 0)
-
-[node name="GravityZone5" parent="." unique_id=1373118558 instance=ExtResource("4_lbve7")]
-position = Vector2(852, 602)
-zone_gravity_direction = Vector2(0, -1)
-
-[node name="CollisionShape2D" parent="GravityZone5" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
-
-[node name="ArrowSprite2D" parent="GravityZone5" index="1" unique_id=659253368]
-position = Vector2(1, 0)
-
-[node name="GravityZone2" parent="." unique_id=762061644 instance=ExtResource("4_lbve7")]
-position = Vector2(720, 221)
+[node name="GravityZone2" parent="." unique_id=659160453 instance=ExtResource("4_6tssv")]
 
 [node name="CollisionShape2D" parent="GravityZone2" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
+position = Vector2(299, -279)
+shape = SubResource("RectangleShape2D_veu4t")
 
 [node name="ArrowSprite2D" parent="GravityZone2" index="1" unique_id=659253368]
-position = Vector2(1, 0)
+position = Vector2(299, -279)
 
-[node name="GravityZone3" parent="." unique_id=726258502 instance=ExtResource("4_lbve7")]
-position = Vector2(59, 221)
+[node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("5_l5h7l")]
+position = Vector2(471, 274)
 
-[node name="CollisionShape2D" parent="GravityZone3" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
-
-[node name="ArrowSprite2D" parent="GravityZone3" index="1" unique_id=659253368]
-position = Vector2(1, 0)
-
-[node name="GravityZone7" parent="." unique_id=794210079 instance=ExtResource("4_lbve7")]
-position = Vector2(266, 363)
-zone_gravity_direction = Vector2(1, 0)
-
-[node name="CollisionShape2D" parent="GravityZone7" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
-
-[node name="ArrowSprite2D" parent="GravityZone7" index="1" unique_id=659253368]
-position = Vector2(1, 0)
-
-[node name="GravityZone8" parent="." unique_id=1084896310 instance=ExtResource("4_lbve7")]
-position = Vector2(1107, 68)
-zone_gravity_direction = Vector2(-1, 0)
-
-[node name="CollisionShape2D" parent="GravityZone8" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
-
-[node name="ArrowSprite2D" parent="GravityZone8" index="1" unique_id=659253368]
-position = Vector2(1, 0)
-
-[node name="GravityZone6" parent="." unique_id=1054652059 instance=ExtResource("4_lbve7")]
-position = Vector2(60, 43)
-
-[node name="CollisionShape2D" parent="GravityZone6" index="0" unique_id=1000997428]
-position = Vector2(1, 0)
-shape = SubResource("RectangleShape2D_j27la")
-
-[node name="ArrowSprite2D" parent="GravityZone6" index="1" unique_id=659253368]
-position = Vector2(1, 0)
+[node name="SpikeHazard" parent="." unique_id=2099886572 instance=ExtResource("6_gyvyh")]
+position = Vector2(-249, 292)
 
 [connection signal="body_entered" from="GravityZone" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone" to="GravityZone" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone4" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone4" to="GravityZone4" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone5" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone5" to="GravityZone5" method="_on_body_entered"]
 [connection signal="body_entered" from="GravityZone2" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone2" to="GravityZone2" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone3" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone3" to="GravityZone3" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone7" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone7" to="GravityZone7" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone8" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone8" to="GravityZone8" method="_on_body_entered"]
-[connection signal="body_entered" from="GravityZone6" to="Player" method="GZ_body_entered"]
-[connection signal="body_entered" from="GravityZone6" to="GravityZone6" method="_on_body_entered"]
 
 [editable path="GravityZone"]
-[editable path="GravityZone4"]
-[editable path="GravityZone5"]
 [editable path="GravityZone2"]
-[editable path="GravityZone3"]
-[editable path="GravityZone7"]
-[editable path="GravityZone8"]
-[editable path="GravityZone6"]

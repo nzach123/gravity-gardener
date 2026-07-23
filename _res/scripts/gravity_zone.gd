@@ -25,6 +25,7 @@ func _ready() -> void:
 		arrow_sprite.rotate(deg_to_rad(0.0))
 	elif zone_gravity_direction == Vector2.LEFT:
 		arrow_sprite.rotate(deg_to_rad(-90.0))
+		
 func snap_to_collision_center() -> void:
 	if not is_instance_valid(collision_shape_2d):
 		return
