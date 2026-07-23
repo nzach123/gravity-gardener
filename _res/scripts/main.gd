@@ -28,3 +28,8 @@ func restart_level() -> void:
 	get_tree().call_deferred("reload_current_scene")
 
 	
+
+
+func _on_kill_area_2d_body_entered(body: Node2D) -> void:
+	if body is Player:
+		restart_level()

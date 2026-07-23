@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://dc5ejli4wfkb1"]
 
 [ext_resource type="Script" uid="uid://cc4j3134bl0k4" path="res://_res/scripts/main.gd" id="1_jo5ah"]
-[ext_resource type="PackedScene" uid="uid://uw1b76r8wxj5" path="res://_res/scenes/test_main.tscn" id="2_5vk8q"]
+[ext_resource type="PackedScene" uid="uid://dkmmywr2trvtk" path="res://_res/scenes/levels/level_06.tscn" id="2_jo5ah"]
 [ext_resource type="Texture2D" uid="uid://cxd13ibbqt2xb" path="res://_res/assets/Simple-Platformer-Asset-Pack/2 Locations/Tiles/Tileset.png" id="3_hrm70"]
 [ext_resource type="PackedScene" uid="uid://bo4gkqlryldgc" path="res://_res/scenes/player/player.tscn" id="4_87tud"]
 [ext_resource type="PackedScene" uid="uid://bghklys61ve02" path="res://_res/scenes/gravity_zone.tscn" id="5_7a2mx"]
@@ -234,11 +234,14 @@ sources/0 = SubResource("TileSetAtlasSource_y68me")
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_veu4t"]
 size = Vector2(50, 50)
 
-[node name="Level04" type="Node2D" unique_id=368539408 node_paths=PackedStringArray("player", "goal")]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_881sq"]
+size = Vector2(68, 640)
+
+[node name="Level05" type="Node2D" unique_id=368539408 node_paths=PackedStringArray("player", "goal")]
 script = ExtResource("1_jo5ah")
 player = NodePath("Player")
 goal = NodePath("Goal")
-next_level = ExtResource("2_5vk8q")
+next_level = ExtResource("2_jo5ah")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)
@@ -259,7 +262,7 @@ zone_gravity_direction = Vector2(0, -1)
 shape = SubResource("RectangleShape2D_veu4t")
 
 [node name="GravityZoneRight" parent="." unique_id=1271288159 instance=ExtResource("5_7a2mx")]
-position = Vector2(263, 269)
+position = Vector2(262, 270)
 zone_gravity_direction = Vector2(1, 0)
 
 [node name="CollisionShape2D" parent="GravityZoneRight" index="0" unique_id=1000997428]
@@ -380,6 +383,12 @@ position = Vector2(397, 291)
 [node name="SpikeHazard35" parent="Node2D" unique_id=1116149220 instance=ExtResource("7_l7315")]
 position = Vector2(428, 291)
 
+[node name="KillArea2D" type="Area2D" parent="." unique_id=807113841]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KillArea2D" unique_id=120128148]
+position = Vector2(-45, 325)
+shape = SubResource("RectangleShape2D_881sq")
+
 [connection signal="body_entered" from="GravityZoneUp" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZoneUp" to="GravityZoneUp" method="_on_body_entered"]
 [connection signal="body_entered" from="GravityZoneRight" to="Player" method="GZ_body_entered"]
@@ -388,6 +397,7 @@ position = Vector2(428, 291)
 [connection signal="body_entered" from="GravityZoneLeft" to="GravityZoneLeft" method="_on_body_entered"]
 [connection signal="body_entered" from="GravityZoneDown" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZoneDown" to="GravityZoneDown" method="_on_body_entered"]
+[connection signal="body_entered" from="KillArea2D" to="." method="_on_kill_area_2d_body_entered"]
 
 [editable path="GravityZoneUp"]
 [editable path="GravityZoneRight"]

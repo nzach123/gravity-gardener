@@ -252,25 +252,17 @@ tile_set = SubResource("TileSet_7sfby")
 position = Vector2(112, 599)
 
 [node name="GravityZone" parent="." unique_id=1204872970 instance=ExtResource("4_6tssv")]
-position = Vector2(576, 326)
+position = Vector2(247, 583)
 zone_gravity_direction = Vector2(0, -1)
 
 [node name="CollisionShape2D" parent="GravityZone" index="0" unique_id=1000997428]
-position = Vector2(-333, 280)
 shape = SubResource("RectangleShape2D_veu4t")
-
-[node name="ArrowSprite2D" parent="GravityZone" index="1" unique_id=659253368]
-position = Vector2(-333, 280)
 
 [node name="GravityZone2" parent="." unique_id=659160453 instance=ExtResource("4_6tssv")]
-position = Vector2(576, 324)
+position = Vector2(1017, 54)
 
 [node name="CollisionShape2D" parent="GravityZone2" index="0" unique_id=1000997428]
-position = Vector2(299, -279)
 shape = SubResource("RectangleShape2D_veu4t")
-
-[node name="ArrowSprite2D" parent="GravityZone2" index="1" unique_id=659253368]
-position = Vector2(299, -279)
 
 [node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("5_l5h7l")]
 position = Vector2(1047, 598)
