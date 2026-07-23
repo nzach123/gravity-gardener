@@ -25,11 +25,12 @@ var _target_rotation: float = 0.0
 # Bounce Variables
 var _is_bouncing: bool = false
 var bounce_threshold: float = 0.75
-var bounce_restitution: float = 0.25
-var chaos_factor: float = 180.0
+var bounce_restitution: float = 0.3
+var chaos_factor: float = 600.0
 
 var _is_dead = false
-var starting
+var starting_position: Vector2
+
 func _ready() -> void:
 	up_direction = -custom_gravity.normalized()
 	camera = get_tree().get_first_node_in_group("MainCamera")
@@ -84,9 +85,8 @@ func _physics_process(delta: float) -> void:
 	
 	vel_along = velocity.dot(right_dir)
 	vel_perp = velocity.dot(up_dir)
-	# Bounce Detection
-	player_bounce(pre_slide_along, vel_along, pre_slide_perp, vel_perp, up_dir, right_dir)
-				
+
+	_player_bounce(pre_slide_along, vel_along, pre_slide_perp, vel_perp, up_dir, right_dir)
 	_flip_sprite(up_dir, delta, input_axis)
 
 func _flip_sprite(up_dir: Vector2, delta:float, input_axis: float) -> void:
@@ -108,7 +108,7 @@ func set_gravity(vector: Vector2) -> Vector2:
 	print("[Player] Gravity changed to: ", custom_gravity)
 	return custom_gravity
 	
-func player_bounce(pre_slide_along: float, vel_along: float, pre_slide_perp: float, vel_perp:float, up_dir: Vector2, right_dir: Vector2) -> void:
+func _player_bounce(pre_slide_along: float, vel_along: float, pre_slide_perp: float, vel_perp:float, up_dir: Vector2, right_dir: Vector2) -> void:
 	var fall_speed: float = absf(pre_slide_perp) ## Up and Down velocity
 	var lateral_speed: float = absf(pre_slide_along) ## Side to side velocity
 	
@@ -119,16 +119,20 @@ func player_bounce(pre_slide_along: float, vel_along: float, pre_slide_perp: flo
 		if absf(normal.dot(up_dir)) > 0.7 and fall_speed >= terminal_velocity * bounce_threshold:
 			var bounced_perp: float = -pre_slide_perp * bounce_restitution
 			var speed_ratio: float = clampf(fall_speed / terminal_velocity, 0.0, 1.0)
-			var chaos: Vector2 = right_dir * randf_range(-chaos_factor, chaos_factor) * speed_ratio
+			var tangent: Vector2 = normal.orthogonal()
+			var chaos: Vector2 = tangent * randf_range(-chaos_factor, chaos_factor) * speed_ratio
+			print(chaos)
 			velocity = up_dir * bounced_perp + right_dir * vel_along + chaos
-			print("Floor Bounce")
+			print("Floor Bounce | Chaos: ", chaos)
 			# Emit signal and connect the camera can use intensity 
 
 		# --- Wall bounce ---
 		elif absf(normal.dot(right_dir)) > 0.7 and lateral_speed >= _speed * bounce_threshold:
 			var bounced_along: float = -pre_slide_along * bounce_restitution
-			velocity = right_dir * bounced_along + up_dir * vel_perp
-			print("Wall Bounce")
+			var tangent: Vector2 = normal.orthogonal()
+			var wall_chaos: Vector2 = tangent * randf_range(-chaos_factor * 0.5, chaos_factor * 0.5)
+			velocity = right_dir * bounced_along + up_dir * vel_perp + wall_chaos
+			print("Wall Bounce | Chaos: ", wall_chaos)
 
 
 func GZ_body_entered(zone: Node2D) -> void:
