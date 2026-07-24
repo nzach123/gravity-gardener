@@ -3,6 +3,22 @@
 [ext_resource type="Script" uid="uid://b5f5d45agc0ec" path="res://_res/scripts/player.gd" id="1_54ydy"]
 [ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="3_s621u"]
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_s621u"]
+atlas = ExtResource("3_s621u")
+region = Rect2(16, 272, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_54ydy"]
+atlas = ExtResource("3_s621u")
+region = Rect2(0, 272, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qx36y"]
+atlas = ExtResource("3_s621u")
+region = Rect2(32, 272, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oe2qg"]
+atlas = ExtResource("3_s621u")
+region = Rect2(0, 272, 16, 16)
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_alesa"]
 atlas = ExtResource("3_s621u")
 region = Rect2(0, 256, 16, 16)
@@ -77,6 +93,23 @@ region = Rect2(112, 256, 16, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_2ljgr"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s621u")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_54ydy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qx36y")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oe2qg")
+}],
+"loop": 1,
+"name": &"Falling",
+"speed": 7.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_alesa")
@@ -158,8 +191,9 @@ texture_filter = 1
 position = Vector2(0, -7)
 scale = Vector2(2, 2)
 sprite_frames = SubResource("SpriteFrames_2ljgr")
-animation = &"MoveRight"
+animation = &"Falling"
 autoplay = "Idle"
+frame_progress = 0.88937676
 
 [node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="." unique_id=445639945]
 position = Vector2(0, -6)
