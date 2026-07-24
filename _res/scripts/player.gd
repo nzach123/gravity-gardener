@@ -4,7 +4,7 @@ class_name Player
 
 
 
-@onready var player_sprite_2d: Sprite2D = $PlayerSprite2D
+@onready var player_sprite_2d: AnimatedSprite2D = $PlayerAnimatedSprite2D
 @onready var player_area_2d: Area2D = $PlayerArea2D
 
 @onready var terminal_velocity: float = 500
@@ -12,6 +12,7 @@ class_name Player
 @export var _speed = 350.0
 @export var _friction: float = 1200.0
 @export var _acceleration: float = 1800.0
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 const ROT_SPEED: float = 12.0
 
@@ -82,12 +83,17 @@ func _physics_process(delta: float) -> void:
 	var pre_slide_perp: float = velocity.dot(up_dir) ##  Velocity in the vertical direction
 	
 	move_and_slide()
-	
+
+
 	vel_along = velocity.dot(right_dir)
 	vel_perp = velocity.dot(up_dir)
 
 	_player_bounce(pre_slide_along, vel_along, pre_slide_perp, vel_perp, up_dir, right_dir)
-	_flip_sprite(up_dir, delta, input_axis)
+	print(input_axis)
+	print(velocity.x)
+	_flip_sprite(up_dir, delta, input_axis,)
+	if velocity.x == 0.0:
+		player_sprite_2d.play("Idle")
 
 func _flip_sprite(up_dir: Vector2, delta:float, input_axis: float) -> void:
 	var down_dir: Vector2 = -up_dir
@@ -96,8 +102,11 @@ func _flip_sprite(up_dir: Vector2, delta:float, input_axis: float) -> void:
 	
 	if input_axis > 0.0:
 		player_sprite_2d.flip_h = false
-	if input_axis < 0.0:
+		player_sprite_2d.play("MoveRight")
+	elif input_axis < 0.0:
 		player_sprite_2d.flip_h = true
+		player_sprite_2d.play("MoveLeft")
+
 
 func win_level() -> void:
 	player_score +=1
