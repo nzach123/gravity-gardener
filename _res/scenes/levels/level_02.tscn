@@ -7,7 +7,7 @@
 [ext_resource type="TileSet" uid="uid://5gdshnv43ld" path="res://_res/resources/Simple_tileset.tres" id="4_sqn6i"]
 [ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="5_l5h7l"]
 [ext_resource type="PackedScene" uid="uid://ctea5gbpyfrl5" path="res://_res/scenes/spike_hazard.tscn" id="6_gyvyh"]
-[ext_resource type="PackedScene" uid="uid://cnaof38rulvy8" path="res://_res/scenes/hazard_moving.tscn" id="8_6tssv"]
+[ext_resource type="PackedScene" uid="uid://cnaof38rulvy8" path="res://_res/scenes/moving_platform.tscn" id="8_6tssv"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_veu4t"]
 size = Vector2(50, 50)

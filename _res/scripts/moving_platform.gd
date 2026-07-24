@@ -1,9 +1,10 @@
 extends Node2D
+class_name MovingPlatform
 
 @export var duration: float = 3.0
 @export var offset: Vector2 = Vector2(200,0.0)
 @onready var hazard_moving: Node2D = $"."
-@onready var static_body_2d: StaticBody2D = $StaticBody2D
+
 
 
 # Called when the node enters the scene tree for the first time.
