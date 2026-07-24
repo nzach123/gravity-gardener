@@ -7,6 +7,7 @@
 [ext_resource type="TileSet" uid="uid://5gdshnv43ld" path="res://_res/resources/Simple_tileset.tres" id="4_sqn6i"]
 [ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="5_l5h7l"]
 [ext_resource type="PackedScene" uid="uid://ctea5gbpyfrl5" path="res://_res/scenes/spike_hazard.tscn" id="6_gyvyh"]
+[ext_resource type="PackedScene" uid="uid://cnaof38rulvy8" path="res://_res/scenes/hazard_moving.tscn" id="8_6tssv"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_veu4t"]
 size = Vector2(50, 50)
@@ -70,6 +71,9 @@ rotation = 3.1415927
 [node name="SpikeHazard6" parent="Node2D" unique_id=1851365834 instance=ExtResource("6_gyvyh")]
 position = Vector2(-184, -293)
 rotation = 3.1415927
+
+[node name="HazardMoving" parent="." unique_id=822278163 instance=ExtResource("8_6tssv")]
+position = Vector2(285, 438)
 
 [connection signal="body_entered" from="GravityZone" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone" to="GravityZone" method="_on_body_entered"]

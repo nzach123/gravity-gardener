@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://cnaof38rulvy8"]
+
+[ext_resource type="Script" uid="uid://1a4nc4dnhrbs" path="res://_res/scripts/hazard_moving.gd" id="1_1ny8v"]
+[ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="1_1og27"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_2ljgr"]
+size = Vector2(178, 26)
+
+[node name="HazardMoving" type="Node2D" unique_id=822278163]
+script = ExtResource("1_1ny8v")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1441096808]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=218454875]
+shape = SubResource("RectangleShape2D_2ljgr")
+
+[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D" unique_id=1322049261]
+scale = Vector2(2.375, 1)
+texture = ExtResource("1_1og27")
+region_enabled = true
+region_rect = Rect2(192, 0, 64, 16)
