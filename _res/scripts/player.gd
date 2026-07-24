@@ -24,11 +24,11 @@ var _target_rotation: float = 0.0
 
 # --- Bounce Physics Configuration ---
 ## Energy retained after bouncing (0.0 = dead stop, 1.0 = perfect elastic).
-@export var bounce_restitution: float = 0.85 
+@export var bounce_restitution: float = 0.6
 ## Energy retained on the tangent axis (simulates surface friction/grip).
-@export var surface_friction: float = 0.92 
+@export var surface_friction: float = 0.75
 ## Max angle deviation in radians for "chaos" (surface roughness).
-@export var surface_roughness: float = 0.04 
+@export var surface_roughness: float = 0.05 
 ## Minimum speed thresholds required to trigger a bounce.
 @export var floor_bounce_threshold: float = 0.25 
 @export var wall_bounce_threshold: float = 0.20 
