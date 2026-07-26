@@ -3,19 +3,19 @@
 [ext_resource type="Script" uid="uid://1a4nc4dnhrbs" path="res://_res/scripts/moving_platform.gd" id="1_3hoif"]
 [ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="2_j27gd"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_2ljgr"]
-size = Vector2(178, 26)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3hoif"]
 
 [node name="MovingPlatfornm" type="Node2D" unique_id=822278163]
 script = ExtResource("1_3hoif")
+is_horizontal = false
 
-[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1441096808]
+[node name="AnimatedBody2D" type="AnimatableBody2D" parent="." unique_id=1372508138]
+sync_to_physics = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=218454875]
-shape = SubResource("RectangleShape2D_2ljgr")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedBody2D" unique_id=218454875]
+shape = SubResource("RectangleShape2D_3hoif")
 
-[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D" unique_id=1322049261]
-scale = Vector2(2.375, 1)
+[node name="Sprite2D" type="Sprite2D" parent="AnimatedBody2D" unique_id=1322049261]
 texture = ExtResource("2_j27gd")
 region_enabled = true
-region_rect = Rect2(192, 0, 64, 16)
+region_rect = Rect2(304, 0, 16, 16)
