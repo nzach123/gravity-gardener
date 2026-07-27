@@ -74,7 +74,8 @@ rotation = 3.1415927
 
 [node name="MovingPlatfornm" parent="." unique_id=822278163 instance=ExtResource("8_6tssv")]
 position = Vector2(252, 425)
-platform_length_blocks = 7
+is_horizontal = true
+platform_length_blocks = 5
 
 [connection signal="body_entered" from="GravityZone" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone" to="GravityZone" method="_on_body_entered"]
