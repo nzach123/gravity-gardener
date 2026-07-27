@@ -24,7 +24,7 @@ var _target_rotation: float = 0.0
 
 # --- Bounce Physics Configuration ---
 ## Energy retained after bouncing (0.0 = dead stop, 1.0 = perfect elastic).
-@export var bounce_restitution: float = 0.6
+@export var bounce_restitution: float = 0.86
 ## Energy retained on the tangent axis (simulates surface friction/grip).
 @export var surface_friction: float = 0.75
 ## Max angle deviation in radians for "chaos" (surface roughness).
@@ -103,7 +103,7 @@ func _physics_process(delta: float) -> void:
 		player_sprite_2d.play("Idle")
 	elif velocity.y != 0.0 and is_on_floor() == false:
 		player_sprite_2d.play("Falling")
-		print("falling")
+		#print("falling")
 
 func _flip_sprite(up_dir: Vector2, delta:float, input_axis: float) -> void:
 	var down_dir: Vector2 = -up_dir

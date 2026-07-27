@@ -11,7 +11,10 @@
 size = Vector2(300, 126)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_veu4t"]
-size = Vector2(50, 50)
+size = Vector2(184, 325)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cur1c"]
+size = Vector2(400, 105)
 
 [node name="Level01" type="Node2D" unique_id=368539408 node_paths=PackedStringArray("player", "goal")]
 script = ExtResource("1_veu4t")
@@ -49,13 +52,15 @@ position = Vector2(938, 603)
 zone_gravity_direction = Vector2(0, -1)
 
 [node name="CollisionShape2D" parent="GravityZoneUp2" index="0" unique_id=1000997428]
+position = Vector2(0, -137.5)
 shape = SubResource("RectangleShape2D_veu4t")
 
 [node name="GravityZoneDown" parent="." unique_id=659160453 instance=ExtResource("4_cur1c")]
 position = Vector2(291, 61)
 
 [node name="CollisionShape2D" parent="GravityZoneDown" index="0" unique_id=1000997428]
-shape = SubResource("RectangleShape2D_veu4t")
+position = Vector2(2, 11)
+shape = SubResource("RectangleShape2D_cur1c")
 
 [node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("5_v2d2p")]
 position = Vector2(1047, 20)

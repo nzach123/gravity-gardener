@@ -259,17 +259,11 @@ zone_gravity_direction = Vector2(1, 0)
 [node name="CollisionShape2D" parent="GravityZone" index="0" unique_id=1000997428]
 shape = SubResource("RectangleShape2D_veu4t")
 
-[node name="ArrowSprite2D" parent="GravityZone" index="1" unique_id=659253368]
-scale = Vector2(3, 3)
-
 [node name="GravityZone2" parent="." unique_id=659160453 instance=ExtResource("5_g3e51")]
 position = Vector2(1091, 398)
 
 [node name="CollisionShape2D" parent="GravityZone2" index="0" unique_id=1000997428]
 shape = SubResource("RectangleShape2D_veu4t")
-
-[node name="ArrowSprite2D" parent="GravityZone2" index="1" unique_id=659253368]
-scale = Vector2(3, 3)
 
 [node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("6_mkulj")]
 position = Vector2(1047, 598)

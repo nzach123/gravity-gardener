@@ -19,3 +19,18 @@ texture_filter = 1
 rotation = -1.5707964
 scale = Vector2(3, 3)
 texture = ExtResource("2_jubgv")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1864925951]
+modulate = Color(0.48962224, 0.48962224, 0.48962218, 0.3647059)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_transform_enabled = true

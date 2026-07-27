@@ -11,11 +11,11 @@ script = ExtResource("1_fq57d")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1614283958]
 texture_filter = 1
-position = Vector2(0, -12.665)
+position = Vector2(0, -5)
 scale = Vector2(2, 2)
 texture = ExtResource("1_tej6p")
 region_enabled = true
-region_rect = Rect2(104, 24, 32, 24)
+region_rect = Rect2(112, 32, 16, 16)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2134628388]
 position = Vector2(0.5, 0)

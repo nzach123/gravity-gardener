@@ -5,7 +5,7 @@
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3hoif"]
 
-[node name="MovingPlatfornm" type="Node2D" unique_id=822278163]
+[node name="MovingPlatfornm" type="Node2D" unique_id=822278163 groups=["platforms"]]
 script = ExtResource("1_3hoif")
 is_horizontal = false
 
