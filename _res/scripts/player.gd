@@ -55,7 +55,8 @@ class_name Player
 # ---------------------------------------------------------------
 var gravity: Vector2 = Vector2.ZERO        # current gravity, may rotate via GravityZone
 var target_gravity: Vector2 = Vector2.ZERO # lerp destination
-
+var right_dir: Vector2
+var up_dir: Vector2
 var coyote_timer: float = 0.0
 var jump_buffer_timer: float = 0.0
 var wall_jump_timer: float = 0.0
@@ -76,8 +77,8 @@ func _ready() -> void:
 # PHYSICS LOOP
 # ---------------------------------------------------------------
 func _physics_process(delta: float) -> void:
-	var up_dir := -gravity.normalized()
-	var right_dir := Vector2(-up_dir.y, up_dir.x)
+	up_dir = -gravity.normalized()
+	right_dir = Vector2(-up_dir.y, up_dir.x)
 
 	wall_jump_timer = maxf(0.0, wall_jump_timer - delta)
 
@@ -94,24 +95,25 @@ func _physics_process(delta: float) -> void:
 # ---------------------------------------------------------------
 # GRAVITY
 # ---------------------------------------------------------------
-func _update_gravity(delta: float) -> void:
+func _update_gravity(delta: float) -> Vector2:
 	# Smoothly rotates gravity toward the target set by a GravityZone.
 	if gravity.is_equal_approx(target_gravity):
-		return
+		pass
 	var new_angle := lerp_angle(gravity.angle(), target_gravity.angle(), clampf(32.0 * delta, 0.0, 1.0))
 	var new_mag := move_toward(gravity.length(), target_gravity.length(), 25.0 * delta)
 	gravity = Vector2.RIGHT.rotated(new_angle) * new_mag
 	up_direction = -gravity.normalized()
+	return gravity
 
-func _apply_gravity(delta: float) -> void:
+func _apply_gravity(delta: float) -> Vector2:
 	if is_on_floor():
-		return
+		pass
 	velocity += gravity * delta
 	# Clamp to terminal velocity along the fall axis.
 	var fall_speed := velocity.dot(gravity.normalized())
 	if fall_speed > terminal_velocity:
 		velocity -= gravity.normalized() * (fall_speed - terminal_velocity)
-
+	return velocity
 # ---------------------------------------------------------------
 # WALL JUMP
 # ---------------------------------------------------------------
@@ -191,7 +193,7 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2) -> void:
 	var input_axis := Input.get_axis("move_left", "move_right")
 	if input_axis != 0.0:
 		sprite.flip_h = (input_axis > 0.0) if right_dir.x < 0.0 else (input_axis < 0.0)
-	print(right_dir)
+	
 	# Pick target scale for squash & stretch.
 	var target_scale := scale_base
 	if land_squash_timer > 0.0:
