@@ -40,21 +40,23 @@ tile_set = ExtResource("3_lg58o")
 
 [node name="Player" parent="." unique_id=1709359331 instance=ExtResource("4_wocy4")]
 position = Vector2(87, 100)
-_jump_force = null
-_speed = null
-_ground_friction = null
-_air_drag = null
-_acceleration = null
-_air_acceleration = null
-_terminal_velocity = null
-_gravity_lerp_speed = null
-_sprite_rotation_speed = null
-bounce_restitution = null
-surface_friction = null
-surface_roughness = null
-floor_bounce_threshold = null
-wall_bounce_threshold = null
-bounce_lockout_duration = null
+max_speed = null
+ground_accel = null
+ground_friction = null
+air_accel = null
+gravity_mag = null
+terminal_velocity = null
+jump_force = null
+jump_cut_multiplier = null
+coyote_time = null
+jump_buffer_time = null
+wall_jump_h_force = null
+wall_jump_v_force = null
+wall_jump_cooldown = null
+squash_stretch_speed = null
+scale_jump = null
+scale_land = null
+scale_run = null
 
 [node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("6_i8hl5")]
 visible = false
