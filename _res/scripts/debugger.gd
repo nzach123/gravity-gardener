@@ -1,6 +1,6 @@
 extends Control
 @onready var debuggerlabel: Label = $DebuggerLabel
-@onready var player: Player = $"../.."
+@export var player: Player
 
 
 

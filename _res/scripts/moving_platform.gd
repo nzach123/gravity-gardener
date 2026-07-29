@@ -41,7 +41,7 @@ func _update_visuals() -> void:
 	for block in sprite_blocks:
 		if is_instance_valid(block):
 			block.queue_free()
-		sprite_blocks.clear()
+	sprite_blocks.clear()
 	var center_offset: float = - (platform_length_blocks - 1.0) / 2.0 * block_size
 	
 	for i in range(platform_length_blocks):

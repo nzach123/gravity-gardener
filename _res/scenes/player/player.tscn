@@ -228,4 +228,5 @@ shape = SubResource("CircleShape2D_34jcp")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2145732260]
 
-[node name="Debugger" parent="CanvasLayer" unique_id=1376778258 instance=ExtResource("3_alesa")]
+[node name="Debugger" parent="CanvasLayer" unique_id=1376778258 node_paths=PackedStringArray("player") instance=ExtResource("3_alesa")]
+player = NodePath("../..")
