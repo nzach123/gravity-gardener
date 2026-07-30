@@ -9,23 +9,18 @@ class_name  GravityZone
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 @onready var color_rect: ColorRect = $ColorRect
 
+signal gravity_changed(new_vector: Vector2)
+
 # Gets and returns the gravity vector only.
 func get_gravity_vector() -> Vector2:
 	return zone_gravity_direction.normalized() * zone_gravity_strength
 
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
-		body.GZ_body_entered(self)
+		gravity_changed.emit(get_gravity_vector())
 		
 func _ready() -> void:
-	if zone_gravity_direction == Vector2.DOWN:
-		arrow_sprite.rotate(deg_to_rad(180))
-	elif zone_gravity_direction == Vector2.RIGHT:
-		arrow_sprite.rotate(deg_to_rad(90.0))
-	elif zone_gravity_direction == Vector2.UP:
-		arrow_sprite.rotate(deg_to_rad(0.0))
-	elif zone_gravity_direction == Vector2.LEFT:
-		arrow_sprite.rotate(deg_to_rad(-90.0))
+	arrow_sprite.rotation = zone_gravity_direction.angle() - Vector2.UP.angle()+ deg_to_rad(-90)
 	color_rect_to_collision_shape()
 	
 func snap_to_collision_center() -> void:

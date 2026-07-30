@@ -72,6 +72,7 @@ func _ready() -> void:
 	gravity = Vector2(0.0, gravity_mag)
 	target_gravity = Vector2(0.0, gravity_mag)
 	scale_base = sprite.scale
+	var gravityzone = get_tree().get_nodes_in_group("gravityzone")
 
 # ---------------------------------------------------------------
 # PHYSICS LOOP
@@ -216,12 +217,13 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2, _input_a
 # ---------------------------------------------------------------
 # EXTERNAL API
 # ---------------------------------------------------------------
-func set_gravity(vector: Vector2) -> void:
-	target_gravity = vector
+func set_gravity(new_vector: Vector2) -> void:
+	target_gravity = new_vector
+	
 
 func win_level() -> void:
 	pass
 
-func GZ_body_entered(zone: Node2D) -> void:
-	if zone is GravityZone:
-		set_gravity(zone.get_gravity_vector())
+#func GZ_body_entered(zone: Node2D) -> void:
+	#if zone is GravityZone:
+		#set_gravity(zone.get_gravity_vector())

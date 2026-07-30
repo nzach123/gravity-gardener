@@ -6,7 +6,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_34jcp"]
 size = Vector2(50, 50)
 
-[node name="GravityZone" type="Area2D" unique_id=1204872970]
+[node name="GravityZone" type="Area2D" unique_id=1204872970 groups=["gravityzone"]]
 gravity_space_override = 3
 gravity = -980.0
 script = ExtResource("1_d8c3d")

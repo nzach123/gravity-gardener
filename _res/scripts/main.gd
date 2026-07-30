@@ -3,7 +3,6 @@ extends Node2D
 @export var goal: Goal
 @export var next_level: PackedScene
 
-
 func _ready() -> void:
 	if goal and player:
 		goal.player_reached_goal.connect(player.win_level)
@@ -13,7 +12,10 @@ func _ready() -> void:
 	var hazards = get_tree().get_nodes_in_group("hazards")
 	for hazard in hazards:
 		hazard.inc_hazard_dmg.connect(restart_level)
-
+		
+	var gravityzone = get_tree().get_nodes_in_group("gravityzone")
+	for zone in gravityzone:
+		zone.gravity_changed.connect(player.set_gravity)
 	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
