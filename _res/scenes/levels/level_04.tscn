@@ -253,6 +253,7 @@ next_level = ExtResource("2_4d8cv")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)
+ignore_rotation = false
 
 [node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=672883762]
 position = Vector2(576, 324)
