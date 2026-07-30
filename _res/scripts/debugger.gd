@@ -8,7 +8,7 @@ func _ready() -> void:
 	pass
 	
 	
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var debug_string: String = ""
 	var gravity = player.target_gravity
 	var y_velocity = snapped(player.velocity.y, .1)

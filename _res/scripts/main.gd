@@ -2,6 +2,7 @@ extends Node2D
 @export var player: Player
 @export var goal: Goal
 @export var next_level: PackedScene
+@onready var camera_2d: Camera2D = $Camera2D
 
 func _ready() -> void:
 	if goal and player:
@@ -17,6 +18,7 @@ func _ready() -> void:
 	for zone in gravityzone:
 		zone.gravity_changed.connect(player.set_gravity)
 	
+	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	pass
@@ -29,7 +31,11 @@ func restart_level() -> void:
 	print("level restart called")
 	get_tree().call_deferred("reload_current_scene")
 
+func set_camera() -> void:
+	camera_2d.global_position = player.global_position 
 	
+func follow_camera()->void:
+	camera_2d.global_position = player.global_position 
 
 
 func _on_kill_area_2d_body_entered(body: Node2D) -> void:
