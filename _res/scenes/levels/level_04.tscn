@@ -250,6 +250,7 @@ script = ExtResource("1_4d8cv")
 player = NodePath("Player")
 goal = NodePath("Goal")
 next_level = ExtResource("2_4d8cv")
+camera_moving = false
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)

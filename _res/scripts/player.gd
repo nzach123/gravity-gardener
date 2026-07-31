@@ -163,6 +163,11 @@ func _handle_jumping(delta: float, up_dir: Vector2) -> void:
 func _apply_movement(delta: float, right_dir: Vector2, up_dir: Vector2, _input_axis: float) -> void:
 	# Map raw left/right input to the current right_dir axis.
 	var input_axis := _input_axis
+	## Hide if camera_following
+	if not is_zero_approx(right_dir.dot(Vector2.RIGHT)):
+		input_axis = input_axis * sign(right_dir.dot(Vector2.RIGHT))
+	else:
+		input_axis = input_axis * -sign(right_dir.y)
 	var vel_side := velocity.dot(right_dir)
 	var target_speed := input_axis * max_speed
 	var accel := ground_accel if is_on_floor() else air_accel
@@ -187,7 +192,9 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2, _input_a
 	# Flip sprite to face movement direction.
 	var input_axis := _input_axis
 	if input_axis != 0.0:
-		sprite.flip_h = input_axis < 0.0
+		
+		#sprite.flip_h = input_axis < 0.0
+		sprite.flip_h = (input_axis > 0.0) if right_dir.x < 0.0 else (input_axis < 0.0)
 	
 	# Pick target scale for squash & stretch.
 	var target_scale := scale_base
