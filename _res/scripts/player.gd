@@ -64,7 +64,7 @@ var land_squash_timer: float = 0.0
 
 var is_jumping: bool = false
 var was_on_floor: bool = false
-
+var camera_rotation_enabled: bool = true
 # ---------------------------------------------------------------
 # READY
 # ---------------------------------------------------------------
@@ -163,11 +163,14 @@ func _handle_jumping(delta: float, up_dir: Vector2) -> void:
 func _apply_movement(delta: float, right_dir: Vector2, up_dir: Vector2, _input_axis: float) -> void:
 	# Map raw left/right input to the current right_dir axis.
 	var input_axis := _input_axis
-	## Hide if camera_following
-	if not is_zero_approx(right_dir.dot(Vector2.RIGHT)):
-		input_axis = input_axis * sign(right_dir.dot(Vector2.RIGHT))
+	if camera_rotation_enabled:
+		pass
+
 	else:
-		input_axis = input_axis * -sign(right_dir.y)
+		if not is_zero_approx(right_dir.dot(Vector2.RIGHT)):
+			input_axis = input_axis * sign(right_dir.dot(Vector2.RIGHT))
+		else:
+			input_axis = input_axis * -sign(right_dir.y)
 	var vel_side := velocity.dot(right_dir)
 	var target_speed := input_axis * max_speed
 	var accel := ground_accel if is_on_floor() else air_accel
@@ -193,9 +196,11 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2, _input_a
 	var input_axis := _input_axis
 	if input_axis != 0.0:
 		
-		#sprite.flip_h = input_axis < 0.0
-		sprite.flip_h = (input_axis > 0.0) if right_dir.x < 0.0 else (input_axis < 0.0)
-	
+		if camera_rotation_enabled:
+			sprite.flip_h = input_axis < 0.0
+		else:
+			sprite.flip_h = (input_axis > 0.0) if right_dir.x < 0.0 else (input_axis < 0.0)
+			
 	# Pick target scale for squash & stretch.
 	var target_scale := scale_base
 	if land_squash_timer > 0.0:

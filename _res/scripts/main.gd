@@ -5,10 +5,13 @@ extends Node2D
 @onready var camera_2d: Camera2D = $Camera2D
 
 @export var camera_moving: bool = false
+@export var camera_rotation_enabled: bool = false
 
 var camera_tween: Tween
 func _ready() -> void:
 	camera_2d.ignore_rotation = false
+	if player:
+		player.camera_rotation_enabled = camera_rotation_enabled
 	if goal and player:
 		goal.player_reached_goal.connect(player.win_level)
 		goal.player_reached_goal.connect(change_level)
