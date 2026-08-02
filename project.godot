@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Gravity_Gardener"
-run/main_scene="uid://ch5ujtky5mh4b"
+run/main_scene="uid://c7wcjgf8lvf3i"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
