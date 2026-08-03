@@ -65,6 +65,8 @@ var land_squash_timer: float = 0.0
 var is_jumping: bool = false
 var was_on_floor: bool = false
 var camera_rotation_enabled: bool = true
+var player_died: bool = false
+var items: Array[String] = []
 # ---------------------------------------------------------------
 # READY
 # ---------------------------------------------------------------
@@ -229,7 +231,6 @@ func set_gravity(new_vector: Vector2) -> void:
 
 func win_level() -> void:
 	pass
-
-#func GZ_body_entered(zone: Node2D) -> void:
-	#if zone is GravityZone:
-		#set_gravity(zone.get_gravity_vector())
+func collect(item) -> void:
+	items.append(item)
+	

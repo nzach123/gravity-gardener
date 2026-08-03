@@ -10,6 +10,8 @@ script = ExtResource("1_3hoif")
 is_horizontal = false
 
 [node name="AnimatedBody2D" type="AnimatableBody2D" parent="." unique_id=1372508138]
+collision_layer = 2
+collision_mask = 2
 sync_to_physics = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedBody2D" unique_id=218454875]

@@ -1,0 +1,86 @@
+[gd_scene format=3 uid="uid://b6xion1fanxva"]
+
+[ext_resource type="Script" uid="uid://b0ek3hvs3r3p7" path="res://_res/scripts/plant.gd" id="1_8ctvd"]
+[ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="2_004kw"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7tyqb"]
+atlas = ExtResource("2_004kw")
+region = Rect2(352, 144, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_unpve"]
+atlas = ExtResource("2_004kw")
+region = Rect2(368, 144, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fu56x"]
+atlas = ExtResource("2_004kw")
+region = Rect2(384, 144, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pq272"]
+atlas = ExtResource("2_004kw")
+region = Rect2(400, 144, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_77fqa"]
+atlas = ExtResource("2_004kw")
+region = Rect2(416, 144, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ovvsf"]
+atlas = ExtResource("2_004kw")
+region = Rect2(432, 144, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_800fm"]
+atlas = ExtResource("2_004kw")
+region = Rect2(336, 144, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_a5nrt"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7tyqb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_unpve")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fu56x")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pq272")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_77fqa")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ovvsf")
+}],
+"loop": 1,
+"name": &"Filling",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_800fm")
+}],
+"loop": 1,
+"name": &"Idle",
+"speed": 5.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_72y4k"]
+radius = 16.0
+
+[node name="Plant" type="Node2D" unique_id=119229537]
+script = ExtResource("1_8ctvd")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=2080806813]
+scale = Vector2(2, 2)
+sprite_frames = SubResource("SpriteFrames_a5nrt")
+animation = &"Filling"
+
+[node name="InteractArea2D" type="Area2D" parent="." unique_id=1241183913]
+collision_layer = 0
+collision_mask = 2
+
+[node name="AreaCollisionShape2D" type="CollisionShape2D" parent="InteractArea2D" unique_id=1441472416]
+shape = SubResource("CircleShape2D_72y4k")
+
+[connection signal="body_entered" from="InteractArea2D" to="." method="_on_interact_body_entered"]

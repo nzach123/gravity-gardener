@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="5_l5h7l"]
 [ext_resource type="PackedScene" uid="uid://ctea5gbpyfrl5" path="res://_res/scenes/spike_hazard.tscn" id="6_gyvyh"]
 [ext_resource type="PackedScene" uid="uid://cnaof38rulvy8" path="res://_res/scenes/moving_platform.tscn" id="8_6tssv"]
+[ext_resource type="PackedScene" uid="uid://b6xion1fanxva" path="res://_res/scenes/plant.tscn" id="9_l5h7l"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_veu4t"]
 size = Vector2(50, 50)
@@ -17,7 +18,6 @@ script = ExtResource("1_iydkr")
 player = NodePath("Player")
 goal = NodePath("Goal")
 next_level = ExtResource("2_sqn6i")
-camera_rotation_enabled = false
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)
@@ -77,6 +77,9 @@ rotation = 3.1415927
 position = Vector2(252, 425)
 is_horizontal = true
 platform_length_blocks = 5
+
+[node name="Plant" parent="." unique_id=119229537 instance=ExtResource("9_l5h7l")]
+position = Vector2(750, 614)
 
 [connection signal="body_entered" from="GravityZone" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZone" to="GravityZone" method="_on_body_entered"]

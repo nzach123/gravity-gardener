@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://bo4gkqlryldgc" path="res://_res/scenes/player/player.tscn" id="3_fo1dc"]
 [ext_resource type="PackedScene" uid="uid://bghklys61ve02" path="res://_res/scenes/gravity_zone.tscn" id="4_cur1c"]
 [ext_resource type="PackedScene" uid="uid://wju5q3rs7h5a" path="res://_res/scenes/goal.tscn" id="5_v2d2p"]
+[ext_resource type="PackedScene" uid="uid://b6xion1fanxva" path="res://_res/scenes/plant.tscn" id="7_cur1c"]
+[ext_resource type="PackedScene" uid="uid://b5susj5h6mc1r" path="res://_res/scenes/bucket.tscn" id="8_y68me"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fo1dc"]
 size = Vector2(144, 126)
@@ -21,7 +23,6 @@ script = ExtResource("1_veu4t")
 player = NodePath("Player")
 goal = NodePath("Goal")
 next_level = ExtResource("2_fo1dc")
-camera_rotation_enabled = false
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)
@@ -59,6 +60,12 @@ shape = SubResource("RectangleShape2D_cur1c")
 position = Vector2(1047, 20)
 rotation = 3.1415927
 flip_sprite = true
+
+[node name="Plant" parent="." unique_id=119229537 instance=ExtResource("7_cur1c")]
+position = Vector2(284, 388)
+
+[node name="Bucket" parent="." unique_id=1976415186 instance=ExtResource("8_y68me")]
+position = Vector2(150, 612)
 
 [connection signal="body_entered" from="GravityZoneUp" to="Player" method="GZ_body_entered"]
 [connection signal="body_entered" from="GravityZoneUp" to="GravityZoneUp" method="_on_body_entered"]
