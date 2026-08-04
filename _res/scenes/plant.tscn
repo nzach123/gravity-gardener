@@ -3,6 +3,10 @@
 [ext_resource type="Script" uid="uid://b0ek3hvs3r3p7" path="res://_res/scripts/plant.gd" id="1_8ctvd"]
 [ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="2_004kw"]
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_8ctvd"]
+atlas = ExtResource("2_004kw")
+region = Rect2(448, 144, 16, 16)
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_7tyqb"]
 atlas = ExtResource("2_004kw")
 region = Rect2(352, 144, 16, 16)
@@ -33,6 +37,14 @@ region = Rect2(336, 144, 16, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_a5nrt"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8ctvd")
+}],
+"loop": 1,
+"name": &"Filled",
+"speed": 5.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_7tyqb")
@@ -68,13 +80,13 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_72y4k"]
 radius = 16.0
 
-[node name="Plant" type="Node2D" unique_id=119229537]
+[node name="Plant" type="Node2D" unique_id=119229537 groups=["plants"]]
 script = ExtResource("1_8ctvd")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=2080806813]
 scale = Vector2(2, 2)
 sprite_frames = SubResource("SpriteFrames_a5nrt")
-animation = &"Filling"
+animation = &"Filled"
 
 [node name="InteractArea2D" type="Area2D" parent="." unique_id=1241183913]
 collision_layer = 0
@@ -84,3 +96,4 @@ collision_mask = 2
 shape = SubResource("CircleShape2D_72y4k")
 
 [connection signal="body_entered" from="InteractArea2D" to="." method="_on_interact_body_entered"]
+[connection signal="body_exited" from="InteractArea2D" to="." method="_on_interact_body_exited"]

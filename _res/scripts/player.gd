@@ -66,7 +66,10 @@ var is_jumping: bool = false
 var was_on_floor: bool = false
 var camera_rotation_enabled: bool = true
 var player_died: bool = false
-var items: Array[String] = []
+
+# Watering state
+var is_watering: bool = false
+var current_plant: Plant = null
 # ---------------------------------------------------------------
 # READY
 # ---------------------------------------------------------------
@@ -80,6 +83,11 @@ func _ready() -> void:
 # PHYSICS LOOP
 # ---------------------------------------------------------------
 func _physics_process(delta: float) -> void:
+	# Lock all movement while watering a plant.
+	if is_watering:
+		velocity = Vector2.ZERO
+		return
+
 	up_dir = -gravity.normalized()
 	right_dir = Vector2(-up_dir.y, up_dir.x)
 
@@ -231,6 +239,4 @@ func set_gravity(new_vector: Vector2) -> void:
 
 func win_level() -> void:
 	pass
-func collect(item) -> void:
-	items.append(item)
 	

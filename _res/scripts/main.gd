@@ -25,6 +25,11 @@ func _ready() -> void:
 	for zone in gravityzone:
 		zone.gravity_changed.connect(player.set_gravity)
 		zone.gravity_changed.connect(_rotate_camera_to_gravity)
+	
+	# Initialize plant count for watering mechanic
+	GameManager.reset_level_state()
+	var plants = get_tree().get_nodes_in_group("plants")
+	GameManager.plants_total = plants.size()
 		
 			
 func _rotate_camera_to_gravity(gravity: Vector2) -> void:
@@ -44,6 +49,7 @@ func change_level() -> void:
 	
 func restart_level() -> void:
 	print("level restart called")
+	GameManager.reset_level_state()
 	get_tree().call_deferred("reload_current_scene")
 
 func set_camera() -> void:
@@ -55,4 +61,5 @@ func follow_camera()->void:
 
 func _on_kill_area_2d_body_entered(body: Node2D) -> void:
 	if body is Player:
+		body.player_died = true
 		restart_level()
