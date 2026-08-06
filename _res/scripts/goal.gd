@@ -21,7 +21,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if not is_unlocked:
-		var gm = get_node("/root/GameManager")
+		var gm = GameManager
 		if gm and gm.goal_unlocked:
 			is_unlocked = true
 			goal_animated_sprite_2d.animation_finished.connect(_on_activation_finished, CONNECT_ONE_SHOT)
@@ -34,6 +34,6 @@ func _on_activation_finished() -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
-		var gm = get_node("/root/GameManager")
+		var gm = GameManager
 		if gm and gm.goal_unlocked:
 			player_reached_goal.emit()
