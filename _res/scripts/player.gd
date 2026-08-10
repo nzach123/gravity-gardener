@@ -212,15 +212,15 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2, _input_a
 			sprite.flip_h = (input_axis > 0.0) if right_dir.x < 0.0 else (input_axis < 0.0)
 			
 	# Pick target scale for squash & stretch.
-	var target_scale := scale_base
-	if land_squash_timer > 0.0:
-		target_scale = scale_land
-	elif not is_on_floor():
-		target_scale = scale_jump
-	elif absf(velocity.dot(right_dir)) > max_speed * 0.8:
-		target_scale = scale_run
-
-	sprite.scale = sprite.scale.lerp(target_scale, squash_stretch_speed * delta)
+	#var target_scale := scale_base
+	#if land_squash_timer > 0.0:
+		#target_scale = scale_land
+	#elif not is_on_floor():
+		#target_scale = scale_jump
+	#elif absf(velocity.dot(right_dir)) > max_speed * 0.8:
+		#target_scale = scale_run
+#
+	#sprite.scale = sprite.scale.lerp(target_scale, squash_stretch_speed * delta)
 
 	# Animations.
 	if not is_on_floor():
