@@ -250,7 +250,6 @@ script = ExtResource("1_4d8cv")
 player = NodePath("Player")
 goal = NodePath("Goal")
 next_level = ExtResource("2_4d8cv")
-camera_moving = false
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)
@@ -263,6 +262,7 @@ tile_set = SubResource("TileSet_7sfby")
 
 [node name="Player" parent="." unique_id=1709359331 instance=ExtResource("4_bn20c")]
 position = Vector2(51, 588)
+scale = Vector2(1, 1)
 
 [node name="GravityZoneUp" parent="." unique_id=1204872970 instance=ExtResource("5_lm7y5")]
 position = Vector2(229, 544)
@@ -306,7 +306,6 @@ position = Vector2(0, 2)
 
 [node name="MovingPlatfornm" parent="Platforms" unique_id=822278163 instance=ExtResource("7_nck1i")]
 position = Vector2(391, 383)
-is_horizontal = true
 platform_length_blocks = 7
 
 [node name="Hazards" type="Node2D" parent="." unique_id=1195914532]

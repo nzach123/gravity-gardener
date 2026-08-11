@@ -10,22 +10,34 @@ class_name Player
 @export var ground_friction: float = 4000.0
 @export var air_accel: float = 4000.0
 
-# ---------------------------------------------------------------
-# GRAVITY
-# ---------------------------------------------------------------
-@export_group("Gravity")
-@export var gravity_mag: float = 3200.0
-@export var terminal_velocity: float = 2500.0
+## ---------------------------------------------------------------
+## GRAVITY
+## ---------------------------------------------------------------
+#@export_group("Gravity")
+#@export var gravity_mag: float = 3200.0
+#@export var terminal_velocity: float = 2500.0
 
 # ---------------------------------------------------------------
-# JUMPING
+# GRAVITY / JUMP  (designer-facing, in pixels — GDC jump math)
+# All gravity and jump feel is derived from these four values so
+# you can reason in "pixels and distances" rather than raw forces.
 # ---------------------------------------------------------------
-@export_group("Jumping")
-@export var jump_force: float = 850.0
-@export var jump_cut_multiplier: float = 0.4
+@export_group("Jump")
+## Peak height the player reaches above the take-off point (px).
+@export var jump_height: float = 200.0
+## Horizontal pixels traveled at max_speed while ascending to peak.
+## Controls how "floaty" the rise feels — longer = slower gravity.
+@export var jump_distance_to_peak: float = 128.0
+## Horizontal pixels traveled at max_speed while descending to land.
+## Shorter than peak distance creates a snappier, arcade-style fall.
+@export var jump_distance_to_land: float = 80.0
+## Minimum upward speed enforced when the player releases jump early.
+## Acts as the floor for variable-height: higher = less control.
+@export var min_jump_velocity: float = 100.0
+
+@export_group("Timing")
 @export var coyote_time: float = 0.12
 @export var jump_buffer_time: float = 0.15
-
 # ---------------------------------------------------------------
 # WALL JUMP
 # ---------------------------------------------------------------
@@ -53,6 +65,10 @@ class_name Player
 # ---------------------------------------------------------------
 # RUNTIME STATE  (not exported — managed internally)
 # ---------------------------------------------------------------
+var gravity_ascent_mag: float = 0.0   # weaker pull on the way up → floaty peak
+var gravity_descent_mag: float = 0.0  # stronger pull on the way down → snappy fall
+var jump_velocity: float = 0.0        # initial upward impulse at take-off
+
 var gravity: Vector2 = Vector2.ZERO        # current gravity, may rotate via GravityZone
 var target_gravity: Vector2 = Vector2.ZERO # lerp destination
 var right_dir: Vector2
@@ -74,8 +90,17 @@ var current_plant: Plant = null
 # READY
 # ---------------------------------------------------------------
 func _ready() -> void:
-	gravity = Vector2(0.0, gravity_mag)
-	target_gravity = Vector2(0.0, gravity_mag)
+ 
+	var t_up: float   = jump_distance_to_peak  / max_speed  # secs to reach apex
+	var t_down: float = jump_distance_to_land  / max_speed  # secs to fall from apex
+
+	gravity_ascent_mag  = (2.0 * jump_height) / (t_up   * t_up)
+	gravity_descent_mag = (2.0 * jump_height) / (t_down * t_down)
+	jump_velocity = (2.0 * jump_height) / t_up
+ 
+	# Seed the live gravity vector using the ascent magnitude as a neutral default.
+	gravity = Vector2(0.0, gravity_ascent_mag)
+	target_gravity = gravity
 	scale_base = sprite.scale
 	var gravityzone = get_tree().get_nodes_in_group("gravityzone")
 
@@ -119,11 +144,9 @@ func _update_gravity(delta: float) -> void:
 func _apply_gravity(delta: float) -> void:
 	if is_on_floor():
 		return
-	velocity += gravity * delta
-	# Clamp to terminal velocity along the fall axis.
-	var fall_speed := velocity.dot(gravity.normalized())
-	if fall_speed > terminal_velocity:
-		velocity -= gravity.normalized() * (fall_speed - terminal_velocity)
+	var vel_up := velocity.dot(-gravity.normalized())   # positive while ascending
+	var grav_mag: float = gravity_ascent_mag if vel_up > 0.0 else gravity_descent_mag
+	velocity += gravity.normalized() * grav_mag * delta
 	
 # ---------------------------------------------------------------
 # WALL JUMP
@@ -146,7 +169,8 @@ func _handle_jumping(delta: float, up_dir: Vector2) -> void:
 
 	# Consume the buffer when coyote window is open.
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
-		velocity += up_dir * jump_force
+		var vel_side := velocity.dot(right_dir)
+		velocity = right_dir * vel_side + up_dir * jump_velocity
 		coyote_timer = 0.0
 		jump_buffer_timer = 0.0
 		is_jumping = true
@@ -155,7 +179,8 @@ func _handle_jumping(delta: float, up_dir: Vector2) -> void:
 	# Variable jump height: cutting the button early reduces upward velocity.
 	var vel_up := velocity.dot(up_dir)
 	if Input.is_action_just_released("jump") and vel_up > 0.0:
-		velocity -= up_dir * (vel_up * (1.0 - jump_cut_multiplier))
+		if vel_up > min_jump_velocity:
+			velocity -= up_dir * (vel_up - min_jump_velocity)
 		is_jumping = false
 
 	# Landing detection.
@@ -234,6 +259,13 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2, _input_a
 # EXTERNAL API
 # ---------------------------------------------------------------
 func set_gravity(new_vector: Vector2) -> void:
+	# GravityZone calls this to redirect (and optionally rescale) gravity.
+	# Re-derive ascent/descent magnitudes proportionally so jump feel stays
+	# consistent in low-gravity or high-gravity zones.
+	var scale_factor: float = new_vector.length() / gravity_ascent_mag if gravity_ascent_mag > 0.0 else 1.0
+	gravity_ascent_mag  *= scale_factor
+	gravity_descent_mag *= scale_factor
+	jump_velocity       *= scale_factor
 	target_gravity = new_vector
 	
 
