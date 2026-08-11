@@ -103,8 +103,8 @@ animations = [{
 "speed": 5.0
 }]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_l7mbx"]
-size = Vector2(24.5, 30)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_y68me"]
+radius = 11.25
 
 [node name="Player" type="CharacterBody2D" unique_id=1709359331]
 scale = Vector2(2, 2)
@@ -120,14 +120,14 @@ autoplay = "Idle"
 
 [node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="." unique_id=445639945]
 position = Vector2(-1.25, -7)
-shape = SubResource("RectangleShape2D_l7mbx")
+shape = SubResource("CapsuleShape2D_y68me")
 
 [node name="PlayerArea2D" type="Area2D" parent="." unique_id=550897856]
 position = Vector2(0, -6)
 
 [node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="PlayerArea2D" unique_id=2063023771]
 position = Vector2(-1.5, -1)
-shape = SubResource("RectangleShape2D_l7mbx")
+shape = SubResource("CapsuleShape2D_y68me")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2145732260]
 

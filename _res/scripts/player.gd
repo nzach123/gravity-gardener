@@ -23,7 +23,6 @@ class_name Player
 # you can reason in "pixels and distances" rather than raw forces.
 # ---------------------------------------------------------------
 @export_group("Jump")
-## Peak height the player reaches above the take-off point (px).
 @export var jump_height: float = 200.0
 ## Horizontal pixels traveled at max_speed while ascending to peak.
 ## Controls how "floaty" the rise feels — longer = slower gravity.
@@ -68,6 +67,7 @@ class_name Player
 var gravity_ascent_mag: float = 0.0   # weaker pull on the way up → floaty peak
 var gravity_descent_mag: float = 0.0  # stronger pull on the way down → snappy fall
 var jump_velocity: float = 0.0        # initial upward impulse at take-off
+var ascent_descent_ratio: float = 1.0 # preserved across gravity zone changes
 
 var gravity: Vector2 = Vector2.ZERO        # current gravity, may rotate via GravityZone
 var target_gravity: Vector2 = Vector2.ZERO # lerp destination
@@ -97,6 +97,7 @@ func _ready() -> void:
 	gravity_ascent_mag  = (2.0 * jump_height) / (t_up   * t_up)
 	gravity_descent_mag = (2.0 * jump_height) / (t_down * t_down)
 	jump_velocity = (2.0 * jump_height) / t_up
+	ascent_descent_ratio = gravity_ascent_mag / gravity_descent_mag
  
 	# Seed the live gravity vector using the ascent magnitude as a neutral default.
 	gravity = Vector2(0.0, gravity_ascent_mag)
@@ -120,7 +121,7 @@ func _physics_process(delta: float) -> void:
 	var input_axis: float = Input.get_axis("move_left", "move_right")
 	_update_gravity(delta)
 	_apply_gravity(delta)
-	_handle_wall_jump(up_dir)
+	#_handle_wall_jump(up_dir)
 	_handle_jumping(delta, up_dir)
 	_apply_movement(delta, right_dir, up_dir, input_axis)
 
@@ -259,14 +260,13 @@ func _update_visuals(delta: float, right_dir: Vector2, up_dir: Vector2, _input_a
 # EXTERNAL API
 # ---------------------------------------------------------------
 func set_gravity(new_vector: Vector2) -> void:
-	# GravityZone calls this to redirect (and optionally rescale) gravity.
-	# Re-derive ascent/descent magnitudes proportionally so jump feel stays
-	# consistent in low-gravity or high-gravity zones.
-	var scale_factor: float = new_vector.length() / gravity_ascent_mag if gravity_ascent_mag > 0.0 else 1.0
-	gravity_ascent_mag  *= scale_factor
-	gravity_descent_mag *= scale_factor
-	jump_velocity       *= scale_factor
-	target_gravity = new_vector
+	var new_mag := new_vector.length()
+	if new_mag <= 0.0:
+		return
+	gravity_ascent_mag  = new_mag
+	gravity_descent_mag = gravity_ascent_mag / ascent_descent_ratio
+	jump_velocity       = sqrt(2.0 * jump_height * gravity_ascent_mag)
+	target_gravity      = new_vector
 	
 
 func win_level() -> void:
