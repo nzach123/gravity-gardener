@@ -4,6 +4,12 @@
 [ext_resource type="Texture2D" uid="uid://cfgqx25u4rgnx" path="res://_res/assets/GG-MainPlayer_Master_SpriteSheet_v1.png" id="3_53i5p"]
 [ext_resource type="PackedScene" uid="uid://cgaa71ep4fxs3" path="res://_res/scenes/debugger.tscn" id="3_alesa"]
 [ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="3_s621u"]
+[ext_resource type="Script" path="res://_res/scripts/components/player_movement_component.gd" id="4_7kqxp"]
+[ext_resource type="Script" path="res://_res/scripts/components/player_gravity_component.gd" id="5_8jryt"]
+[ext_resource type="Script" path="res://_res/scripts/components/player_jump_component.gd" id="6_3plmn"]
+[ext_resource type="Script" path="res://_res/scripts/components/player_wall_jump_component.gd" id="7_9xcvb"]
+[ext_resource type="Script" path="res://_res/scripts/components/player_watering_component.gd" id="8_2qwer"]
+[ext_resource type="Script" path="res://_res/scripts/components/player_visual_component.gd" id="9_5tyui"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_u2e6y"]
 atlas = ExtResource("3_s621u")
@@ -133,3 +139,21 @@ shape = SubResource("CapsuleShape2D_y68me")
 
 [node name="Debugger" parent="CanvasLayer" unique_id=1376778258 node_paths=PackedStringArray("player") instance=ExtResource("3_alesa")]
 player = NodePath("../..")
+
+[node name="PlayerMovementComponent" type="Node" parent="."]
+script = ExtResource("4_7kqxp")
+
+[node name="PlayerGravityComponent" type="Node" parent="."]
+script = ExtResource("5_8jryt")
+
+[node name="PlayerJumpComponent" type="Node" parent="."]
+script = ExtResource("6_3plmn")
+
+[node name="PlayerWallJumpComponent" type="Node" parent="."]
+script = ExtResource("7_9xcvb")
+
+[node name="PlayerWateringComponent" type="Node" parent="."]
+script = ExtResource("8_2qwer")
+
+[node name="PlayerVisualComponent" type="Node" parent="."]
+script = ExtResource("9_5tyui")

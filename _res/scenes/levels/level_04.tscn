@@ -262,7 +262,6 @@ tile_set = SubResource("TileSet_7sfby")
 
 [node name="Player" parent="." unique_id=1709359331 instance=ExtResource("4_bn20c")]
 position = Vector2(51, 588)
-scale = Vector2(1, 1)
 
 [node name="GravityZoneUp" parent="." unique_id=1204872970 instance=ExtResource("5_lm7y5")]
 position = Vector2(229, 544)
