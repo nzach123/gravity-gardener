@@ -21,15 +21,18 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if not is_unlocked:
+		
 		var gm = GameManager
 		if gm and gm.goal_unlocked:
+			print("unlocked")
 			is_unlocked = true
-			goal_animated_sprite_2d.animation_finished.connect(_on_activation_finished, CONNECT_ONE_SHOT)
-			goal_animated_sprite_2d.play("goal_interact")
+			goal_animated_sprite_2d.play("goal_open")
+			#goal_animated_sprite_2d.animation_finished.connect(_on_activation_finished, CONNECT_ONE_SHOT)
+			
 
 
-func _on_activation_finished() -> void:
-	goal_animated_sprite_2d.play("Idle")
+#func _on_activation_finished() -> void:
+	#goal_animated_sprite_2d.play("Idle")
 
 
 func _on_body_entered(body: Node2D) -> void:

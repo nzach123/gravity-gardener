@@ -23,12 +23,9 @@ script = ExtResource("1_veu4t")
 player = NodePath("Player")
 goal = NodePath("Goal")
 next_level = ExtResource("2_fo1dc")
-camera_moving = true
-camera_rotation_enabled = true
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1075314689 groups=["MainCamera"]]
 position = Vector2(576, 324)
-zoom = Vector2(1.5, 1.5)
 
 [node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=59647957]
 position = Vector2(576, 324)
@@ -60,9 +57,8 @@ position = Vector2(2, 11)
 shape = SubResource("RectangleShape2D_cur1c")
 
 [node name="Goal" parent="." unique_id=1054379182 instance=ExtResource("5_v2d2p")]
-position = Vector2(1047, 20)
+position = Vector2(1046, 33)
 rotation = 3.1415927
-flip_sprite = true
 
 [node name="Plant" parent="." unique_id=119229537 instance=ExtResource("7_cur1c")]
 position = Vector2(284, 388)

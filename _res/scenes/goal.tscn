@@ -1,35 +1,27 @@
 [gd_scene format=3 uid="uid://wju5q3rs7h5a"]
 
 [ext_resource type="Script" uid="uid://dtfk37r56nr3d" path="res://_res/scripts/goal.gd" id="1_1xy8y"]
-[ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="2_1xy8y"]
+[ext_resource type="Texture2D" uid="uid://dfltmvjyd8ofo" path="res://_res/assets/GG-Door.png" id="2_1xy8y"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_r8g61"]
 atlas = ExtResource("2_1xy8y")
-region = Rect2(112, 128, 16, 16)
+region = Rect2(0, 0, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_l81qx"]
 atlas = ExtResource("2_1xy8y")
-region = Rect2(80, 128, 16, 16)
+region = Rect2(0, 0, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_w53ww"]
 atlas = ExtResource("2_1xy8y")
-region = Rect2(80, 128, 16, 16)
+region = Rect2(32, 0, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_r8u0g"]
 atlas = ExtResource("2_1xy8y")
-region = Rect2(96, 128, 16, 16)
+region = Rect2(64, 0, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_p1ss7"]
 atlas = ExtResource("2_1xy8y")
-region = Rect2(112, 128, 16, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_v0p84"]
-atlas = ExtResource("2_1xy8y")
-region = Rect2(128, 128, 16, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_bxke3"]
-atlas = ExtResource("2_1xy8y")
-region = Rect2(144, 128, 16, 16)
+region = Rect2(96, 0, 32, 32)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_y7o2t"]
 animations = [{
@@ -58,16 +50,10 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_p1ss7")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_v0p84")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_bxke3")
 }],
 "loop": 0,
-"name": &"goal_interact",
-"speed": 8.0
+"name": &"goal_open",
+"speed": 4.0
 }]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1xy8y"]
@@ -81,7 +67,7 @@ texture_filter = 1
 position = Vector2(0, -16)
 scale = Vector2(2, 2)
 sprite_frames = SubResource("SpriteFrames_y7o2t")
-animation = &"goal_interact"
+animation = &"goal_open"
 
 [node name="GoalArea2D" type="Area2D" parent="." unique_id=1245713606]
 collision_layer = 0

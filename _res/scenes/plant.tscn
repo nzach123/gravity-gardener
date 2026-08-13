@@ -1,54 +1,50 @@
 [gd_scene format=3 uid="uid://b6xion1fanxva"]
 
 [ext_resource type="Script" uid="uid://b0ek3hvs3r3p7" path="res://_res/scripts/plant.gd" id="1_8ctvd"]
-[ext_resource type="Texture2D" uid="uid://c7vvgrsxmlfny" path="res://_res/assets/Industrial/industrial.v2.png" id="2_004kw"]
+[ext_resource type="Texture2D" uid="uid://ewpfqo6bjfcr" path="res://_res/assets/GG-Plant_v1.png" id="2_8ctvd"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_8ctvd"]
-atlas = ExtResource("2_004kw")
-region = Rect2(448, 144, 16, 16)
+[sub_resource type="AtlasTexture" id="AtlasTexture_004kw"]
+atlas = ExtResource("2_8ctvd")
+region = Rect2(64, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_7tyqb"]
-atlas = ExtResource("2_004kw")
-region = Rect2(352, 144, 16, 16)
+atlas = ExtResource("2_8ctvd")
+region = Rect2(80, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_unpve"]
-atlas = ExtResource("2_004kw")
-region = Rect2(368, 144, 16, 16)
+atlas = ExtResource("2_8ctvd")
+region = Rect2(16, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fu56x"]
-atlas = ExtResource("2_004kw")
-region = Rect2(384, 144, 16, 16)
+atlas = ExtResource("2_8ctvd")
+region = Rect2(32, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pq272"]
-atlas = ExtResource("2_004kw")
-region = Rect2(400, 144, 16, 16)
+atlas = ExtResource("2_8ctvd")
+region = Rect2(48, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_77fqa"]
-atlas = ExtResource("2_004kw")
-region = Rect2(416, 144, 16, 16)
+atlas = ExtResource("2_8ctvd")
+region = Rect2(64, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ovvsf"]
-atlas = ExtResource("2_004kw")
-region = Rect2(432, 144, 16, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_800fm"]
-atlas = ExtResource("2_004kw")
-region = Rect2(336, 144, 16, 16)
+atlas = ExtResource("2_8ctvd")
+region = Rect2(0, 0, 16, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_a5nrt"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_8ctvd")
+"texture": SubResource("AtlasTexture_004kw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7tyqb")
 }],
 "loop": 1,
 "name": &"Filled",
-"speed": 5.0
+"speed": 2.0
 }, {
 "frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_7tyqb")
-}, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_unpve")
 }, {
@@ -60,9 +56,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_77fqa")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ovvsf")
 }],
 "loop": 1,
 "name": &"Filling",
@@ -70,7 +63,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_800fm")
+"texture": SubResource("AtlasTexture_ovvsf")
 }],
 "loop": 1,
 "name": &"Idle",
@@ -82,11 +75,13 @@ radius = 16.0
 
 [node name="Plant" type="Node2D" unique_id=119229537 groups=["plants"]]
 script = ExtResource("1_8ctvd")
+water_duration = 3.0
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=2080806813]
 scale = Vector2(2, 2)
 sprite_frames = SubResource("SpriteFrames_a5nrt")
-animation = &"Filled"
+animation = &"Filling"
+frame_progress = 0.7832599
 
 [node name="InteractArea2D" type="Area2D" parent="." unique_id=1241183913]
 collision_layer = 0

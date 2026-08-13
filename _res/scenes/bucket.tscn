@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b5susj5h6mc1r"]
 
-[ext_resource type="Texture2D" uid="uid://b8m37twpsjiui" path="res://_res/assets/temp/Bucket-temp.png" id="1_3116r"]
 [ext_resource type="Script" uid="uid://dsae4xytikp8u" path="res://_res/scripts/bucket.gd" id="1_t2wcc"]
+[ext_resource type="Texture2D" uid="uid://bkh8yvia4j1bh" path="res://_res/assets/GG-WaterJug.png" id="2_t2wcc"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_a5nrt"]
 radius = 19.026299
@@ -12,7 +12,7 @@ script = ExtResource("1_t2wcc")
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=332209609]
 texture_filter = 1
 scale = Vector2(2, 2)
-texture = ExtResource("1_3116r")
+texture = ExtResource("2_t2wcc")
 
 [node name="Area2D" type="Area2D" parent="." unique_id=1451958714]
 collision_layer = 0

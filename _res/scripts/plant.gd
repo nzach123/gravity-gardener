@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 				water_progress += delta
 				
 				# Drive the filling animation
-				animated_sprite_2d.speed_scale = 3.0 / water_duration
+				animated_sprite_2d.speed_scale = 2.0 / water_duration
 				if animated_sprite_2d.animation != "Filling":
 					animated_sprite_2d.play("Filling")
 				
