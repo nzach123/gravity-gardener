@@ -51,6 +51,35 @@ another system relies on.
 
 ---
 
+## Architecture
+
+`docs/architecture/architecture.md` (v1.0, 2026-08-13) translates all four GDDs
+above into a technical blueprint. It extracts a 52-requirement baseline
+(`TR-gravity-*`, `TR-watering-*`, `TR-oxygen-*`, `TR-props-*`), maps every system
+to a layer, and lists the 12 ADRs required before implementation.
+
+### Pending GDD amendments
+
+Architecture decisions that contradict what these documents currently say. Resolve
+via `/propagate-design-change` once the relevant ADR is accepted — **do not edit
+the GDDs ahead of the ADR**.
+
+| GDD | Section | Amendment needed | Driver |
+|---|---|---|---|
+| `watering-system.md` | §6 Code | Ownership moves from `GameManager` to an injectable `LevelState` | ADR-0002 (D2) |
+| `suit-oxygen.md` | §6 | Ownership moves from `GameManager` to an injectable `OxygenState` | ADR-0002 (D2) |
+| `gravity.md` | §5 Edge Cases | Init-order hazard **stays** and gains an explicit guard requirement; do not delete it | ADR-0001 (D7) |
+| `gravity.md` | §3 / §7 | Levels gain `default_gravity_direction` / `_multiplier`; gravity now survives scene reload and must be reset | ADR-0001 (D6) |
+| `physics-props.md` | §3 R3 | Props receive gravity via default-space physics, not by subscribing individually | ADR-0001 (D3) |
+
+### New requirement with no GDD home
+
+`level_complete` — the flag that lets `watering-system.md` AC13 (pour + zero
+oxygen → death) and `suit-oxygen.md` AC8 (airlock + zero oxygen → completion)
+coexist. Without it the two criteria directly contradict each other. Currently
+specified only in the architecture document; needs an owner in one of the two
+GDDs.
+
 ## Implemented but undocumented
 
 Systems that exist in code with no GDD. Listed so the gap is visible, not to imply
