@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://ctea5gbpyfrl5"]
+
+[ext_resource type="Script" uid="uid://dknmfjjr7eq1b" path="res://src/scripts/spike_hazard.gd" id="1_fq57d"]
+[ext_resource type="Texture2D" uid="uid://643jmm3t8m1e" path="res://src/assets/Simple-Platformer-Asset-Pack/6 Traps/4.png" id="1_tej6p"]
+[ext_resource type="Script" uid="uid://cx44kwu6783sb" path="res://src/scripts/tiled_block_body.gd" id="2_fq57d"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_a5nrt"]
+size = Vector2(31, 24)
+
+[node name="SpikeHazard" type="Area2D" unique_id=1963317586 groups=["hazards"]]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_fq57d")
+
+[node name="TiledBlockBody" type="Node2D" parent="." unique_id=949618208]
+script = ExtResource("2_fq57d")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1614283958]
+texture_filter = 1
+position = Vector2(0, -5)
+scale = Vector2(2, 2)
+texture = ExtResource("1_tej6p")
+region_enabled = true
+region_rect = Rect2(112, 32, 16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2134628388]
+position = Vector2(0.5, 0)
+shape = SubResource("RectangleShape2D_a5nrt")

@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://b5susj5h6mc1r"]
+
+[ext_resource type="Script" uid="uid://dsae4xytikp8u" path="res://src/scripts/bucket.gd" id="1_t2wcc"]
+[ext_resource type="Texture2D" uid="uid://bkh8yvia4j1bh" path="res://src/assets/GG-WaterJug.png" id="2_t2wcc"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_a5nrt"]
+radius = 19.026299
+
+[node name="Bucket" type="Node2D" unique_id=1976415186]
+script = ExtResource("1_t2wcc")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=332209609]
+texture_filter = 1
+scale = Vector2(2, 2)
+texture = ExtResource("2_t2wcc")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1451958714]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=897220754]
+shape = SubResource("CircleShape2D_a5nrt")
+
+[connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]

@@ -1,0 +1,8 @@
+# Integration tests go here — one subdirectory per system.
+
+Suggested layout:
+  tests/integration/gravity_movement/  → gravity → movement pipeline tests
+  tests/integration/watering_doors/    → plant watering → goal unlock tests
+  tests/integration/level_flow/        → level transition tests
+
+Integration tests span multiple nodes/systems and may require scene instantiation.

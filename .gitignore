@@ -34,3 +34,14 @@ export_credentials.cfg
 .directory
 Thumbs.db
 desktop.ini
+
+# Godot editor scene temp files
+*.tscn*.tmp
+
+# Ephemeral session state and audit logs (see .claude/docs/context-management.md)
+production/session-state/*
+!production/session-state/.gitkeep
+production/session-logs/
+
+# Generated test reports (gdUnit4 HTML output)
+reports/

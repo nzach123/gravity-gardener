@@ -1,0 +1,7 @@
+[gd_resource type="Theme" format=3 uid="uid://i8ww0n5d7u66"]
+
+[ext_resource type="FontFile" uid="uid://8vrb73ye1pkf" path="res://src/fonts/PixelOperator8-Bold.ttf" id="1_lh7bd"]
+
+[resource]
+Button/font_sizes/font_size = 24
+Button/fonts/font = ExtResource("1_lh7bd")

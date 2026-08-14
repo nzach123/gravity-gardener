@@ -1,0 +1,7 @@
+# Evidence directory
+
+Store screenshot logs and manual test sign-off records here.
+
+Suggested layout:
+  tests/evidence/playtest-YYYY-MM-DD/   → screenshots + notes per session
+  tests/evidence/sign-off-[system].md   → lead sign-off per visual/feel story

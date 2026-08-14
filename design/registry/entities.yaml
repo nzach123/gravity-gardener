@@ -1,0 +1,426 @@
+# Game World Entity Registry
+#
+# PURPOSE: Single source of truth for all named game-world facts that appear
+# in more than one document. Skills check this before writing new content to
+# detect cross-doc inconsistencies at authoring time.
+#
+# RULES:
+#   - Only register facts that cross system boundaries. Internal-only facts
+#     (a formula used in one GDD only) do NOT need to be registered.
+#   - Never delete entries — set status: deprecated instead.
+#   - When a value changes: update the value, set revised: to today's date,
+#     and add a comment with the old value and which GDD changed it.
+#   - source: is the authoritative GDD — the one that "owns" this fact.
+#     Other GDDs that reference it list themselves in referenced_by.
+#   - When a new GDD references an existing entry, append its path to
+#     referenced_by. Do not create a duplicate entry.
+#
+# WRITTEN BY: /design-system (Phase 5 — after GDD sections are approved)
+#             /consistency-check (when resolving conflicts)
+# READ BY:    /design-system (Phase 2 — before authoring begins, and after
+#               Section C/D writes to conflict-check new entities/formulas)
+#             /consistency-check (primary input — grep-first, GDD-second)
+#             /review-all-gdds (Phase 1 — baseline for Phase 2 checks)
+#             /architecture-review (data structure and interface validation)
+#
+# SEARCH PATTERNS (for skills using Grep):
+#   All entity names:        Grep pattern="^  - name:" path="design/registry/entities.yaml"
+#   Specific entity:         Grep pattern="  - name: goblin" path="design/registry/entities.yaml"
+#   All items:               Grep pattern="^  - name:" path="design/registry/entities.yaml" (items section)
+#   What combat.md owns:     Grep pattern="source: design/gdd/combat.md"
+#   What inventory.md uses:  Grep pattern="referenced_by.*inventory"
+#   All gold values:          Grep pattern="value_gold:"
+#   Deprecated entries:      Grep pattern="status: deprecated"
+#
+# FORMAT: YAML. Consistent indentation is critical for grep reliability.
+#   Sections: entities | items | formulas | constants
+#   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
+
+version: 1
+last_updated: "2026-08-13"
+
+# ─── ENTITIES ────────────────────────────────────────────────────────────────
+# Named game-world objects: enemies, NPCs, characters, factions, bosses.
+# Register an entity here when it appears in more than one GDD — e.g., an
+# enemy defined in combat.md that also drops items listed in inventory.md.
+#
+# Required fields: name, status, source, referenced_by, added
+# Attribute fields: any key stats that could appear in another GDD
+#   (health, damage, drops, faction, etc.)
+
+entities:
+  # ── Player ───────────────────────────────────────────────────────────────
+  - name: player
+    status: active
+    source: src/scripts/player.gd
+    referenced_by:
+      - src/scripts/player.gd
+      - src/scripts/main.gd
+      - src/scripts/plant.gd
+      - src/scripts/gravity_zone.gd
+      - src/scripts/spike_hazard.gd
+      - src/scripts/goal.gd
+      - src/scripts/debugger.gd
+      - src/scripts/bucket.gd
+    class: CharacterBody2D
+    max_speed: 350.0
+    ground_accel: 4500.0
+    ground_friction: 4000.0
+    air_accel: 4000.0
+    jump_height: 200.0
+    jump_distance_to_peak: 128.0
+    jump_distance_to_land: 80.0
+    min_jump_velocity: 100.0
+    coyote_time: 0.12
+    jump_buffer_time: 0.15
+    wall_jump_h_force: 450.0
+    wall_jump_v_force: 800.0
+    wall_jump_cooldown: 0.15
+    camera_rotation_enabled: true
+    player_died: false
+    groups:
+      - player
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Gravity Zone ─────────────────────────────────────────────────────────
+  - name: gravity_zone
+    status: active
+    source: src/scripts/gravity_zone.gd
+    referenced_by:
+      - src/scripts/gravity_zone.gd
+      - src/scripts/main.gd
+      - src/scripts/components/player_gravity_component.gd
+    class: Area2D
+    zone_gravity_direction: "Vector2.DOWN"
+    # Was zone_gravity_strength: 980.0 (absolute px/s²) until 2026-08-13.
+    # Replaced by a relative multiplier per design/gdd/gravity.md R7.
+    zone_gravity_multiplier: 1.0
+    zone_priority: 0
+    groups:
+      - gravityzone
+    signals_out:
+      - gravity_changed(new_vector: Vector2)
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Plant ────────────────────────────────────────────────────────────────
+  - name: plant
+    status: active
+    source: src/scripts/plant.gd
+    referenced_by:
+      - src/scripts/plant.gd
+      - src/scripts/main.gd
+      - src/scripts/components/player_watering_component.gd
+      - src/scripts/autoloads/gamemanager.gd
+    class: Node2D
+    water_duration: 5.0
+    water_progress: 0.0
+    is_watered: false
+    groups:
+      - plants
+    signals_out:
+      - plant_watered
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Bucket ───────────────────────────────────────────────────────────────
+  - name: bucket
+    status: active
+    source: src/scripts/bucket.gd
+    referenced_by:
+      - src/scripts/bucket.gd
+      - src/scripts/main.gd
+      - src/scripts/autoloads/gamemanager.gd
+    class: Node
+    pickup_behavior: "sets GameManager.carrying_bucket = true on body_entered"
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Goal (Bulkhead Door) ─────────────────────────────────────────────────
+  - name: goal
+    status: active
+    source: src/scripts/goal.gd
+    referenced_by:
+      - src/scripts/goal.gd
+      - src/scripts/main.gd
+      - src/scripts/autoloads/gamemanager.gd
+    class: Node2D
+    is_unlocked: false
+    flip_sprite: false
+    unlock_condition: "GameManager.goal_unlocked == true"
+    signals_out:
+      - player_reached_goal
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Hazard (Spike) ───────────────────────────────────────────────────────
+  - name: hazard
+    status: active
+    source: src/scripts/spike_hazard.gd
+    referenced_by:
+      - src/scripts/spike_hazard.gd
+      - src/scripts/main.gd
+      - src/scripts/tiled_block_body.gd
+    class: Area2D
+    hazard_length_blocks: 3
+    block_size: 17
+    groups:
+      - hazards
+    signals_out:
+      - inc_hazard_dmg
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Moving Platform ──────────────────────────────────────────────────────
+  - name: moving_platform
+    status: active
+    source: src/scripts/moving_platform.gd
+    referenced_by:
+      - src/scripts/moving_platform.gd
+      - src/scripts/tiled_block_body.gd
+    class: Node2D
+    duration: 3.0
+    travel_distance: 200.0
+    is_direction_vertical: true
+    platform_length_blocks: 3
+    block_size: 16
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Tiled Block Body (Shared Component) ──────────────────────────────────
+  - name: tiled_block_body
+    status: active
+    source: src/scripts/tiled_block_body.gd
+    referenced_by:
+      - src/scripts/tiled_block_body.gd
+      - src/scripts/spike_hazard.gd
+      - src/scripts/moving_platform.gd
+    class: Node2D
+    block_count: 3
+    block_size: 16
+    is_horizontal: true
+    role: "shared component — builds multi-block rectangular shapes with tiled sprites + collision"
+    added: "2026-08-13"
+    revised: ""
+
+
+# ─── ITEMS ───────────────────────────────────────────────────────────────────
+# Named collectables, equipment, consumables, crafting materials, currency.
+# Register an item when its name or value appears in more than one GDD.
+#
+# Required fields: name, status, source, referenced_by, added
+# Attribute fields: value_gold, weight, stackable, category, and any stat
+#   modifiers that another system (e.g., economy, crafting) might reference.
+
+items:
+  - name: bucket
+    status: active
+    source: src/scripts/bucket.gd
+    referenced_by:
+      - src/scripts/bucket.gd
+      - src/scripts/main.gd
+      - src/scripts/autoloads/gamemanager.gd
+      - src/scripts/plant.gd
+    category: tool
+    stackable: false
+    effect: "enables watering interaction with plants; carried state tracked in GameManager.carrying_bucket"
+    added: "2026-08-13"
+    revised: ""
+
+
+# ─── FORMULAS ────────────────────────────────────────────────────────────────
+# Named calculations with defined variables and output ranges.
+# Register a formula when its output feeds into another system's input,
+# or when another GDD references it by name.
+#
+# Required fields: name, status, source, referenced_by, variables[],
+#   output_range[min, max], added
+# Optional: expression (the actual formula), notes
+
+formulas:
+  # ── GDC Jump Math ────────────────────────────────────────────────────────
+  - name: gravity_derivation
+    status: active
+    source: src/scripts/components/player_gravity_component.gd
+    referenced_by:
+      - src/scripts/components/player_gravity_component.gd
+      - src/scripts/components/player_jump_component.gd
+    variables:
+      - jump_height
+      - jump_distance_to_peak
+      - jump_distance_to_land
+      - max_speed
+    output_range: [0, 10000]
+    expression: |
+      t_up   = jump_distance_to_peak / max_speed
+      t_down = jump_distance_to_land  / max_speed
+      gravity_ascent_mag  = (2.0 * jump_height) / (t_up   * t_up)
+      gravity_descent_mag = (2.0 * jump_height) / (t_down * t_down)
+      ascent_descent_ratio = gravity_ascent_mag / gravity_descent_mag
+    notes: "GDC-style jump math. Designer tunes jump_height, jump_distance_to_peak,
+      and jump_distance_to_land in pixels. Gravity magnitudes are derived, not
+      hand-tuned. Ascent gravity is weaker than descent for a floatier jump arc."
+    added: "2026-08-13"
+    revised: ""
+
+  - name: jump_velocity_formula
+    status: active
+    source: src/scripts/components/player_gravity_component.gd
+    referenced_by:
+      - src/scripts/components/player_gravity_component.gd
+      - src/scripts/components/player_jump_component.gd
+    variables:
+      - jump_height
+      - t_up
+    output_range: [0, 5000]
+    expression: "jump_velocity = (2.0 * jump_height) / t_up"
+    notes: "Initial upward velocity applied on jump. Derived from jump_height and
+      time-to-peak. Passed from GravityComponent to JumpComponent via
+      set_jump_velocity()."
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Movement ─────────────────────────────────────────────────────────────
+  - name: lateral_movement
+    status: active
+    source: src/scripts/components/player_movement_component.gd
+    referenced_by:
+      - src/scripts/components/player_movement_component.gd
+    variables:
+      - vel_side
+      - input_axis
+      - max_speed
+      - accel
+      - ground_friction
+      - delta
+    output_range: [-350, 350]
+    expression: |
+      target_speed = input_axis * max_speed
+      vel_side = move_toward(vel_side, target_speed, accel * delta)
+      if input_axis == 0 and is_on_floor:
+          vel_side = move_toward(vel_side, 0, ground_friction * delta)
+    notes: "Lateral velocity decomposed along right_dir. Ground uses ground_accel
+      and ground_friction; air uses air_accel only (no air friction)."
+    added: "2026-08-13"
+    revised: ""
+
+  # ── Gravity Lerp ─────────────────────────────────────────────────────────
+  - name: gravity_smoothing
+    status: active
+    source: src/scripts/components/player_gravity_component.gd
+    referenced_by:
+      - src/scripts/components/player_gravity_component.gd
+    variables:
+      - gravity
+      - target_gravity
+      - delta
+    output_range: [-980, 980]
+    expression: |
+      gravity.angle = lerp_angle(gravity.angle, target_gravity.angle, rotation_speed * delta)
+      gravity.magnitude = move_toward(gravity.magnitude, target_gravity.magnitude, lerp_speed * delta)
+    notes: "Smoothly rotates and scales the live gravity vector toward the target
+      set by a GravityZone. Prevents instant gravity flips."
+    added: "2026-08-13"
+    revised: ""
+
+
+# ─── CONSTANTS ───────────────────────────────────────────────────────────────
+# Named numerical values referenced across multiple systems.
+# Register a constant when it is defined in one GDD but another GDD must
+# agree with it (e.g., gold carry limit defined in economy but checked in
+# inventory, or base inventory slots defined in inventory but displayed in HUD).
+#
+# Required fields: name, status, source, referenced_by, value, unit, added
+
+constants:
+  - name: coyote_time
+    status: active
+    source: src/scripts/player.gd
+    referenced_by:
+      - src/scripts/player.gd
+      - src/scripts/components/player_jump_component.gd
+    value: 0.12
+    unit: seconds
+    added: "2026-08-13"
+    revised: ""
+
+  - name: jump_buffer_time
+    status: active
+    source: src/scripts/player.gd
+    referenced_by:
+      - src/scripts/player.gd
+      - src/scripts/components/player_jump_component.gd
+    value: 0.15
+    unit: seconds
+    added: "2026-08-13"
+    revised: ""
+
+  - name: wall_jump_cooldown
+    status: active
+    source: src/scripts/player.gd
+    referenced_by:
+      - src/scripts/player.gd
+      - src/scripts/components/player_wall_jump_component.gd
+    value: 0.15
+    unit: seconds
+    added: "2026-08-13"
+    revised: ""
+
+  - name: water_duration
+    status: active
+    source: src/scripts/plant.gd
+    referenced_by:
+      - src/scripts/plant.gd
+    value: 5.0
+    unit: seconds
+    added: "2026-08-13"
+    revised: ""
+
+  - name: default_gravity_strength
+    status: deprecated
+    source: design/gdd/gravity.md
+    referenced_by:
+      - src/scripts/gravity_zone.gd
+      - src/scripts/components/player_gravity_component.gd
+    # Was 980.0 px/s², a placeholder meant to represent 9.80 m/s². Retired
+    # 2026-08-13: zones now declare a relative multiplier (R7) and the absolute
+    # baseline is derived from jump tuning. See baseline_gravity_strength.
+    value: 980.0
+    unit: pixels/s²
+    added: "2026-08-13"
+    revised: "2026-08-13"
+
+  - name: baseline_gravity_strength
+    status: active
+    source: design/gdd/gravity.md
+    referenced_by:
+      - src/scripts/components/player_gravity_component.gd
+    # Derived, not authored: 2h * s^2 / d_peak^2 with h=200, s=350, d_peak=128.
+    # This is the 1.0x reference every zone multiplier scales against.
+    value: 2990.72
+    unit: pixels/s²
+    added: "2026-08-13"
+    revised: ""
+
+  - name: player_max_speed
+    status: active
+    source: src/scripts/player.gd
+    referenced_by:
+      - src/scripts/player.gd
+      - src/scripts/components/player_movement_component.gd
+      - src/scripts/components/player_gravity_component.gd
+    value: 350.0
+    unit: pixels/s
+    added: "2026-08-13"
+    revised: ""
+
+  - name: player_starting_lives
+    status: active
+    source: src/scripts/autoloads/gamemanager.gd
+    referenced_by:
+      - src/scripts/autoloads/gamemanager.gd
+    value: 5
+    unit: lives
+    added: "2026-08-13"
+    revised: ""
