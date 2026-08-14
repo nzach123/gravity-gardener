@@ -281,51 +281,78 @@ behaviourally neutral today and removes the trap before anything depends on it.
 
 ### Frame update path
 
-`process_priority` makes tick order explicit rather than an accident of tree
-layout (**D5**).
+> **Revised 2026-08-14 by ADR-0005** in three places. The original version of this
+> section named `process_priority` (which orders `_process`, not `_physics_process`),
+> placed `Goal` at `+50` inside the batch, and drew the death check as same-frame.
+> All three were defects — as written, **AC8 failed**. See
+> `adr-0005-frame-ordering-and-level-complete-guard.md` for the verified engine
+> facts (F1, F2) and the reasoning. ADR-0005 is authoritative for this section.
 
-| Priority | Node | Responsibility |
+`process_physics_priority` makes tick order explicit rather than an accident of
+tree layout (**D5**). Note the property name: `process_priority` orders `_process`
+and would have no effect on these callbacks.
+
+| `process_physics_priority` | Node | Responsibility |
 |---|---|---|
 | `-100` | `GravityAuthority` | Ease direction, push space gravity, force-wake props |
-| `0` | `Player` + components | Pour progress, movement, `move_and_slide()` |
-| `+50` | `Goal` | Airlock entry resolves |
-| `+100` | `OxygenDrain` | Drain, **then** death check |
+| `0` | `Player` + components, `Plant` | Pour progress, movement, `move_and_slide()` |
+| `+100` | `OxygenDrain` | Armed-kill evaluation, **then** drain |
+
+`Goal` has no row. Area overlap is resolved once per physics step, *not* when a
+body moves, so no priority value lets `Goal` observe an entry caused earlier in the
+same batch. It resolves at the physics-query phase instead — a different point in
+the frame, not a different priority.
 
 ```
-GravityAuthority._physics_process(Δ)
+GravityAuthority._physics_process(Δ)                 [-100]
    ├─ lerp_angle toward target                      (gravity.md R3)
    ├─ PhysicsServer2D.area_set_param(space, …)      (D3)
    └─ for prop in props: prop.sleeping = false      (props R5)
         │
         ▼
-Player._physics_process(Δ)
+Player._physics_process(Δ)                           [0]
    ├─ if watering: accumulate water_progress, velocity = ZERO, return
    ├─ update_derived_dirs()   ◀── reads GravityAuthority.gravity
    ├─ apply_gravity() → wall jump → jump → movement (× carry multiplier)
    └─ move_and_slide()
         │
         ▼
-Goal._physics_process — airlock entry → level_complete = true
+OxygenDrain._physics_process(Δ)                      [+100]
+   ├─ if level_complete: return           ← frozen, no drain and no kill
+   ├─ if _death_armed:  restart_level(); return   ← armed on a PREVIOUS frame
+   ├─ OxygenState.drain(Δ)
+   └─ if remaining <= 0: _death_armed = true      ← arms; does NOT kill yet
+        │
+   ── physics step: overlap resolved ──
         │
         ▼
-OxygenDrain._physics_process(Δ)
-   ├─ OxygenState.drain(Δ)
-   └─ if remaining <= 0 and not level_complete: → restart_level()
+Goal.body_entered → player_reached_goal              [next frame, pre-batch]
+        │
+        ▼
+LevelRoot._on_player_reached_goal()
+   ├─ level_state.mark_complete()        ← write-once latch, sole writer
+   └─ change_level()
+
+LevelRoot.restart_level()
+   └─ if level_complete: return          ← chokepoint: oxygen, spikes, kill area
 ```
 
 **D5 — Frame ordering is a contract, not a detail.** This ordering is what makes
 two otherwise-contradictory acceptance criteria pass by construction:
 
 - `watering-system.md` AC13 — final pour on the frame oxygen hits zero must yield
-  **death, not completion**. The pour resolves at priority `0`, the death check at
-  `+100`. The pour completes and the player still dies. ✅
+  **death, not completion**. The pour resolves at priority `0` and sets
+  `goal_unlocked`, never `level_complete` — unlocking the door is not entering it.
+  The armed kill fires the next frame unopposed. ✅
 - `suit-oxygen.md` AC8 — airlock entry on the frame oxygen hits zero must
-  **complete the level**. The `level_complete` guard set at `+50` suppresses the
-  death check at `+100`. ✅
+  **complete the level**. The kill is deferred one physics frame, by which point
+  `body_entered` has been delivered and the latch is set, suppressing it. ✅
 
 `level_complete` is the single piece of state separating these two criteria.
 Without it they directly contradict each other. Any change to this ordering or to
-that flag breaks one of the two ACs — treat both as load-bearing.
+that flag breaks one of the two ACs — treat both as load-bearing. The one-frame
+deferral is likewise load-bearing: collapsing it back into a same-frame kill is an
+obvious-looking cleanup that silently breaks AC8.
 
 ### Event / signal path
 
@@ -472,14 +499,16 @@ var buckets_total: int
 var buckets_consumed: int
 var carrying_bucket: bool
 var goal_unlocked: bool      # derived, read-only
-var level_complete: bool     # D5 — suppresses the oxygen death check
+var level_complete: bool     # D5 — write-once; suppresses every death path
 
 func _init(buckets_total: int) -> void
 func consume_bucket() -> void
+func mark_complete() -> void    # ADR-0005 — sole writer is LevelRoot; no un-set
 ```
 
 **Callers must:** pass `buckets_total` at construction (immutable thereafter); call
-`consume_bucket()` only on a completed pour.
+`consume_bucket()` only on a completed pour; call `mark_complete()` only from
+`LevelRoot._on_player_reached_goal()` (ADR-0005).
 
 **Guarantees:** `goal_unlocked` flips true exactly when
 `buckets_consumed >= buckets_total` and never before (watering AC6) · **no
@@ -682,10 +711,11 @@ first, not an implementation detail.
 
 **P2 — Contracts are enforced by structure, not by discipline.**
 Where a rule can be made impossible to break, it is: collision layers rather than
-`if` statements for prop isolation (props R2), `process_priority` rather than
-convention for the death-check ordering (D5), a single owner for the unlock
-decision rather than cooperating plants (watering R6). A rule that depends on
-every future author remembering it is not enforced.
+`if` statements for prop isolation (props R2), `process_physics_priority` plus a
+guarded single restart chokepoint rather than convention for the death-check
+ordering (D5 / ADR-0005), a single owner for the unlock decision rather than
+cooperating plants (watering R6). A rule that depends on every future author
+remembering it is not enforced.
 
 **P3 — Geometric guarantees outrank feel knobs.**
 `jump_velocity` is fixed and never recomputed (`gravity.md` R5/R10). This is what

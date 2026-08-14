@@ -11,7 +11,7 @@
 #   - `status` is inherited from the owning ADR (proposed | accepted | superseded).
 #
 # Created: 2026-08-14 by ADR-0001
-# Contributors: ADR-0001, ADR-0002
+# Contributors: ADR-0001, ADR-0002, ADR-0005
 
 version: 1
 last_updated: 2026-08-14
@@ -111,6 +111,25 @@ state_ownership:
       suit-oxygen.md R4/R5 — nothing refills the suit and oxygen never carries
       between levels. Both hold by construction: no setter, and the object dies
       with the level.
+
+  - state: level_completion_latch
+    fields:
+      - level_complete
+    owner: LevelState
+    owner_kind: refcounted
+    written_by: LevelRoot._on_player_reached_goal
+    adr: ADR-0005
+    status: proposed
+    interface: |
+      Read freely. Written ONLY through LevelState.mark_complete(), and only from
+      LevelRoot._on_player_reached_goal(). Write-once: there is no un-set, no
+      clear and no reset — restart is reconstruction (ADR-0002).
+    note: >
+      Discharges the "declared here; ADR-0005 owns read/write ordering" note on
+      level_watering_state. This is the single piece of state reconciling
+      watering-system.md AC13 (death) with suit-oxygen.md AC8 (completion) on the
+      frame oxygen reaches zero. goal_unlocked and level_complete are DISTINCT:
+      unlocking the airlock is not entering it (watering-system.md §5).
 
 interfaces:
   - name: gravity_changed
@@ -225,6 +244,75 @@ interfaces:
       This corrects architecture.md's init-order block, which had HUD binding at
       step 2.
 
+  - name: LevelState.mark_complete
+    kind: method_contract
+    signature: "mark_complete() -> void"
+    owner: LevelState
+    adr: ADR-0005
+    status: proposed
+    preconditions:
+      - "called ONLY from LevelRoot._on_player_reached_goal()"
+      - "called BEFORE change_level() in that handler — connection order is not a contract"
+    guarantees:
+      - "idempotent: a second call is a no-op, never an error"
+      - "no path anywhere sets level_complete = false [ADR-0002 level_state_reset_method]"
+    note: >
+      Goal does NOT call this. Goal emits player_reached_goal and writes no level
+      state, preserving watering-system.md §6 "behaviour unchanged" and staying
+      clear of ADR-0002's plant_decides_level_outcome ban.
+
+  - name: frame_ordering_contract
+    kind: lifecycle_contract
+    signature: |
+      process_physics_priority, assigned in _ready() from LevelRoot constants:
+        -100  GravityAuthority   ease, space gravity, force-wake props
+           0  Player (+ components inline), Plant   pour, movement, move_and_slide()
+        +100  OxygenDrain        armed-kill evaluation, then drain
+    adr: ADR-0005
+    status: proposed
+    preconditions:
+      - "process_physics_priority, NOT process_priority — the latter orders _process (ADR-0005 F1, verified 2026-08-14)"
+      - "assigned in code, never per-scene in the inspector: 8 level scenes = 8 chances to drift"
+    guarantees:
+      - "no consumer can read a stale gravity vector [gravity.md AC12]"
+      - "the pour resolves before the drain in every frame [watering AC13]"
+    note: >
+      Goal has NO row and takes no priority. Area overlap is resolved once per
+      physics step, not when a body moves, so no priority value lets Goal observe
+      an entry caused earlier in the same batch. It resolves at the physics-query
+      phase — a different point in the frame, not a different priority.
+
+  - name: OxygenDrain.frame_contract
+    kind: method_contract
+    signature: |
+      _physics_process(delta):
+        if level_complete:      return          # frozen: no drain, no kill
+        if _death_armed:        restart_level(); return
+        drain(delta)
+        if remaining <= 0.0:    _death_armed = true
+    owner: OxygenDrain
+    adr: ADR-0005
+    status: proposed
+    preconditions:
+      - "the four steps run in exactly this order"
+      - "arming and killing NEVER happen in the same callback [suit-oxygen AC8]"
+    guarantees:
+      - "airlock entry on the depletion frame completes the level [suit-oxygen AC8]"
+      - "a final pour on the depletion frame still kills [watering AC13]"
+      - "OxygenState.drain() itself keeps NO state checks [ADR-0002, suit-oxygen R2]"
+    narrows:
+      entry: OxygenState.contract
+      adr: ADR-0002
+      precondition: "drain() called exactly once per physics frame, unconditionally, in every player state"
+      scope: >
+        level_complete is the ONLY condition permitted to suppress a drain() call,
+        and it is checked in OxygenDrain, never inside OxygenState.drain(). The
+        ADR-0002 precondition exists to stop PLAYER STATES (watering, crouching,
+        wall-cling) becoming oxygen sanctuaries; level_complete is not a player
+        state, it is the level having ended. suit-oxygen R4 is untouched —
+        freezing is not refilling and remaining still has no setter.
+      note: "Recorded as an explicit narrowing, not a supersession. The ADR-0002 entry is unmodified."
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -303,6 +391,50 @@ api_decisions:
       suit-oxygen.md AC7's runtime failure mode unreachable. LevelValidation
       (ADR-0003) still reports it at load time, because authoring feedback needs
       all failures at once rather than the first crash.
+
+  - decision: armed_death_one_frame_deferral
+    choice: "OxygenDrain arms on depletion and evaluates the kill at the top of its NEXT physics callback"
+    rejected:
+      - "same-frame geometric poll in Goal (rect.has_point at +50)"
+      - "same-frame physics shape query in Goal (intersect_shape at +50)"
+      - "architecture.md D5 as originally written — Goal._physics_process at +50"
+    adr: ADR-0005
+    status: proposed
+    rationale: >
+      Area overlap is resolved once per physics step, not when a body moves, so
+      NOTHING later in the batch that moved the player can observe the entry.
+      Deferring the kill one frame lets body_entered land first. The rejected
+      same-frame options each give Goal a second source of truth for "is the
+      player in the airlock" that must be kept in sync with its own Area2D
+      forever — a permanent liability bought with 16.6 ms of imperceptible
+      latency. Deferral also preserves watering-system.md §6 "Goal behaviour
+      unchanged".
+    implementation_notes:
+      - "Robust to the one unresolved phase question: whether body_entered is emitted at the tail of step N or at the query flush opening frame N+1, it lands after frame N's +100 and before frame N+1's. Both readings work; no verification is owed."
+      - "The deferral MUST carry a comment citing ADR-0005 and AC8 — collapsing it into a direct kill is an obvious-looking cleanup that silently breaks AC8."
+    consequence: >
+      One physics frame exists in which remaining <= 0 and the player is alive and
+      controllable. No current mechanic can act inside 16.6 ms. Revisit if a
+      future mechanic grants meaningful single-frame action, or if a death VFX is
+      authored to begin on the depletion frame rather than on the restart.
+
+  - decision: restart_level_chokepoint_guard
+    choice: "LevelRoot.restart_level() returns early when level_complete is true"
+    rejected:
+      - "guarding only OxygenDrain (the literal reading of architecture.md and ADR-0002)"
+    adr: ADR-0005
+    status: proposed
+    rationale: >
+      suit-oxygen.md R3/AC2 requires oxygen, spike and kill-area death to be
+      INDISTINGUISHABLE. Guarding only the oxygen path makes oxygen the sole death
+      that respects completion, so a spike touched on the completion frame would
+      restart a level already won. The chokepoint costs two lines and closes the
+      whole class, including death paths added later by an author who never reads
+      ADR-0005.
+    consequence: >
+      OxygenDrain keeps its own level_complete check as deliberate redundancy —
+      ADR-0002 assigns it the oxygen kill DECISION; the chokepoint is a backstop
+      for every path.
 
 performance_budgets:
   - system: prop_gravity
@@ -403,3 +535,63 @@ forbidden_patterns:
       watering-system.md R6 — "no single plant should be deciding whether the room
       is breathable." Plant emits pour_completed and holds no level state.
       Replaces the current plant.gd:73-79 GameManager write.
+
+  - pattern: physics_order_via_process_priority
+    description: "Using process_priority to order _physics_process callbacks"
+    adr: ADR-0005
+    status: proposed
+    reason: >
+      process_priority orders _process (the idle/render callback);
+      _physics_process is ordered by the SEPARATE process_physics_priority.
+      Verified against the live Godot 4.7 Node class reference on 2026-08-14
+      (ADR-0005 F1). architecture.md named the wrong property until ADR-0005
+      corrected it. Failure mode is silent: it compiles, it runs, and tick order
+      quietly remains an accident of tree layout — the exact defect D5 exists to
+      prevent.
+
+  - pattern: same_frame_oxygen_kill
+    description: "Restarting the level in the same _physics_process callback that observed remaining <= 0"
+    adr: ADR-0005
+    status: proposed
+    reason: >
+      Breaks suit-oxygen.md AC8. Area overlap is resolved once per physics step,
+      not when a body moves, so the player's entry into the airlock cannot be
+      observed in the batch that moved them there. Killing immediately kills a
+      player who physically reached the door. Presents as AC8 failing ONLY on a
+      frame-perfect entry — rare in play and easy to dismiss as a fluke.
+      Collapsing the deferral looks like a harmless simplification; it is not.
+
+  - pattern: level_complete_written_outside_level_root
+    description: "Any node other than LevelRoot._on_player_reached_goal() setting level_complete, or setting it to false anywhere"
+    adr: ADR-0005
+    status: proposed
+    reason: >
+      The latch is write-once with a single writer. Goal is the tempting culprit —
+      it is the node that knows the player arrived — but Goal writing level state
+      is the same class of defect as ADR-0002's plant_decides_level_outcome, and
+      it would spend watering-system.md §6's "behaviour unchanged". A clearable
+      latch reintroduces the hand-maintained-reset problem ADR-0002 removed.
+
+  - pattern: unguarded_restart_path
+    description: "A death or reset path that reloads the level without consulting level_complete"
+    adr: ADR-0005
+    status: proposed
+    reason: >
+      suit-oxygen.md R3/AC2 — the three death paths (oxygen, spike_hazard
+      inc_hazard_dmg, kill area) must be indistinguishable. All must route through
+      the guarded LevelRoot.restart_level(). A path that reloads directly restarts
+      a level the player has already completed, and does so inconsistently with
+      the others.
+
+  - pattern: gameplay_timing_in_idle_process
+    description: "Accumulating or evaluating rule-bearing quantities in _process — pour progress, oxygen, timers whose value on a specific frame decides an outcome"
+    adr: ADR-0005
+    status: proposed
+    reason: >
+      plant.gd advanced water_progress in _process while oxygen drains in
+      _physics_process. "The same frame" in watering-system.md AC13 is not a
+      defined concept across two clocks running at unrelated rates, so AC13 could
+      not be written as a deterministic test at all. Cosmetic work — camera
+      follow, sprite placement, animation — legitimately stays in _process. The
+      line is whether a RULE reads the value.
+    remediation: "plant.gd water_progress accumulation moves to _physics_process (ADR-0005 D5.5), landing with ADR-0002's removal of the plant.gd:73-79 GameManager write."
