@@ -3,6 +3,7 @@ status: draft
 source: /brainstorm session 2026-08-13
 depends-on: gravity.md
 date: 2026-08-13
+amended: 2026-08-14 — §5/§6 synced to ADR-0002 (LevelState owned by the level root; reset defect resolved structurally). No rule changed
 ---
 
 # Watering System — Design
@@ -92,9 +93,10 @@ producing room oxygen. A refused pour costs the player nothing; the bucket is ke
 
 **R6 — The airlock gates on the level-wide consumed-bucket counter.** The airlock
 is the existing `Goal` scene (`src/scenes/goal.tscn`, `src/scripts/goal.gd`) —
-"airlock" is its fictional name, not a new object. Its unlock path is unchanged:
-`goal.gd` watches `GameManager.goal_unlocked`, plays `goal_open`, and emits
-`player_reached_goal` on entry.
+"airlock" is its fictional name, not a new object. Its unlock behaviour is
+unchanged: `goal.gd` watches `goal_unlocked`, plays `goal_open`, and emits
+`player_reached_goal` on entry. Only the *source* of the flag moves — from
+`GameManager` to the injected `LevelState` (ADR-0002).
 
 What changes is the condition that raises the flag. `buckets_consumed` increments
 on each completed pour, and the flag is set when
@@ -235,13 +237,17 @@ ever taxes the return leg:
 | Spent jug in flight during a gravity flip | The jug completes its arc in the gravity basis captured at throw time (R7). The cosmetic mismatch is accepted — it has no collision and a fixed lifetime |
 | Pour completes on the same frame oxygen reaches zero | The pour resolves first, then the death check runs. The player still dies. R6 unlocks the airlock; it does not teleport the player to it — the door must be physically reached |
 | Player reaches the airlock while carrying a bucket | Cannot occur under R8, since the counter only reaches `buckets_total` when every bucket has been consumed. If it does occur, the level is mis-authored — log an error |
-| Level restart while carrying | `carrying_bucket` **must** be cleared by `reset_level_state()`. ⚠ It currently is not — see below |
+| Level restart while carrying | `carrying_bucket` is cleared. Restart reloads the scene, which destroys the level root and with it the `LevelState` — a fresh one is constructed on load, so carry state cannot survive (ADR-0002) |
 
-> ⚠ **Existing defect.** `GameManager.reset_level_state()` clears `goal_unlocked`,
-> `plants_watered` and `plants_total`, but leaves `carrying_bucket` set. After a
-> death the player retains a bucket that no longer exists in the scene. This is
-> latent today; under R1 it corrupts the level's bucket supply and must be fixed as
-> part of the change #6 refactor.
+> ⚠ **Existing defect — resolved by ADR-0002.** `GameManager.reset_level_state()`
+> clears `goal_unlocked`, `plants_watered` and `plants_total`, but leaves
+> `carrying_bucket` set. After a death the player retains a bucket that no longer
+> exists in the scene. Under R1 this corrupts the level's bucket supply.
+>
+> ADR-0002 removes the defect *by construction* rather than by fixing the reset
+> function: `LevelState` is owned by the level root and dies with it, and
+> `reset_level_state()` is deleted outright. AC8 remains the test for this — it now
+> verifies object lifetime rather than that someone remembered to clear a field.
 
 ## 6. Dependencies
 
@@ -261,9 +267,10 @@ ever taxes the return leg:
 | `PlayerMovementComponent` | Owns `max_speed`; applies `carry_speed_multiplier` when carrying (R2) |
 | `Plant` (`plant.gd`) | `buckets_required` / `buckets_received`, intake cap (R5), growth visuals. **Stops touching `GameManager`** — reports a completed pour and nothing more |
 | `Bucket` (`bucket.gd`) | Pickup, consumption, throw-and-free (R7). Must stop declaring `extends Node` while being given a transform |
-| `Goal` (`goal.gd`) | **No changes.** Continues to watch `GameManager.goal_unlocked`. Listed so it does not get opened unnecessarily |
-| `GameManager` | Owns `buckets_consumed` / `buckets_total`; must clear carry state in `reset_level_state()` (§5 defect) |
-| `main.gd` / level root | Replaces `@export var bucket: Bucket` with a group lookup; owns the tally and the R8 load-time validation |
+| `Goal` (`goal.gd`) | **Behaviour unchanged.** Watches `goal_unlocked` on the injected `LevelState` instead of on `GameManager` (ADR-0002). Listed so it does not get opened for anything more than that |
+| `LevelState` *(RefCounted, new)* | Owns `buckets_total`, `buckets_consumed`, `carrying_bucket`, and the derived `goal_unlocked`. Constructed per level by the level root and injected into consumers (ADR-0002). **Not** an autoload |
+| `GameManager` | **No longer holds watering state.** Retains cross-level concerns only (ADR-0002) |
+| `main.gd` / level root | Replaces `@export var bucket: Bucket` with a group lookup; constructs and injects `LevelState`; owns the tally and the R8 load-time validation |
 | HUD *(new scene)* | Carry indicator. The oxygen readout belongs to `suit-oxygen.md`, not here |
 
 ### Level design

@@ -1,0 +1,405 @@
+# Architecture Registry — Gravity Gardener
+#
+# Machine-readable record of binding architectural stances taken by Accepted and
+# Proposed ADRs. `/architecture-decision` reads this file as a BLOCKING conflict
+# gate before drafting a new ADR.
+#
+# Rules:
+#   - Append only. Never edit or delete an existing entry.
+#   - To change a stance, mark the old entry `status: superseded` with
+#     `superseded_by: ADR-NNNN` and append the replacement.
+#   - `status` is inherited from the owning ADR (proposed | accepted | superseded).
+#
+# Created: 2026-08-14 by ADR-0001
+# Contributors: ADR-0001, ADR-0002
+
+version: 1
+last_updated: 2026-08-14
+
+state_ownership:
+  - state: world_gravity_vector
+    fields:
+      - gravity
+      - target_gravity
+      - up_dir
+      - right_dir
+      - baseline_ascent_mag
+      - ascent_descent_ratio
+      - direction_ease_rate
+    owner: GravityAuthority
+    owner_kind: autoload
+    adr: ADR-0001
+    status: proposed
+    interface: |
+      Read via GravityAuthority.gravity / up_dir / right_dir, or by connecting to
+      gravity_changed(direction, multiplier). Written ONLY by
+      GravityAuthority.set_gravity() / reset_to().
+    note: >
+      gravity.md R9 — gravity is world state, not player state. Previously owned by
+      PlayerGravityComponent; relocated by ADR-0001. No consumer may cache it.
+
+  - state: level_default_gravity
+    fields:
+      - default_gravity_direction
+      - default_gravity_multiplier
+    owner: LevelRoot
+    owner_kind: scene_export
+    adr: ADR-0001
+    status: superseded
+    superseded_by: ADR-0002
+    interface: |
+      Authored per level as @export on the level root. Applied via
+      GravityAuthority.reset_to() from GameManager.reset_level_state().
+    note: >
+      Superseded on caller name only — the ownership stance is unchanged.
+      ADR-0002 deletes GameManager.reset_level_state(). See the replacement entry.
+
+  - state: level_default_gravity
+    fields:
+      - default_gravity_direction
+      - default_gravity_multiplier
+    owner: LevelRoot
+    owner_kind: scene_export
+    adr: ADR-0002
+    supersedes: ADR-0001
+    status: proposed
+    interface: |
+      Authored per level as @export on the level root. Applied via
+      GravityAuthority.reset_to() from LevelRoot._ready() (init step 3e).
+    note: >
+      Exists because an autoload survives reload_current_scene(). Without it a
+      restarted level inherits the gravity the player died under. All 8 existing
+      levels must add these exports. Restart is a scene reload, which re-runs
+      LevelRoot._ready(), so first load and restart share one path.
+
+  - state: level_watering_state
+    fields:
+      - buckets_total
+      - buckets_consumed
+      - carrying_bucket
+      - goal_unlocked        # derived, read-only
+      - level_complete       # declared here; ADR-0005 owns read/write ordering
+    owner: LevelState
+    owner_kind: refcounted
+    constructed_by: LevelRoot
+    adr: ADR-0002
+    status: proposed
+    interface: |
+      Constructed in LevelRoot._ready() and injected via bind(). Written only
+      through consume_bucket(). goal_unlocked is derived and has no setter.
+    note: >
+      watering-system.md R6 — no single plant decides the level is over. Plant
+      emits pour_completed and holds no level state. Dies with the level root, so
+      restart reset is structural (AC8).
+
+  - state: level_oxygen_state
+    fields:
+      - capacity             # immutable after construction
+      - remaining            # monotonically decreasing
+      - fraction
+      - band
+    owner: OxygenState
+    owner_kind: refcounted
+    constructed_by: LevelRoot
+    adr: ADR-0002
+    status: proposed
+    interface: |
+      Constructed in LevelRoot._ready() from the oxygen_capacity export and
+      injected via bind(). Mutated only by drain(). No setter exists for
+      remaining.
+    note: >
+      suit-oxygen.md R4/R5 — nothing refills the suit and oxygen never carries
+      between levels. Both hold by construction: no setter, and the object dies
+      with the level.
+
+interfaces:
+  - name: gravity_changed
+    kind: signal
+    signature: "gravity_changed(direction: Vector2, multiplier: float)"
+    emitter: GravityAuthority
+    consumers:
+      - PlayerGravityComponent
+      - LevelRoot          # camera rotation
+      - PhysicsProps       # indirect, via default-space gravity
+    adr: ADR-0001
+    status: proposed
+    note: >
+      The single broadcast. Zones must NOT emit directly to consumers, and
+      consumers must NOT subscribe to individual zones.
+
+  - name: GravityAuthority.lifecycle
+    kind: method_contract
+    signature: |
+      initialize(baseline_ascent_mag: float, ascent_descent_ratio: float) -> void
+      reset_to(direction: Vector2, multiplier: float) -> void
+      set_gravity(direction: Vector2, multiplier: float) -> void
+    owner: GravityAuthority
+    adr: ADR-0001
+    status: proposed
+    preconditions:
+      - "initialize() must be called before any set_gravity() or reset_to()"
+      - "multiplier > 0"
+      - "direction is non-zero"
+    guarantees:
+      - "ascent_descent_ratio never changes after initialize()   [gravity.md AC4]"
+      - "jump_velocity is never recomputed, incl. bucket carry   [gravity.md R5/R10, AC11]"
+      - "a rejected change leaves gravity untouched              [gravity.md R7/AC7]"
+      - "no broadcast occurs before initialize(); push_error instead [gravity.md §5]"
+
+  - name: GravityAuthority.prop_registry
+    kind: method_contract
+    signature: |
+      register_prop(prop: RigidBody2D) -> void
+      unregister_prop(prop: RigidBody2D) -> void
+      ascent_magnitude() -> float
+      descent_magnitude() -> float
+    owner: GravityAuthority
+    adr: ADR-0001
+    status: proposed
+    preconditions:
+      - "unregister_prop() MUST be called from PropBody._exit_tree()"
+    guarantees:
+      - "every registered prop is woken on every frame the vector changes [physics-props.md R5/AC3, gravity.md AC12]"
+    note: >
+      unregister_prop is not optional. physics-props.md R7 frees out-of-bounds
+      props; without it the wake loop iterates freed instances.
+
+  - name: LevelState.contract
+    kind: method_contract
+    signature: |
+      _init(buckets_total: int) -> void
+      consume_bucket() -> void
+      signal goal_unlocked_changed(unlocked: bool)
+      signal bucket_consumed(consumed: int, total: int)
+    owner: LevelState
+    adr: ADR-0002
+    status: proposed
+    preconditions:
+      - "buckets_total >= 0, passed at construction, immutable thereafter"
+      - "consume_bucket() is called ONLY on a completed pour (watering R3) — never on pickup or early release"
+    guarantees:
+      - "goal_unlocked flips true exactly at buckets_consumed >= buckets_total, never before [watering AC6]"
+      - "buckets_consumed never decreases and never exceeds buckets_total"
+      - "no reset() — restart discards the object [watering AC8]"
+
+  - name: OxygenState.contract
+    kind: method_contract
+    signature: |
+      _init(capacity: float, tuning: OxygenTuning) -> void
+      drain(delta: float) -> void
+      signal threshold_changed(band: Band)
+      signal depleted
+    owner: OxygenState
+    adr: ADR-0002
+    status: proposed
+    preconditions:
+      - "capacity > 0 — construction fails otherwise [suit-oxygen AC7]"
+      - "drain() called exactly once per physics frame, unconditionally, in every player state [suit-oxygen R2/AC1]"
+    guarantees:
+      - "remaining never increases by any path; no setter, no reset [suit-oxygen R4/AC3]"
+      - "depleted emits exactly once"
+      - "threshold_changed fires at 0.50 / 0.25 / 0.10 and never re-fires an entered band [suit-oxygen AC10]"
+      - "drain() contains no state checks, so no caller can create a safe state [suit-oxygen R2]"
+    note: >
+      depleted is a PURE STATE signal meaning "the tank is empty". It carries no
+      policy. OxygenDrain owns the kill decision and the level_complete
+      suppression that suit-oxygen.md AC8 requires.
+
+  - name: level_state_injection
+    kind: lifecycle_contract
+    signature: "bind(...) called by LevelRoot._ready() on every consumer"
+    adr: ADR-0002
+    status: proposed
+    consumers:
+      - "Player / PlayerWateringComponent  <- LevelState   (via @export var player)"
+      - "Goal                              <- LevelState   (via @export var goal)"
+      - "HUD                               <- LevelState + OxygenState (via new @export var hud)"
+      - "OxygenDrain                       <- OxygenState  (child of LevelRoot)"
+      - "Plant                             <- nothing; pour_completed wired to consume_bucket()"
+    preconditions:
+      - "Every consumer MUST refuse to operate before bind() and push_error()"
+    note: >
+      _ready() is bottom-up, so children are ready before LevelRoot constructs the
+      state. A consumer therefore cannot read injected state in its own _ready().
+      Same guard pattern as GravityAuthority.initialize() in ADR-0001.
+      This corrects architecture.md's init-order block, which had HUD binding at
+      step 2.
+
+api_decisions:
+  - decision: prop_gravity_via_physics_space
+    choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
+    rejected:
+      - "per-prop apply_central_force each frame"
+      - "props subscribing to a re-emitted Player signal"
+    adr: ADR-0001
+    status: proposed
+    rationale: >
+      Space gravity is symmetric by nature (physics-props.md R4, zero code) and
+      reaches every RigidBody2D in the same physics frame (gravity.md AC12,
+      physics-props.md AC4) with no per-prop per-frame cost.
+    implementation_notes:
+      - "Rewrite both params EVERY physics frame while easing — physics-props.md R3 requires props to follow the rotation, not snap to the target."
+      - "Space gravity does NOT wake sleeping bodies; the wake loop is separate and mandatory."
+      - "CharacterBody2D ignores space gravity, so the player keeps its asymmetric manual application."
+    verify_at_implementation:
+      - "exact enum spelling of AREA_PARAM_GRAVITY_VECTOR / AREA_PARAM_GRAVITY (Godot 4.7)"
+
+  - decision: gravity_authority_autoload_kind
+    choice: "scene autoload (gravity_authority.tscn with script attached)"
+    rejected:
+      - "bare script autoload"
+    adr: ADR-0001
+    status: proposed
+    rationale: >
+      A bare script autoload gives @export var direction_ease_rate no inspector
+      surface, making the export decorative and leaving the value effectively
+      hardcoded — the exact defect the export exists to fix.
+
+  - decision: jump_constants_location
+    choice: "@export on Player (jump_height, jump_distance_to_peak, jump_distance_to_land)"
+    rejected:
+      - "GravityTuning .tres resource"
+    adr: ADR-0001
+    status: proposed
+    rationale: >
+      USER DECISION on 2026-08-13, made against the standing recommendation and
+      reaffirmed 2026-08-14. Keeps designer knobs on the node they already live on.
+    consequence: >
+      The gravity.md §5 initialisation-order hazard stays LIVE and must not be
+      deleted from the GDD. Guarded by GravityAuthority refusing to broadcast
+      before initialize().
+
+  - decision: level_state_lifetime
+    choice: "LevelRoot constructs and owns LevelState + OxygenState; restart is reconstruction via reload_current_scene()"
+    rejected:
+      - "GameManager autoload holds both objects and clears them in reset_level_state() (architecture.md D2 as originally written)"
+      - "flat untyped fields on GameManager (status quo)"
+      - "hybrid — LevelRoot constructs, GameManager publishes for global lookup"
+      - "one autoload per state object"
+    adr: ADR-0002
+    status: proposed
+    rationale: >
+      USER DECISION 2026-08-14, deviating from architecture.md D2. reset_level_state()
+      existed only because an autoload survives reload_current_scene(), and
+      restart_level() already reloads the scene. Under LevelRoot ownership the
+      reload discards both objects and _ready() builds fresh ones, so watering AC8
+      and oxygen AC4/AC5 hold by construction rather than depending on a
+      hand-maintained reset function — a function that is ALREADY missing
+      carrying_bucket today. Unlike ADR-0001 Alternative 3, no global engine
+      resource forces an autoload here.
+    consequence: >
+      architecture.md D2, its init-order block, its signal table and the
+      LevelState/OxygenState API blocks were all amended 2026-08-14. Explicit
+      injection wiring is now required and LevelRoot must reach every consumer.
+
+  - decision: oxygen_state_constructor_injection
+    choice: "OxygenState._init(capacity, tuning) — capacity validated at construction"
+    rejected:
+      - "configure(capacity, tuning) called after construction"
+    adr: ADR-0002
+    status: proposed
+    rationale: >
+      An OxygenState with non-positive capacity is not constructible, making
+      suit-oxygen.md AC7's runtime failure mode unreachable. LevelValidation
+      (ADR-0003) still reports it at load time, because authoring feedback needs
+      all failures at once rather than the first crash.
+
+performance_budgets:
+  - system: prop_gravity
+    budget: "0 per-frame script cost in steady state; <=40-prop wake pass only while the vector is easing (~6-7 frames per change at 60 FPS)"
+    adr: ADR-0001
+    status: proposed
+    verified_by: "physics-props.md AC10 — a room of props at budget holds 60 FPS during a gravity flip (owned by ADR-0011)"
+
+forbidden_patterns:
+  - pattern: area2d_gravity_space_override
+    description: "Setting gravity_space_override (or `gravity`) on any Area2D, including GravityZone"
+    adr: ADR-0001
+    status: proposed
+    reason: >
+      Gives props PER-REGION gravity from the physics server, contradicting
+      gravity.md R2/R9 ("no per-body or per-region gravity") and breaking AC12.
+      Presents as props behaving correctly only inside a zone's bounds.
+    remediation: "Removed from gravity_zone.tscn (was gravity_space_override = 3, gravity = -980.0)"
+
+  - pattern: per_prop_gravity_application
+    description: "apply_central_force for gravity, or per-prop gravity_scale tuning"
+    adr: ADR-0001
+    status: proposed
+    reason: "40 script callbacks + 40 force applications per frame to buy variation physics-props.md R4/§7 explicitly forbids. Use default-space gravity."
+
+  - pattern: private_gravity_copy
+    description: "Any node caching its own gravity/target_gravity instead of reading GravityAuthority"
+    adr: ADR-0001
+    status: proposed
+    reason: "Defeats gravity.md R9. There must be exactly one vector; a cached copy can silently diverge."
+
+  - pattern: recompute_jump_velocity
+    description: "Recalculating jump_velocity after initialize() — including any bucket-carry weight penalty"
+    adr: ADR-0001
+    status: proposed
+    reason: >
+      gravity.md R5/R10 and watering-system.md R2/AC1. Fixed launch velocity is
+      what lets level design prove a gap is crossable from the zone multiplier
+      alone. Confirmed by the user on 2026-08-14: carrying penalises max_speed ONLY.
+
+  - pattern: broadcast_before_initialize
+    description: "Calling set_gravity() or reset_to() before GravityAuthority.initialize()"
+    adr: ADR-0001
+    status: proposed
+    reason: "ascent_descent_ratio is still 1.0, so the asymmetry is silently lost. gravity.md §5. Must push_error and refuse, never broadcast."
+
+  - pattern: zone_targets_player_directly
+    description: "Connecting GravityZone.gravity_changed to the player, or calling Player.set_gravity()"
+    adr: ADR-0001
+    status: proposed
+    reason: "Player.set_gravity() is removed by ADR-0001. Zones report to GravityAuthority; the player is a subscriber like any other consumer."
+
+  - pattern: global_level_state_access
+    description: "Reaching level or oxygen state through an autoload (GameManager.level_state, a new singleton, or a service locator)"
+    adr: ADR-0002
+    status: proposed
+    reason: >
+      Level state is owned by LevelRoot and injected. A global access path
+      reintroduces the singleton the coding standard exists to remove, and creates
+      a second source of truth for object lifetime — a stale reference to a freed
+      level is a failure mode the injected design cannot have.
+
+  - pattern: level_state_reset_method
+    description: "Adding reset() to LevelState or OxygenState, or reintroducing GameManager.reset_level_state()"
+    adr: ADR-0002
+    status: proposed
+    reason: >
+      Restart is reconstruction: reload_current_scene() discards LevelRoot and
+      both state objects. A reset() re-creates the hand-maintained-clear problem
+      that already lost carrying_bucket (watering-system.md §5) and turns
+      watering AC8 / oxygen AC4 back into conventions.
+
+  - pattern: depleted_wired_to_restart
+    description: "Connecting OxygenState.depleted directly to LevelRoot.restart_level()"
+    adr: ADR-0002
+    status: proposed
+    reason: >
+      Breaks suit-oxygen.md AC8 — airlock entry on the frame oxygen reaches zero
+      must complete the level, not kill. depleted is a pure state signal;
+      OxygenDrain owns the policy and the level_complete suppression. Note that
+      architecture.md's signal table originally specified the broken wiring; it
+      was corrected 2026-08-14.
+
+  - pattern: state_access_before_bind
+    description: "A consumer reading LevelState or OxygenState in its own _ready(), or before bind() is called"
+    adr: ADR-0002
+    status: proposed
+    reason: >
+      _ready() is bottom-up, so children run before LevelRoot constructs the
+      state. Every consumer must guard and push_error(). Same class of hazard as
+      broadcast_before_initialize in ADR-0001.
+
+  - pattern: plant_decides_level_outcome
+    description: "Plant (or any single objective) writing level-wide state or deciding the level is complete"
+    adr: ADR-0002
+    status: proposed
+    reason: >
+      watering-system.md R6 — "no single plant should be deciding whether the room
+      is breathable." Plant emits pour_completed and holds no level state.
+      Replaces the current plant.gd:73-79 GameManager write.

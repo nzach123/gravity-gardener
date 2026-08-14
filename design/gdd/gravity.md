@@ -3,6 +3,7 @@ status: reverse-documented, amended
 source: src/scripts/components/player_gravity_component.gd, src/scripts/gravity_zone.gd
 date: 2026-08-13
 amended: 2026-08-13 — R9 (gravity as world state) and R10 (carry affects speed only) added
+amended: 2026-08-14 — §5/§6/§7 synced to ADR-0001 (GravityAuthority ownership). No rule changed; §5 init-order hazard deliberately retained per ADR-0001 part 7
 verified-by: nzach123
 ---
 
@@ -154,7 +155,7 @@ angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
 | Player leaves all zones | Gravity persists (see R2) |
 | Gravity flips mid-jump | Velocity is preserved in world space, so upward motion becomes downward relative to the new frame. Intended: the swap should feel like being *caught* by the new floor |
 | Mid-transition input | `up_dir`/`right_dir` follow the easing direction, so controls rotate continuously rather than snapping |
-| Gravity magnitude easing | The magnitude half of `update_gravity_lerp()` is dead — every consumer reads `gravity.normalized()`, so only direction is used. Consistent with R3 but the code should be removed to say so honestly |
+| Gravity magnitude easing | Only direction eases; magnitude snaps. Every consumer reads `gravity.normalized()`. The dead `move_toward` magnitude easing is removed by ADR-0001 when the ease moves to `GravityAuthority` |
 | Prop and player in different zones | No conflict — R9 means one global vector. The most recently entered zone governs everything |
 | Player carrying a bucket | Speed reduced; gravity, jump velocity and jump height all unchanged (R10) |
 
@@ -163,8 +164,14 @@ angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
 - **PlayerMovementComponent** — consumes `right_dir`; owns `max_speed`, an input to every gravity formula
 - **PlayerJumpComponent** — receives `jump_velocity`; owns coyote/buffer/min-velocity
 - **PlayerVisualComponent** — rotates sprite to gravity; must mirror movement's axis inversion exactly
-- **GravityZone** — sole authority for changing gravity
-- **main.gd** — wires `gravity_changed` to `player.set_gravity` and camera rotation
+- **GravityAuthority** *(autoload)* — owns the gravity vector, the ease, and the
+  ascent/descent ratio; sole writer. Emits `gravity_changed` to every consumer
+  (ADR-0001)
+- **GravityZone** — *declares* a direction and multiplier and reports them to
+  `GravityAuthority.set_gravity()`. It does not own or change gravity itself
+- **main.gd** (`LevelRoot`) — wires zones to `GravityAuthority`, and camera
+  rotation to `GravityAuthority.gravity_changed`. `Player.set_gravity()` no longer
+  exists (ADR-0001)
 - **Watering System** (`watering-system.md`) — consumes `max_speed` via
   `carry_speed_multiplier`; must not affect jump velocity (R5/R10)
 - **Physics Props** (`physics-props.md`) — consumes the global gravity vector; all
@@ -183,7 +190,7 @@ angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
 | `coyote_time` | 0.12 | |
 | `jump_buffer_time` | 0.15 | |
 | `zone_gravity_multiplier` | 1.0 | Per-zone; 0.5 = double reach, 2.0 = half |
-| direction ease rate | 32.0 | Hardcoded; should be exported |
+| `direction_ease_rate` | 32.0 | Exported on `GravityAuthority` (ADR-0001) |
 | `zone_priority` | 0 | ⚠ not implemented (R8) |
 
 > `carry_speed_multiplier` is consumed by this system through `max_speed`, but is

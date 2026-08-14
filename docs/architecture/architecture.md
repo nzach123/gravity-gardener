@@ -125,18 +125,33 @@ becomes a consumer that derives its basis, asymmetry and `jump_velocity` from th
 broadcast vector. Its derivation math (`initialize()`, `apply_gravity()`) is
 unchanged.
 
-**D2 — `GameManager` splits into injectable state objects.**
+**D2 — Level state moves into injectable state objects owned by `LevelRoot`.**
+*(Amended 2026-08-14 by ADR-0002 — see the revision note below.)*
 All three GDDs assign state to `GameManager`, an autoload;
 `.claude/docs/coding-standards.md` requires dependency injection over singletons
 and demands every public method be unit-testable. Every Logic-type acceptance
-criterion across the GDDs must run headlessly. `GameManager` therefore keeps only
-cross-level concerns and holds plain injectable state objects — `LevelState`
-(bucket counters, `goal_unlocked`, carry state) and `OxygenState` (`remaining`,
-`capacity`, thresholds) — which tests construct directly.
+criterion across the GDDs must run headlessly. The state therefore moves into
+plain `RefCounted` objects — `LevelState` (bucket counters, `goal_unlocked`, carry
+state) and `OxygenState` (`remaining`, `capacity`, thresholds) — which tests
+construct directly. `GameManager` keeps only cross-level concerns.
+
+**`LevelRoot` constructs and owns both objects and injects them into consumers.**
+
+> **Revision note.** As originally written, D2 had `GameManager` *hold* the two
+> objects and clear them in `reset_level_state()`. ADR-0002 moved ownership to
+> `LevelRoot` on a user decision taken 2026-08-14. The deciding argument:
+> `reset_level_state()` exists only because an autoload survives
+> `reload_current_scene()`, and `restart_level()` already reloads the scene. Under
+> `LevelRoot` ownership the reload discards both objects and `_ready()` builds
+> fresh ones, so `watering-system.md` AC8 and `suit-oxygen.md` AC4/AC5 hold by
+> construction instead of depending on a hand-maintained reset function — a
+> function that is *already* missing `carrying_bucket` today. `reset_level_state()`
+> is deleted and neither object has a `reset()`. Full reasoning, including the
+> three rejected alternatives, is in ADR-0002.
 
 *Consequence:* the ownership lines in `watering-system.md` §6 and
-`suit-oxygen.md` §6 name `GameManager` directly and must be amended to name the
-state objects instead. Tracked as an Open Question.
+`suit-oxygen.md` §6 named `GameManager` directly. **Both were amended on
+2026-08-14**, closing Open Question QQ-01.
 
 ## Module Ownership
 
@@ -145,10 +160,10 @@ state objects instead. Tracked as an Open Question.
 | Module | Owns | Exposes | Consumes | Engine APIs |
 |---|---|---|---|---|
 | `GravityAuthority` *(autoload)* | `gravity`, `target_gravity`, `baseline_ascent_mag`, `ascent_descent_ratio`, ease rate | `gravity_changed(dir, mult)`, `current_gravity`, `up_dir`, `right_dir`, `set_gravity()` | Zone declarations | `Node`, `Signal`, `lerp_angle`, `PhysicsServer2D` |
-| `GameManager` *(autoload)* | `player_lives`, holds the two state objects | `level_state`, `oxygen_state`, `reset_level_state()` | — | `Node` |
-| `LevelState` *(RefCounted)* | `buckets_consumed`, `buckets_total`, `goal_unlocked`, `carrying_bucket` | `consume_bucket()`, `goal_unlocked` signal | — | `RefCounted` |
+| `GameManager` *(autoload)* | `player_lives` — cross-level concerns only *(ADR-0002)* | — | — | `Node` |
+| `LevelState` *(RefCounted)* | `buckets_consumed`, `buckets_total`, `goal_unlocked`, `carrying_bucket`, `level_complete` | `consume_bucket()`, `goal_unlocked_changed` signal | — | `RefCounted` |
 | `OxygenState` *(RefCounted)* | `remaining`, `capacity`, threshold band | `drain(delta)`, `fraction`, `depleted`, `threshold_changed` | `OxygenTuning` | `RefCounted` |
-| `LevelRoot` (`main.gd`) | Wiring, camera, `next_level`, restart path | `restart_level()`, `change_level()` | Everything below | `Node2D`, `Camera2D`, `SceneTree`, `Tween` |
+| `LevelRoot` (`main.gd`) | Wiring, camera, `next_level`, restart path. **Constructs and owns `LevelState` + `OxygenState`, and injects them** *(ADR-0002)* | `restart_level()`, `change_level()` | Everything below | `Node2D`, `Camera2D`, `SceneTree`, `Tween` |
 | `LevelValidation` | Load-time contract rules | `validate(level) -> Array[String]` | `LevelState`, plants, props | `push_error` |
 | Tuning resources | Watering / Oxygen / Prop constants | `@export` properties | — | `Resource` (`.tres`) |
 | `CollisionLayerRegistry` | Layer/mask allocation | Named constants | — | `project.godot` `layer_names` |
@@ -323,7 +338,7 @@ Every cross-module link is a signal. No module calls upward.
 | `pour_completed` | `Plant` | `LevelState` |
 | `goal_unlocked` | `LevelState` | `Goal`, `HUD` |
 | `threshold_changed(band)` | `OxygenState` | `HUD` |
-| `depleted` | `OxygenState` | `LevelRoot.restart_level()` |
+| `depleted` | `OxygenState` | `OxygenDrain` *(**not** `LevelRoot.restart_level()` — corrected by ADR-0002. `depleted` is a pure state signal meaning "the tank is empty" and carries no policy. `OxygenDrain` owns the kill decision, including the `level_complete` suppression that `suit-oxygen.md` AC8 requires. Wiring this straight to `restart_level()` breaks AC8)* |
 | `inc_hazard_dmg` | `SpikeHazard` | `LevelRoot.restart_level()` *(exists)* |
 | `player_reached_goal` | `Goal` | `LevelRoot.change_level()` *(exists)* |
 
@@ -340,22 +355,26 @@ restart. Persistence means exactly two operations:
 | Operation | Mechanism | Owner |
 |---|---|---|
 | Level transition | `change_scene_to_packed(next_level)` | `LevelRoot` |
-| Level restart | `reload_current_scene()` + `reset_level_state()` | `LevelRoot` |
+| Level restart | `reload_current_scene()` alone — the reload discards `LevelState` / `OxygenState` and `_ready()` builds fresh ones *(ADR-0002)* | `LevelRoot` |
 
 Scene reload rebuilds the tree, which gives `physics-props.md` R6 / AC8 — props
 return to authored transforms — for free. No prop bookkeeping is needed.
 
-**D6 — Levels declare a default gravity; `reset_level_state()` restores it.**
+**D6 — Levels declare a default gravity; `LevelRoot._ready()` restores it.**
 D1 introduces a regression that cannot occur in the current design: gravity lives
 on the player today, so scene reload resets it automatically. An autoload
 **survives scene reload**, so without this the player would restart a level
 carrying whatever gravity they died under.
 
 Each level root therefore exports `default_gravity_direction` and
-`default_gravity_multiplier`, and `reset_level_state()` restores
-`GravityAuthority` to them. This covers first load and restart with one
-mechanism, and makes a level's starting orientation explicit and authorable
-rather than implied.
+`default_gravity_multiplier`, and `LevelRoot._ready()` restores
+`GravityAuthority` to them at init step 3e. This covers first load and restart
+with one mechanism — restart is a scene reload, which re-runs `_ready()` — and
+makes a level's starting orientation explicit and authorable rather than implied.
+
+*(Amended 2026-08-14: originally `reset_level_state()` did the restoring. ADR-0002
+deletes that function; the call moves to `LevelRoot._ready()`, which already ran on
+both paths. No behavioural change.)*
 
 *Consequence:* all 8 existing levels need the export added. No GDD covers this
 requirement — it is a direct consequence of D1.
@@ -383,17 +402,24 @@ Two mitigations are mandatory:
 Godot calls `_ready()` bottom-up, so `Player` (a child of the level root)
 initialises before `LevelRoot`. The order resolves cleanly:
 
+*(Corrected 2026-08-14 by ADR-0002. The original had `HUD._ready()` binding to
+`OxygenState`/`LevelState` at step 2, before `LevelRoot` creates them at step 3 —
+impossible under bottom-up `_ready()`. Binding is a step-3 activity, and every
+consumer guards against use before bind.)*
+
 ```
 1. Autoloads      GameManager, GravityAuthority   (uninitialised, guarded)
 2. Level children, bottom-up
    ├─ Player._ready()   derive baseline → GravityAuthority.initialize(…)
    ├─ Plants, Buckets, Props, Zones _ready()
-   └─ HUD._ready()      bind to OxygenState / LevelState
+   └─ HUD._ready()      build widgets ONLY — must not touch state yet
 3. LevelRoot._ready()   (parent, last)
-   a. LevelValidation.validate(level)   → push_error on contract breach
-   b. seed LevelState (buckets_total) and OxygenState (capacity) from exports
-   c. GravityAuthority.reset_to(default_gravity_*)   → first broadcast
-   d. wire zones → GravityAuthority ; register props → GravityAuthority
+   a. construct LevelState(buckets_total) and OxygenState(capacity, tuning)
+   b. LevelValidation.validate(level)   → push_error on contract breach
+   c. bind state into Player, Goal, HUD, OxygenDrain
+   d. connect each Plant.pour_completed → LevelState.consume_bucket()
+   e. GravityAuthority.reset_to(default_gravity_*)   → first broadcast
+   f. wire zones → GravityAuthority ; register props → GravityAuthority
 ```
 
 `TR-gravity-011` (the hardcoded `32.0` ease rate) is not closed by this decision
@@ -448,16 +474,18 @@ var carrying_bucket: bool
 var goal_unlocked: bool      # derived, read-only
 var level_complete: bool     # D5 — suppresses the oxygen death check
 
+func _init(buckets_total: int) -> void
 func consume_bucket() -> void
-func reset() -> void
 ```
 
-**Callers must:** set `buckets_total` once at load; call `consume_bucket()` only
-on a completed pour.
+**Callers must:** pass `buckets_total` at construction (immutable thereafter); call
+`consume_bucket()` only on a completed pour.
 
 **Guarantees:** `goal_unlocked` flips true exactly when
-`buckets_consumed >= buckets_total` and never before (watering AC6) · `reset()`
-clears `carrying_bucket` (watering AC8 — the defect at `gamemanager.gd:12`).
+`buckets_consumed >= buckets_total` and never before (watering AC6) · **no
+`reset()`** — restart discards the object and `LevelRoot` builds a fresh one, so
+carry state cannot survive (watering AC8, the defect at `gamemanager.gd:12`).
+*(ADR-0002 — `reset()` was removed from this contract.)*
 
 ```gdscript
 class_name OxygenState extends RefCounted
@@ -470,13 +498,15 @@ var capacity: float
 var remaining: float
 var fraction: float
 
-func configure(capacity: float, tuning: OxygenTuning) -> void
+func _init(capacity: float, tuning: OxygenTuning) -> void
 func drain(delta: float) -> void
-func reset() -> void
 ```
 
-**Callers must:** pass `capacity > 0` (validated at load, oxygen AC7); call
+**Callers must:** pass `capacity > 0` at construction — an invalid `OxygenState` is
+not constructible, so oxygen AC7's runtime failure mode is unreachable
+(`LevelValidation` still reports it at load, for authoring feedback); call
 `drain()` exactly once per physics frame.
+*(ADR-0002 — `configure()` became constructor injection; `reset()` was removed.)*
 
 **Guarantees:** `remaining` never increases by any path (oxygen AC3) · `depleted`
 emits once · drain is unconditional across every player state (oxygen AC1).

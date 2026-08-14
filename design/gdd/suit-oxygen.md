@@ -3,6 +3,7 @@ status: draft
 source: /brainstorm session 2026-08-13
 depends-on: watering-system.md
 date: 2026-08-13
+amended: 2026-08-14 — §6 synced to ADR-0002 (OxygenState owned by the level root). No rule changed
 ---
 
 # Suit Oxygen — Design
@@ -133,8 +134,10 @@ not be used as a difficulty dial.
 |---|---|
 | `watering-system.md` | **Reciprocal.** Pour duration and bucket routing produce `t_level`, which sets this system's `oxygen_capacity` (R6). Watering §6 already declares the other direction |
 | `gravity.md` | **No interaction by design.** Gravity transitions neither pause nor accelerate drain. Stated explicitly so it is not assumed otherwise |
-| `GameManager` | Owns `oxygen_remaining` / `oxygen_capacity`; resets both in `reset_level_state()` |
-| `main.gd` | Wires oxygen death into the existing `restart_level` path |
+| `OxygenState` *(RefCounted, new)* | Owns `capacity` and `remaining`. Constructed per level by the level root from its `oxygen_capacity` export and injected into consumers (ADR-0002). **Not** an autoload — it dies with the level, which is what gives R5 for free |
+| `GameManager` | **No longer holds oxygen state.** Retains cross-level concerns only (ADR-0002) |
+| `OxygenDrain` *(new)* | Drives `OxygenState.drain()` and owns the death *policy*, including the airlock-entry suppression in §5. `OxygenState.depleted` reports an empty tank and decides nothing |
+| `main.gd` / level root | Constructs and injects `OxygenState`; wires oxygen death into the existing `restart_level` path |
 | `spike_hazard`, kill area | Share that restart path — oxygen death must be indistinguishable |
 | HUD *(new scene)* | Renders the readout and threshold feedback (R7) |
 
