@@ -1,0 +1,681 @@
+# Technical Requirements Registry — Gravity Gardener
+#
+# The 52-requirement TR baseline. `architecture.md:9` and `systems-index.md:58`
+# have described this baseline as extracted and mapped since 2026-08-13, but no
+# file defined a single TR ID until this one. Every prior occurrence across
+# `architecture.md` and the six ADRs was a citation of a table that was never
+# written.
+#
+# READ THIS BEFORE CITING ANY ID
+# ------------------------------
+# This registry was RECONSTRUCTED, not recovered. The distinction matters and is
+# recorded per entry in the `provenance` field:
+#
+#   provenance: verbatim
+#     The ID appears in surviving prose that states what it covers. 7 of 52.
+#     `confirmed_by` names the exact source. These are facts.
+#
+#   provenance: derived
+#     The ID's existence and its owning ADR are reliable; which numbered slot a
+#     given GDD rule occupies is an assignment made by
+#     `architecture-review-2026-08-15.md`, not recovered fact. 45 of 52.
+#     Treat the slot number as this project's convention, not as history.
+#
+# Why the allocation is trustworthy even where the text is not: the surviving
+# citations fill four contiguous ranges with no gaps and no overlaps
+# (13 / 18 / 12 / 9 = 52), matching the documented total exactly. A bad
+# reconstruction does not produce that shape. Each ADR's cited IDs were then
+# fitted only to requirements that ADR actually addresses, which is a hard
+# constraint.
+#
+# CORRECTIONS
+# -----------
+# An entry whose text was stale at the time of writing is corrected in place and
+# carries a `corrected:` key naming the date and the reason. This follows the
+# convention settled 2026-08-15 in `docs/registry/architecture.yaml`: correcting
+# text that never matched its source is not a supersession, because supersession
+# would falsely imply the requirement once said the wrong thing.
+#
+# Two entries were corrected on creation — TR-watering-017 and TR-watering-018.
+# Both were stale in the source review. They were fixed BEFORE this file gained
+# binding force rather than written wrong and amended later.
+#
+# SCOPE
+# -----
+# GDD-derived requirements only. UX commitments that do not originate in a GDD
+# (for example the on-demand tally in `design/accessibility-requirements.md`) are
+# NOT TRs and must not be given IDs here.
+#
+# Created: 2026-08-15
+# Source: docs/architecture/architecture-review-2026-08-15.md § Traceability Matrix
+
+version: 1
+last_updated: 2026-08-15
+
+baseline:
+  total: 52
+  by_system:
+    gravity: 13
+    watering: 18
+    oxygen: 12
+    props: 9
+
+coverage:
+  covered_by_accepted_adr: 22
+  gap_assigned_to_unwritten_adr: 28
+  parked_or_implemented: 2
+  note: >
+    All six Foundation ADRs became Accepted on 2026-08-15 (session 12). The
+    source review recorded coverage-by-accepted as 0 of 52 because every ADR was
+    still Proposed when it ran. That figure is stale; 22 is current.
+
+provenance_summary:
+  verbatim: 7
+  derived: 45
+
+status_values:
+  covered: Owned by a written, Accepted ADR
+  gap: Assigned to an ADR that does not exist yet
+  parked: Deliberately not implemented, per GDD design
+  implemented: Already working in src/, no ADR required
+
+requirements:
+
+  # ---------------------------------------------------------------- gravity --
+  gravity:
+    - id: TR-gravity-001
+      requirement: "Gravity is a Vector2 with derived up_dir/right_dir basis; one owner"
+      gdd: gravity.md
+      gdd_anchor: R1
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-gravity-002
+      requirement: "Zones are setters; global broadcast; no per-body or per-region gravity"
+      gdd: gravity.md
+      gdd_anchor: "R2, R9"
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-gravity-003
+      requirement: "Direction eases, strength snaps"
+      gdd: gravity.md
+      gdd_anchor: R3
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-gravity-004
+      requirement: "Asymmetric ascent/descent applied to the player"
+      gdd: gravity.md
+      gdd_anchor: R4
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-gravity-005
+      requirement: "jump_velocity derived once, never recomputed"
+      gdd: gravity.md
+      gdd_anchor: R5
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-gravity-006
+      requirement: "Variable jump height; release caps at min_jump_velocity"
+      gdd: gravity.md
+      gdd_anchor: R6
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-gravity-007
+      requirement: "Carried mass affects speed only, never gravity or jump"
+      gdd: gravity.md
+      gdd_anchor: R10
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-gravity-008
+      requirement: "zone_priority overlap resolution"
+      gdd: gravity.md
+      gdd_anchor: R8
+      adr: null
+      adr_status: none
+      status: parked
+      provenance: verbatim
+      confirmed_by: >
+        architecture.md:737 — "TR-gravity-008 — zone_priority. gravity.md R8 parks
+        it explicitly, and D1's global broadcast keeps it parked."
+      note: >
+        With one vector in play, overlap is an ordering question rather than a
+        spatial one. Revisit only on a design change — see architecture.md QQ-07.
+
+    - id: TR-gravity-009
+      requirement: "Multiplier semantics; reject zero direction and non-positive multiplier"
+      gdd: gravity.md
+      gdd_anchor: "R7, AC7"
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-gravity-010
+      requirement: "Camera rotation follows gravity"
+      gdd: gravity.md
+      gdd_anchor: "§6"
+      adr: null
+      adr_status: none
+      status: implemented
+      provenance: verbatim
+      confirmed_by: >
+        architecture.md:738 — "TR-gravity-010 — camera rotation, working in main.gd"
+      note: >
+        Working in main.gd today. NOT free of concerns: main.gd:8-9 leaves
+        camera_moving and camera_rotation_enabled uncoupled, which blocks the
+        reduced-motion commitment in design/accessibility-requirements.md. See
+        hud.md Q10.
+
+    - id: TR-gravity-011
+      requirement: "direction_ease_rate exported, not hardcoded 32.0"
+      gdd: gravity.md
+      gdd_anchor: "§7"
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: verbatim
+      confirmed_by: >
+        architecture.md:467 — "TR-gravity-011 (the hardcoded 32.0 ease rate)";
+        architecture.md:480 — "@export var direction_ease_rate: float = 32.0
+        # closes TR-gravity-011"
+
+    - id: TR-gravity-012
+      requirement: "Props adopt the vector on the same frame as the player"
+      gdd: gravity.md
+      gdd_anchor: AC12
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+      note: >
+        Rests on ADR-0001 Verification Required #2, which is still open — that a
+        default-space gravity write made in _physics_process reaches every
+        RigidBody2D in the same step.
+
+    - id: TR-gravity-013
+      requirement: "Visual component mirrors movement axis inversion at any angle"
+      gdd: gravity.md
+      gdd_anchor: "§6, AC8, AC10"
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+  # --------------------------------------------------------------- watering --
+  watering:
+    - id: TR-watering-001
+      requirement: "Buckets are single-use; pickup on contact; one carried at a time"
+      gdd: watering-system.md
+      gdd_anchor: R1
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-watering-002
+      requirement: "Carry scales max_speed only"
+      gdd: watering-system.md
+      gdd_anchor: R2
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-watering-003
+      requirement: "Pour is time-based, held-input, and locks the player"
+      gdd: watering-system.md
+      gdd_anchor: R3
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      note: >
+        ADR-0009 must define pour abandonment as GESTURE-AGNOSTIC. A toggle
+        alternative to the hold is committed in
+        design/accessibility-requirements.md (Motor), so hold-release and
+        toggle-press must be the same event.
+
+    - id: TR-watering-004
+      requirement: "Early release zeroes progress and retains the bucket"
+      gdd: watering-system.md
+      gdd_anchor: R4
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      note: >
+        AC3 is the test. The visible drain-back specified in hud.md E3 is the
+        proof of this requirement — no partial credit.
+
+    - id: TR-watering-005
+      requirement: "Plants cap intake at buckets_required"
+      gdd: watering-system.md
+      gdd_anchor: R5
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-watering-006
+      requirement: "Airlock gates on the level-wide consumed counter, not on a plant"
+      gdd: watering-system.md
+      gdd_anchor: R6
+      adr: ADR-0002
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-watering-007
+      requirement: "Spent jug is flung and freed"
+      gdd: watering-system.md
+      gdd_anchor: R7
+      adr: ADR-0012
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-watering-008
+      requirement: "buckets_total == sum of buckets_required, validated at load"
+      gdd: watering-system.md
+      gdd_anchor: R8
+      adr: ADR-0003
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-watering-009
+      requirement: "Nearest plant with remaining capacity receives the pour"
+      gdd: watering-system.md
+      gdd_anchor: "§5, AC12"
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-watering-010
+      requirement: "Pour survives a gravity flip; area exit equals early release"
+      gdd: watering-system.md
+      gdd_anchor: "§5"
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-watering-011
+      requirement: "Restart clears carry state and all watering state"
+      gdd: watering-system.md
+      gdd_anchor: "§5 defect, AC8"
+      adr: ADR-0002
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-watering-012
+      requirement: "Final pour on the depletion frame yields death, not completion"
+      gdd: watering-system.md
+      gdd_anchor: AC13
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: verbatim
+      confirmed_by: "ADR-0005 GDD table — 'AC13 (TR-watering-012)'"
+
+    - id: TR-watering-013
+      requirement: "carry_speed_multiplier and throw_* live in WateringTuning"
+      gdd: watering-system.md
+      gdd_anchor: "§7"
+      adr: ADR-0006
+      adr_status: accepted
+      status: covered
+      provenance: derived
+      note: >
+        architecture.md:751 assigns this ID to ADR-0006 by name, but does not
+        state the requirement text, so the text remains derived.
+
+    - id: TR-watering-014
+      requirement: "Carrying leaves jump apex unchanged at every zone multiplier"
+      gdd: watering-system.md
+      gdd_anchor: AC1
+      adr: ADR-0007
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      note: >
+        Cross-document invariant. watering-system.md AC1 and gravity.md AC11 are
+        one test serving both documents (systems-index.md § Cross-document
+        invariants). ADR-0007 owns it and should be written first.
+
+    - id: TR-watering-015
+      requirement: "Load logs an error on bucket-sum mismatch"
+      gdd: watering-system.md
+      gdd_anchor: "AC7 — Logic, BLOCKING"
+      adr: ADR-0003
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-watering-016
+      requirement: "Bucket must be an Area2D, not a Node"
+      gdd: watering-system.md
+      gdd_anchor: "§6"
+      adr: ADR-0009
+      adr_status: not_written
+      status: gap
+      provenance: verbatim
+      confirmed_by: >
+        architecture.md:661 — "class_name Bucket extends Area2D
+        # was `extends Node` — TR-watering-016"
+
+    - id: TR-watering-017
+      requirement: >
+        The HUD reads carrying_bucket as a precondition for the interact prompt.
+        Carry state itself is communicated diegetically, not by a HUD indicator.
+      gdd: watering-system.md
+      gdd_anchor: "§6"
+      adr: ADR-0010
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      corrected:
+        date: 2026-08-15
+        was: "HUD carry indicator (§6)"
+        reason: >
+          Stale on arrival. /propagate-design-change watering-system.md closed Q9
+          on 2026-08-15: §6's HUD row now states there is NO carry indicator, and
+          systems-index.md:102 matches. The carry indicator was never
+          load-bearing — it appeared in exactly one table row, backed by no rule,
+          no acceptance criterion and no tuning knob. Corrected before this file
+          gained binding force rather than written wrong and amended later.
+      note: >
+        Do NOT read this as grounds to drop ADR-0002's HUD-to-LevelState binding.
+        The HUD still READS carrying_bucket (hud.md H6) and owns the level tally.
+        Only the rendering obligation moved.
+
+    - id: TR-watering-018
+      requirement: >
+        A fully grown plant shows a positive refusal marker. Refusal must be
+        legible rather than silent — suppressing the prompt alone is insufficient.
+      gdd: watering-system.md
+      gdd_anchor: "§5"
+      adr: ADR-0010
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      corrected:
+        date: 2026-08-15
+        was: "Interact prompt suppressed on a fully grown plant (§5)"
+        reason: >
+          Stale on arrival. hud.md E4 establishes that refusal is a POSITIVE
+          marker and explicitly "not the absence of E2", because suppression
+          alone leaves the player unable to distinguish a capped plant from one
+          they are simply too far from. watering-system.md §5 requires the
+          refusal be "legible rather than silent", which the original text
+          contradicted.
+
+  # ----------------------------------------------------------------- oxygen --
+  oxygen:
+    - id: TR-oxygen-001
+      requirement: "Per-level countdown from oxygen_capacity"
+      gdd: suit-oxygen.md
+      gdd_anchor: R1
+      adr: ADR-0008
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-oxygen-002
+      requirement: "Drain is unconditional in every player state"
+      gdd: suit-oxygen.md
+      gdd_anchor: "R2, AC1"
+      adr: ADR-0008
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-oxygen-003
+      requirement: "Zero is death via the shared restart path, indistinguishable from other deaths"
+      gdd: suit-oxygen.md
+      gdd_anchor: "R3, AC2"
+      adr: ADR-0008
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      note: >
+        GDD revision flag: suit-oxygen.md §5 and R3 say oxygen death is
+        "immediate", but ADR-0005 D5.2 defers it one physics frame by design.
+        Unresolved.
+
+    - id: TR-oxygen-004
+      requirement: "Nothing refills the suit"
+      gdd: suit-oxygen.md
+      gdd_anchor: "R4, AC3"
+      adr: ADR-0008
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-oxygen-005
+      requirement: "Restart refills; oxygen never carries between levels"
+      gdd: suit-oxygen.md
+      gdd_anchor: "R5, AC4, AC5"
+      adr: ADR-0002
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-oxygen-006
+      requirement: "Pause halts drain"
+      gdd: suit-oxygen.md
+      gdd_anchor: "§5"
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: derived
+      unowned: true
+      note: >
+        NO ADR CLAIMS THIS. architecture.md QQ-04 routes it to ADR-0010, whose
+        scope is HUD and Control offset usage. The node that must consult pause
+        state is OxygenDrain, which ADR-0008 owns. Neither claims it. Assign an
+        owner before either ADR is written. suit-oxygen.md §5 states it plainly:
+        "when one is added, halting the drain is a requirement, not a nicety."
+        No pause menu exists in src/. hud.md U10.3 already specifies the frozen
+        HUD state that depends on this.
+
+    - id: TR-oxygen-007
+      requirement: "Readout is always visible"
+      gdd: suit-oxygen.md
+      gdd_anchor: "R7, AC9"
+      adr: ADR-0010
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      note: >
+        hud.md reconciles this with its adaptive philosophy by making E1
+        permanent: "adaptive" governs prominence at the §4 thresholds, never
+        visibility.
+
+    - id: TR-oxygen-008
+      requirement: "Load logs an error when oxygen_capacity <= 0"
+      gdd: suit-oxygen.md
+      gdd_anchor: "AC7 — Logic, BLOCKING"
+      adr: ADR-0003
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-oxygen-009
+      requirement: "Threshold feedback fires at 50 / 25 / 10 percent"
+      gdd: suit-oxygen.md
+      gdd_anchor: "R7, AC10"
+      adr: ADR-0010
+      adr_status: not_written
+      status: gap
+      provenance: derived
+      note: >
+        GDD internal tension, unresolved: §2 wants thirty-seconds-out awareness,
+        but §4's caution threshold fires at 24 s for a 48 s level — after that
+        mark. hud.md Q13.
+
+    - id: TR-oxygen-010
+      requirement: "Airlock entry on the depletion frame completes the level"
+      gdd: suit-oxygen.md
+      gdd_anchor: AC8
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: verbatim
+      confirmed_by: "ADR-0005 GDD table — 'AC8 (TR-oxygen-010)'"
+
+    - id: TR-oxygen-011
+      requirement: "margin, drain_rate and threshold_* live in OxygenTuning"
+      gdd: suit-oxygen.md
+      gdd_anchor: "§7"
+      adr: ADR-0006
+      adr_status: accepted
+      status: covered
+      provenance: derived
+      note: >
+        drain_rate is designated an accessibility hook (range 0.5-1.0). ADR-0006
+        D6.6 assigned its accessibility composition to ADR-0008. That ADR must
+        know the HUD displays oxygen_remaining / drain_rate, not the raw value.
+
+    - id: TR-oxygen-012
+      requirement: "Capacity derived from O_level, authored on the level root"
+      gdd: suit-oxygen.md
+      gdd_anchor: R6
+      adr: ADR-0002
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+  # ------------------------------------------------------------------ props --
+  props:
+    - id: TR-props-001
+      requirement: "Props obey the global vector including during easing; symmetric"
+      gdd: physics-props.md
+      gdd_anchor: "R3, R4"
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-props-002
+      requirement: "Cosmetic isolation enforced by layer and mask"
+      gdd: physics-props.md
+      gdd_anchor: "R1, R2, AC1, AC2"
+      adr: ADR-0004
+      adr_status: accepted
+      status: covered
+      provenance: verbatim
+      confirmed_by: "ADR-0004 — 'this ADR covers TR-props-002'"
+
+    - id: TR-props-003
+      requirement: "Props reset to authored transforms on restart"
+      gdd: physics-props.md
+      gdd_anchor: "R6, AC8"
+      adr: ADR-0011
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-props-004
+      requirement: "Sleeping props are force-woken on every change"
+      gdd: physics-props.md
+      gdd_anchor: "R5, AC3"
+      adr: ADR-0001
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-props-005
+      requirement: "Props leaving level bounds are freed"
+      gdd: physics-props.md
+      gdd_anchor: "R7, AC9"
+      adr: ADR-0011
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-props-006
+      requirement: "Fall-speed cap; per-prop mass and damping"
+      gdd: physics-props.md
+      gdd_anchor: "§4, §7, AC7"
+      adr: ADR-0011
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-props-007
+      requirement: "Prop count is budgeted and flagged at load"
+      gdd: physics-props.md
+      gdd_anchor: "R8, §5"
+      adr: ADR-0003
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+    - id: TR-props-008
+      requirement: "A room of props at budget holds 60 FPS during a flip"
+      gdd: physics-props.md
+      gdd_anchor: AC10
+      adr: ADR-0011
+      adr_status: not_written
+      status: gap
+      provenance: derived
+
+    - id: TR-props-009
+      requirement: "PropTuning knobs and defaults"
+      gdd: physics-props.md
+      gdd_anchor: "§7"
+      adr: ADR-0006
+      adr_status: accepted
+      status: covered
+      provenance: derived
+
+# ---------------------------------------------------------------------------
+# Open items carried by this registry
+# ---------------------------------------------------------------------------
+open_items:
+  - id: TR-oxygen-006
+    issue: "No ADR owns it. Assign before ADR-0008 or ADR-0010 is written."
+    severity: blocking_for_adr_0008
+
+  - id: TR-gravity-012
+    issue: >
+      Depends on ADR-0001 Verification Required #2, still open — that a
+      default-space gravity write in _physics_process reaches every RigidBody2D
+      in the same step. gravity.md AC12 rests on it.
+    severity: verification_open
+
+  - id: TR-oxygen-003
+    issue: >
+      GDD revision flag. suit-oxygen.md says oxygen death is "immediate";
+      ADR-0005 D5.2 defers it one physics frame by design.
+    severity: gdd_conflict
+
+  - id: TR-gravity-010
+    issue: >
+      Implemented but entangled. main.gd:8-9 leaves camera_moving and
+      camera_rotation_enabled uncoupled, blocking the reduced-motion commitment
+      in design/accessibility-requirements.md. No ADR owns the decouple.
+    severity: blocks_accessibility_commitment

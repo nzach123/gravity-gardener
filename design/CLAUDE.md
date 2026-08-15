@@ -33,6 +33,13 @@ Use `/quick-design` to author.
 - Per-screen specs: `design/ux/[screen-name].md`
 - HUD design: `design/ux/hud.md`
 - Interaction pattern library: `design/ux/interaction-patterns.md`
-- Accessibility requirements: `design/ux/accessibility-requirements.md`
 
 Use `/ux-design` to author. Validate with `/ux-review` before passing to `/team-ui`.
+
+## Accessibility (`design/`)
+
+- Accessibility requirements: `design/accessibility-requirements.md`
+
+This file is project-wide rather than per-screen, so it sits at the `design/` root and
+not under `design/ux/`. Five skills read this path: `/gate-check`,
+`/architecture-review`, `/create-architecture`, `/team-ui` and `/ux-design`.

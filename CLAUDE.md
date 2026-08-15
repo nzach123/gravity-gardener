@@ -30,6 +30,12 @@ Each agent owns a specific domain, enforcing separation of concerns and quality.
 
 @.claude/docs/coordination-rules.md
 
+## Game
+2D Platformer where the player can change gravity, must collect water and water his plants before running out of oxygen
+
+## Agent
+this project is using Godot engine, use a Godot agent to ensure accurate context.
+
 ## Collaboration Protocol
 
 **User-driven collaboration, not autonomous execution.**
@@ -52,3 +58,7 @@ See `docs/COLLABORATIVE-DESIGN-PRINCIPLE.md` for full protocol and examples.
 ## Context Management
 
 @.claude/docs/context-management.md
+
+##Lang
+
+always use the /asd-ste100 skill
