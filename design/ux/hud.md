@@ -1,7 +1,15 @@
 # HUD Design
 
-> **Status**: Complete draft — all 8 sections authored and approved.
-> Not yet validated with `/ux-review`.
+> **Status**: Complete draft — all 10 sections authored and approved. **Awaiting re-review.**
+> **Reviewed**: `/ux-review` 2026-08-15 — verdict **NEEDS REVISION**, 7 blocking findings.
+> **Six have since been closed**: Acceptance Criteria (H1–H27, 18 BLOCKING) · Tuning Knobs
+> with placement routed to the Presentation-tier ADR (Q16) · `tally_duration` = 1.2 s ·
+> the single Z2 slot and the E5→E4 suppression rule · the completed Z1/Z2 collision rule ·
+> the paused HUD state (Q7).
+> **One blocking finding remains open — Q9**, the `watering-system.md` §6 carry-indicator
+> divergence. It cannot be closed inside this file: it needs
+> `/propagate-design-change watering-system.md` **and** an edit to `systems-index.md:102`,
+> which still lists the carry indicator as a HUD deliverable.
 > **Author**: user + ux-designer
 > **Last Updated**: 2026-08-15
 > **Template**: HUD Design
@@ -200,6 +208,24 @@ zero relative to the viewport.
 - Prompts belong to the object, not the player. Several may exist in a level; only those
   within proximity render.
 
+**The single Z2 slot.** At most **one** Z2 element renders at any moment, however many
+plants are in range. The slot is awarded in this order:
+
+1. The **resolved pour target** — the nearest plant with remaining capacity whose interact
+   area contains the player, with the player carrying a bucket → **E2** (with E3 inside it
+   while `interact` is held).
+2. Otherwise, the **nearest plant in range at capacity** → **E4**.
+3. Otherwise, nothing.
+
+This preserves `watering-system.md` **AC12** exactly — the pour still targets the nearest
+plant *with capacity*, and rule 1 puts the prompt on that same plant even when a capped
+plant is nearer. Rule 2 fires only when rule 1 found no target, so **E2 and E4 can never
+both be on screen.**
+
+Without this rule the two-element visual budget is not achievable: two capped plants in
+range would render two E4s, and a capped plant overlapping an uncapped one would render
+E1 + E2 + E4. E2 had a cardinality rule from AC12; E4 had none.
+
 **Z3 — Transient** *(Contextual)*
 
 Pour-completion tally and the death sequence.
@@ -229,8 +255,19 @@ actually enforced.
 ### Z1 / Z2 collision rule
 
 When the player stands in a plant's interact area, Z1 and Z2 are adjacent by construction
-and may overlap. **Z1 never yields** — R7 makes the oxygen readout non-negotiable. Z2
-displaces along the viewport-horizontal axis, away from the player.
+and may overlap. **Z1 never yields** — R7 makes the oxygen readout non-negotiable.
+
+| Rule | Behaviour |
+|---|---|
+| Displacement axis | Z2 displaces along the viewport-horizontal axis, away from the player's projected position. Z1 does not move |
+| Trigger / release | Displacement applies while Z1's and Z2's bounding boxes intersect, and releases when they separate by `z2_release_hysteresis`. **The hysteresis is required, not cosmetic**: both boxes track moving objects, so without it a player standing at the intersection boundary makes Z2 flicker every frame |
+| Z1 against a viewport edge | Z1 clamps inside the viewport by `hud_edge_margin` and stops tracking on that axis until the player moves back. `stretch/aspect="expand"` guarantees content is never cropped, so this clamp guards only against the player themselves reaching the edge |
+| Z2 displaced off-viewport | If displacing away from the player would put Z2 past the viewport edge, it displaces **toward** the player instead. Z1 still does not move |
+| Z2 onto another Z2 | **Cannot occur** — at most one Z2 element exists at a time (see *The single Z2 slot*) |
+| Z3 | Exempt. Z3 layers above both and is permitted to overlap them |
+
+Magnitudes are knobs, not fixed values — see **Tuning Knobs**. The behaviours above are
+the part that had to be specified here; the pixel figures are playtest targets.
 
 ---
 
@@ -304,7 +341,7 @@ or persisted would imply progress had been banked, which is exactly what the rul
 |---|---|
 | Zone / category | Z2 · **Contextual** |
 | Content | A capped / complete state marker on the plant |
-| Trigger | Player inside the interact area of a plant at `buckets_received == buckets_required` |
+| Trigger | Player inside the interact area of a plant at `buckets_received == buckets_required`, **and** the single Z2 slot resolves to that plant — i.e. no pour target is in range |
 | Animation | Static. No pulse, no shake |
 
 **This is not the absence of E2.** `watering-system.md` §5 requires the refusal be
@@ -319,7 +356,14 @@ deliberately static because a full plant is a success, not an error.
 | Zone / category | Z3 · **Contextual** |
 | Content | `buckets_consumed` / `buckets_total` |
 | Trigger | Fires when `LevelState.buckets_consumed` advances — i.e. on pour completion |
-| Duration | Brief, then clears |
+| Duration | **1.2 s**, then clears |
+
+**1.2 s, and the ceiling is structural rather than a matter of feel.** `water_duration`
+has a **2.0 s floor** (`watering-system.md` §7, range 2.0–8.0 s) and every pour is
+separated by at least one fetch leg, so two `buckets_consumed` increments cannot fall
+closer than roughly 2 s apart. Any duration below ~1.5 s therefore makes an E5 queue
+**structurally impossible** — which is why this spec specifies no queue or priority rule
+for E5. Raising the value past ~2.0 s would reintroduce the need for one.
 
 **E5 does not announce the airlock unlock.** On the final pour it reads `5 / 5` and
 nothing more; the airlock changing state is the message, per the Hidden-diegetic
@@ -419,9 +463,32 @@ This is the load-bearing argument for E1 being Must Show, beyond R7's bare wordi
 |---|---|---|
 | E2 prompt | Player enters the resolved target plant's interact area while carrying, plant has capacity | On exit, on capacity fill, or when the resolved target changes |
 | E3 fill | `interact` pressed while E2 shown | Released (drains to zero) or completed |
-| E4 refusal | Player enters the area of a capped plant | On exit |
-| E5 tally | `buckets_consumed` advances | After its brief duration |
+| E4 refusal | The Z2 slot resolves to a capped plant in range **and** E5 is not showing | On exit, or when E5 fires |
+| E5 tally | `buckets_consumed` advances | After 1.2 s |
 | E6 death | Any death, after the `level_complete` guard clears | After ~0.35 s, into restart |
+
+### Paused state
+
+`suit-oxygen.md` §5 requires pausing to halt oxygen drain. **No pause menu exists yet** —
+`start_menu.tscn` is the only menu scene — so this specifies HUD behaviour for whenever
+one lands. It does not design the menu.
+
+**The HUD freezes. Nothing hides, nothing dims.**
+
+| Element | While paused |
+|---|---|
+| E1 | Fully visible, holding its last value. Drain is halted, so the value is not stale — it is **correct**. R7 is honoured literally |
+| E2 / E4 | Hold as-is |
+| E3 | **Freezes at its current fill.** See below |
+| E5 | Its 1.2 s timer holds and resumes |
+| E6 | Unreachable — the death sequence already pauses game systems itself |
+| E7 | Continues updating. It is a developer tool, and a frozen readout is less useful than a live one |
+
+**On E3 specifically.** Pause is not an input release, so the R4 / AC3 drain-back does
+**not** fire on pausing — draining there would read as the game confiscating progress the
+player never released. R4 forbids *partial credit*, not *suspension*. On unpause: if
+`interact` is still held the pour resumes from the same fill; if it is not, the drain-back
+fires at that moment, exactly as an ordinary release would.
 
 ### Objects that deliberately get no prompt
 
@@ -447,6 +514,26 @@ Recorded so the absence reads as a decision rather than an oversight.
 **Never more than two player-facing elements at once.** This is the minimal claim from
 HUD Philosophy expressed as a number the spec can be tested against. If a future element
 breaks it, what changed is the philosophy — not just the count.
+
+**What makes this structurally true rather than aspirational is the single Z2 slot plus
+one suppression rule.** E1 is permanent and Z2 holds at most one, which caps the common
+cases at two. Z3 is what would break it:
+
+> **While E5 is showing, Z2 is suppressed.**
+
+Without that rule the budget fails on the most ordinary event in the game. Completing a
+pour on a `buckets_required = 1` plant dismisses E2, fires E5, and leaves the plant capped
+with the player still standing in its interact area — so rule 2 of the single Z2 slot
+awards E4, and E1 + E4 + E5 renders three elements at once.
+
+Suppression is the right resolution rather than a reordering because **E5 already carries
+E4's message.** "3 / 5 buckets delivered" is only true because the plant in front of the
+player just filled; showing a capped marker beside it restates that. E4 exists for the
+player who *arrives* at a plant already full, which is a different moment. When E5 clears
+after 1.2 s, Z2 resolves normally and E4 appears if the player is still in range.
+
+E6 is the deliberate exception to everything: it covers the screen because the level is
+ending.
 
 ### Debug overlay paging
 
@@ -581,6 +668,145 @@ the resource value.
 
 ---
 
+## Tuning Knobs
+
+Values this spec introduces that a designer should be able to change without editing code.
+
+> Defaults marked ***playtest target*** are **not derived** from any formula, sprite
+> dimension, or GDD figure. They are starting points, labelled so that no later reader
+> mistakes them for computed values. The same treatment the 0.35 s death hold already had.
+
+| Knob | Default | Safe range | Affects |
+|---|---|---|---|
+| `death_hold_duration` | 0.35 s *(playtest target)* | 0.2 – 1.0 s | E6. How long the frame of death holds before restart. Past ~1.0 s it fights a loop built on repeated attempts |
+| `tally_duration` | **1.2 s** | 0.6 – 1.5 s | E5. **The ceiling is structural, not feel** — above ~1.5 s consecutive tallies can overlap and E5 needs a queue rule it deliberately does not have |
+| `z1_offset` | 24 px *(playtest target)* | 12 – 64 px | Z1. Viewport-pixel distance from the player's projected position toward viewport-up. Too small and E1 overlaps the sprite; too large and it leaves the region the player is actually watching |
+| `z2_offset` | 24 px *(playtest target)* | 12 – 64 px | Z2. The same measurement, taken from the owning object |
+| `z2_displacement` | 48 px *(playtest target)* | 24 – 96 px | Z1/Z2 collision rule. Too small and the boxes still intersect after displacing, which defeats the rule |
+| `z2_release_hysteresis` | 8 px *(playtest target)* | 4 – 24 px | Z1/Z2 collision rule. Below ~4 px the displacement flickers when the player stands at the intersection boundary |
+| `hud_edge_margin` | 16 px *(playtest target)* | 8 – 48 px | Z1's clamp distance from the viewport edge |
+| `prompt_fade_duration` | 0.15 s *(playtest target)* | 0.05 – 0.4 s | E2's rise-and-fade in and out. Past ~0.4 s the prompt visibly lags the player's arrival |
+| `hud_outline_size` | 4 px | 2 – 8 px | E1–E4 outline width. 4 px is not a playtest target — it matches `debugger.gd`'s existing `outline_size` |
+
+### Placement is not decided here
+
+ADR-0006 **D6.1** fixed the tuning set at exactly three resources — `WateringTuning`,
+`OxygenTuning`, `PropTuning` — one per GDD, and **D6.3** made the `Tuning` const holder
+the only place a `.tres` path may appear. **There is no HUD resource in that set, and the
+HUD is not a GDD.**
+
+Two placements are available, and this spec chooses neither:
+
+- a fourth **`HudTuning`** resource — consistent with D6.3's holder pattern, but it extends
+  a set D6.1 sized deliberately, so it needs an ADR-0006 amendment and registry entries; or
+- **`@export` on the HUD scene's nodes** — follows the `Plant` precedent
+  (`watering-system.md` §7 *Placement*), and since there is exactly one HUD scene,
+  per-instance equals global. Needs no ADR change, but is not the data-driven `.tres`
+  route `.claude/docs/coding-standards.md` prefers for global values.
+
+**Assigned to the Presentation-tier ADR.** A UX spec states what needs tuning; where the
+value lives is an architecture decision, and settling it here would silently amend
+ADR-0006 from a UX document. Logged as **Q16**.
+
+### Not owned here
+
+Consumed by the HUD, tuned elsewhere. The HUD **reads** these and must never redeclare
+them — a second copy of a threshold is a divergence waiting to happen.
+
+| Value | Owner | Used by |
+|---|---|---|
+| Threshold bands 0.50 / 0.25 / 0.10 | `OxygenTuning` (`suit-oxygen.md` §4) | E1's band colour, numeral appearance, and tick positions |
+| `drain_rate` | `OxygenTuning`; its accessibility composition is **ADR-0008**'s per ADR-0006 **D6.6** | E1 displays the *composed* value — Accessibility Finding 2 |
+| `oxygen_capacity` | `suit-oxygen.md` R6, authored per level | E1's bar length, and its error state at `<= 0` |
+| `interact_radius` | `Plant`'s `InteractArea2D` (`watering-system.md` §7) | When E2 and E4 appear at all |
+| `water_duration` | `Plant`, per instance (`watering-system.md` §7) | E3's fill rate — and its 2.0 s floor is what `tally_duration`'s ceiling rests on |
+| `buckets_required` | `Plant`, per instance | E2's embedded capacity readout |
+| Band colours | The NES palette constraint (Accessibility § Palette) | Not free values — each must be one of the 56 entries (H23) |
+
+---
+
+## Acceptance Criteria
+
+> Type and gate level follow `.claude/docs/coding-standards.md` § Testing Standards.
+> `H*` numbering is local to this document; bare `AC*` references throughout this
+> spec belong to `suit-oxygen.md` and `watering-system.md`.
+
+### Layout & visibility
+
+| # | Criterion | Source | Type |
+|---|---|---|---|
+| H1 | E1 renders at zero rotation relative to the viewport in both camera modes — verified mid-gravity-flip in `level_01` (follow+rotate) and in `level_02` (static) | Z1, R7 | Integration — BLOCKING |
+| H2 | E1 remains fully within the viewport at every position the player can reach in all 8 levels, including against the top edge of the visible area | Z1 | Integration — BLOCKING |
+| H3 | When E1 and E2 are both visible, no part of either overlaps the other; the displacement does not flicker while the player stands at the intersection boundary; and when the player is against a viewport edge, E1 stays fully inside it and E2 displaces toward the player rather than off screen | Z1/Z2 collision rule | UI — ADVISORY |
+| H4 | No more than two player-facing elements render simultaneously — in every state in the Density profile, in the overlapping-interact-area case of `watering-system.md` §5, **and on the frame a `buckets_required = 1` plant fills while the player remains in its interact area** (E5 must suppress E4) | Visual budget, single Z2 slot | Integration — BLOCKING |
+| H5 | A release export contains no E7: F3 produces no overlay and no input action is registered for it | E7, Platform variants | Integration — BLOCKING |
+
+### Per-context correctness
+
+| # | Criterion | Source | Type |
+|---|---|---|---|
+| H6 | E2 renders only when all three hold: player inside the resolved target's `InteractArea2D`, carrying a bucket, plant has remaining capacity. Removing any one condition hides it | E2, R3 | Logic — BLOCKING |
+| H7 | With two overlapping interact areas both having capacity, exactly one E2 renders, on the nearer plant; it moves to the other plant when the resolved target changes **without the player leaving either area** | E2, AC12 | Integration — BLOCKING |
+| H8 | Releasing `interact` mid-pour drains E3's fill to zero, leaves E2 visible, and leaves `buckets_received` unchanged | E3, R4 / AC3 | Integration — BLOCKING |
+| H9 | Entering a capped plant's interact area with no pour target in range renders E4 and not E2. With a farther uncapped plant also in range and a bucket carried, E2 renders on that farther plant and **no E4 renders** | E4, single Z2 slot, R5, §5 | Logic — BLOCKING |
+| H10 | E5 fires exactly once per `buckets_consumed` increment and clears after **1.2 s** | E5, R6 | Logic — BLOCKING |
+| H11 | E5 on the final pour reads `N / N` and contains no airlock or unlock text | E5, #11 | UI — ADVISORY |
+| H12 | E6 does not fire when `level_complete` is latched: entering the airlock on the frame oxygen reaches zero completes the level with no death hold | E6, ADR-0005, `suit-oxygen.md` AC8 | Integration — BLOCKING |
+| H13 | E6 is identical in presentation across oxygen death and spike death, and names no cause | E6, R3 | Integration — BLOCKING |
+| H14 | While paused, E1 stays fully visible holding its last value and no element hides or dims. Pausing mid-pour freezes E3's fill without draining it; on unpause with `interact` still held the pour resumes from that fill with no progress lost, and on unpause with `interact` released the drain-back fires then | Paused state, `suit-oxygen.md` §5, R4 / AC3 | Integration — BLOCKING |
+
+> **H13 coverage is partial.** Kill-area death cannot be included until **BUG-0001** is
+> fixed — the kill planes in `level_05` and `level_06` never fire (Q15). H13 must be
+> re-run against a kill area once that lands.
+
+### Data correctness
+
+| # | Criterion | Source | Type |
+|---|---|---|---|
+| H15 | E1's numerals display `oxygen_remaining / drain_rate`: at `drain_rate = 0.5` with `oxygen_remaining = 24`, the readout shows **48**, not 24 | Accessibility Finding 2 | Logic — BLOCKING |
+| H16 | E1's numerals are hidden while `oxygen_fraction > 0.50` and shown at and below it | E1, §4 | Logic — BLOCKING |
+| H17 | At `oxygen_capacity <= 0`, E1 renders the distinct error appearance — neither an empty bar nor hidden — and the load-time error of `suit-oxygen.md` AC7 is still logged | E1 error state | Logic — BLOCKING |
+| H18 | E2's embedded capacity readout matches the target plant's `buckets_received` / `buckets_required` and updates on pour completion without the player leaving the area | E2, #8 | Logic — BLOCKING |
+| H19 | No HUD element writes to `OxygenState`, `LevelState`, `Plant`, or `PlayerWateringComponent`. The HUD is read-only | Information Architecture | Logic — BLOCKING |
+| H20 | E1 tracks `oxygen_remaining` within 0.1 s at `drain_rate = 1.0` | `suit-oxygen.md` AC9 | UI — ADVISORY |
+
+### Accessibility
+
+| # | Criterion | Source | Type |
+|---|---|---|---|
+| H21 | In a greyscale capture, all three threshold crossings remain identifiable from tick position and numeral presence alone | Colour independence | Visual — ADVISORY |
+| H22 | All four E1 band colours measure ≥ 4.5:1 against `#000000`, and E1–E4 render their black outline or backing plate over the lightest terrain present in all 8 levels | Band colours & contrast | Visual — ADVISORY |
+| H23 | Every colour used by any player-facing HUD element is a member of the 56-entry NES palette | Palette | Visual — ADVISORY |
+| H24 | Any text-size option scales at integer factors only, with no shimmer under `default_texture_filter=0` | Text scale | UI — ADVISORY |
+
+### Developer overlay
+
+| # | Criterion | Source | Type |
+|---|---|---|---|
+| H25 | The Collision group flags every `Area2D` whose mask ANDed with the player's layer is zero. With BUG-0001 open, it flags `KillArea2D` in `level_05` and `level_06` | E7 Collision group | Logic — BLOCKING |
+| H26 | F3 cycles Off → Gravity → Player → Watering → Oxygen → Level flow → Validation → Collision → Off, one group at a time | Debug overlay paging | UI — ADVISORY |
+| H27 | E7 never occludes E1–E6, verified with the player positioned over Z4's screen region | Layering | UI — ADVISORY |
+
+### Answer to Q8
+
+**Eighteen** of the criteria above are BLOCKING. Q8 asked whether it was acceptable
+that AC9 and AC10 — both advisory — were the only HUD acceptance criteria. This
+section supersedes that state. **Q8 is closed.**
+
+> The count rose from seventeen to eighteen when **H14** was written against the
+> paused-state rules. No criterion was removed.
+
+### Criteria still blocked
+
+| # | Blocked on |
+|---|---|
+| H24 | No text-size option is specified anywhere in the project; this criterion constrains one **if** it is added. It is not blocked on a decision this spec can make |
+
+H3, H10 and H14 were unblocked by the Z1/Z2 collision rule, `tally_duration`, and the
+Paused state section respectively.
+
+---
+
 ## Open Questions
 
 ### Missing upstream documents
@@ -598,8 +824,14 @@ the resource value.
 | # | Question |
 |---|---|
 | Q6 | **The death sequence has no GDD home.** Specified only here, exactly as `level_complete` is specified only in the architecture document (`systems-index.md` §"New requirement with no GDD home"). It needs an owner in `suit-oxygen.md` or elsewhere |
-| Q7 | **HUD behaviour while paused is undefined.** `suit-oxygen.md` §5 requires pausing to halt oxygen drain, but no pause menu exists (only `start_menu.tscn`). Whether E1 dims, holds, or is covered is unanswered |
-| Q8 | **AC9 and AC10 are the only HUD acceptance criteria, and both are advisory.** No BLOCKING criterion covers any element in this spec. Whether that is acceptable is a QA decision |
+| Q16 | **Where the HUD's tuning knobs live is undecided.** ADR-0006 D6.1 fixed the tuning set at three resources, none of them a HUD resource. Either a fourth `HudTuning` (needs an ADR-0006 amendment plus registry entries) or `@export` on the HUD scene nodes. **Assigned to the Presentation-tier ADR** — see Tuning Knobs § *Placement is not decided here* |
+
+### Resolved since the 2026-08-15 review
+
+| # | Question | Resolution |
+|---|---|---|
+| Q7 | HUD behaviour while paused | **Closed.** Dynamic Behaviors § *Paused state* — the HUD freezes, nothing hides or dims, and E3 suspends rather than draining. H14 is written against it |
+| Q8 | Whether advisory-only HUD criteria were acceptable | **Closed.** The Acceptance Criteria section now carries 18 BLOCKING criteria |
 
 ### Conflicts requiring resolution outside this spec
 
