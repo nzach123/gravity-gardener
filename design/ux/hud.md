@@ -2,14 +2,11 @@
 
 > **Status**: Complete draft — all 10 sections authored and approved. **Awaiting re-review.**
 > **Reviewed**: `/ux-review` 2026-08-15 — verdict **NEEDS REVISION**, 7 blocking findings.
-> **Six have since been closed**: Acceptance Criteria (H1–H27, 18 BLOCKING) · Tuning Knobs
+> **All seven are now closed**: Acceptance Criteria (H1–H27, 18 BLOCKING) · Tuning Knobs
 > with placement routed to the Presentation-tier ADR (Q16) · `tally_duration` = 1.2 s ·
 > the single Z2 slot and the E5→E4 suppression rule · the completed Z1/Z2 collision rule ·
-> the paused HUD state (Q7).
-> **One blocking finding remains open — Q9**, the `watering-system.md` §6 carry-indicator
-> divergence. It cannot be closed inside this file: it needs
-> `/propagate-design-change watering-system.md` **and** an edit to `systems-index.md:102`,
-> which still lists the carry indicator as a HUD deliverable.
+> the paused HUD state (Q7) · the carry-indicator divergence (Q9), ratified into
+> `watering-system.md` §6 and `systems-index.md:102` on 2026-08-15.
 > **Author**: user + ux-designer
 > **Last Updated**: 2026-08-15
 > **Template**: HUD Design
@@ -36,7 +33,7 @@ attached to the thing it describes.
 
 ### Two GDD requirements this philosophy has to answer to
 
-Neither is waived. Both are flagged here and resolved in later sections.
+Neither is waived. #1 is resolved in HUD Elements; #2 was resolved upstream, in the GDD.
 
 **1. `suit-oxygen.md` R7 — the oxygen readout must be *always visible*.** This is the
 one value that cannot be proximity-triggered: R7 exists so "the player must never be
@@ -45,12 +42,14 @@ gauge carried on the suit is diegetic and permanent at once — but **"adaptive"
 apply to its visibility.** Adaptive may still govern its *prominence* at the §4
 thresholds (0.50 / 0.25 / 0.10). Resolved in HUD Elements.
 
-**2. `watering-system.md` §6 assigns a carry indicator to the HUD.** Under a diegetic
+**2. `watering-system.md` §6 — carry state.** Under a diegetic
 stance the bucket is already in the player's hands, and AC14 requires the player read as
 "visibly slower and visibly burdened." The world already carries this information, so a
-screen-space indicator would be the least diegetic possible answer to it. **This spec
-proposes satisfying §6 diegetically rather than with a HUD element** — a departure from
-what that GDD says, recorded here rather than silently dropped.
+screen-space indicator would be the least diegetic possible answer to it. §6 originally
+assigned a carry indicator to the HUD, which made this spec's treatment a departure; that
+was resolved in the diegetic treatment's favour on 2026-08-15
+(`/propagate-design-change`, Q9), and §6 now states there is no carry indicator.
+**No longer a divergence.**
 
 ### Developer diagnostic overlay — a separate tier, not player-facing
 
@@ -832,12 +831,12 @@ Paused state section respectively.
 |---|---|---|
 | Q7 | HUD behaviour while paused | **Closed.** Dynamic Behaviors § *Paused state* — the HUD freezes, nothing hides or dims, and E3 suspends rather than draining. H14 is written against it |
 | Q8 | Whether advisory-only HUD criteria were acceptable | **Closed.** The Acceptance Criteria section now carries 18 BLOCKING criteria |
+| Q9 | `watering-system.md` §6 carry indicator vs. this spec's diegetic treatment | **Closed 2026-08-15 by `/propagate-design-change watering-system.md`.** Ratified, not reversed: §6's HUD row now states there is no carry indicator, and `systems-index.md:102` matches. 0 of the 5 ADRs referencing that GDD were affected — ADR-0002's `HUD ← LevelState` binding survives, because the HUD still reads `carrying_bucket` as an E2 precondition and owns the level tally |
 
 ### Conflicts requiring resolution outside this spec
 
 | # | Conflict |
 |---|---|
-| Q9 | **`watering-system.md` §6 assigns a carry indicator to the HUD; this spec satisfies it diegetically instead.** A genuine departure. Route through `/propagate-design-change` or reverse it — it must not remain a silent divergence |
 | Q10 | **`camera_moving` and `camera_rotation_enabled` are uncoupled** (`main.gd:8–9`). Blocks any reduced-motion option (Accessibility Finding 1) and lets a level invert the player's controls against a view that never turned. Architecture, not UX |
 | Q11 | **`drain_rate` composition.** E1 displays `oxygen_remaining / drain_rate`. ADR-0006 **D6.6** assigned the accessibility override to **ADR-0008** — that ADR must know the HUD reads the composed value, not the resource value |
 | Q12 | **Asset pack palette compliance unverified.** `src/assets/Simple-Platformer-Asset-Pack/` ships its own `5 GUI/Palette.png`. If it is not NES-palette, adopting the constraint means re-paletting existing art or scoping the rule to new work only |

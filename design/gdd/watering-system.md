@@ -4,6 +4,7 @@ source: /brainstorm session 2026-08-13
 depends-on: gravity.md
 date: 2026-08-13
 amended: 2026-08-14 — §5/§6 synced to ADR-0002 (LevelState owned by the level root; reset defect resolved structurally). No rule changed
+amended: 2026-08-15 — §6 HUD row: carry indicator resolved diegetically per design/ux/hud.md (Q9). No rule changed
 ---
 
 # Watering System — Design
@@ -271,7 +272,7 @@ ever taxes the return leg:
 | `LevelState` *(RefCounted, new)* | Owns `buckets_total`, `buckets_consumed`, `carrying_bucket`, and the derived `goal_unlocked`. Constructed per level by the level root and injected into consumers (ADR-0002). **Not** an autoload |
 | `GameManager` | **No longer holds watering state.** Retains cross-level concerns only (ADR-0002) |
 | `main.gd` / level root | Replaces `@export var bucket: Bucket` with a group lookup; constructs and injects `LevelState`; owns the tally and the R8 load-time validation |
-| HUD *(new scene)* | Carry indicator. The oxygen readout belongs to `suit-oxygen.md`, not here |
+| HUD *(new scene)* | **No carry indicator** — carry state is satisfied diegetically: the bucket in the player's hands and AC14's burdened read (`design/ux/hud.md`, 2026-08-15). The HUD still *reads* `carrying_bucket` as a precondition for the pour prompt, and owns the level tally (`buckets_consumed` / `buckets_total`, R6). The oxygen readout belongs to `suit-oxygen.md`, not here |
 
 ### Level design
 

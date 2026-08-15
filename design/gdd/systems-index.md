@@ -99,7 +99,7 @@ each one needs a document.
 
 | Requirement | Source | Note |
 |---|---|---|
-| HUD | `suit-oxygen.md` R7, `watering-system.md` §6 | Oxygen readout and carry indicator. **No HUD scene exists** |
+| HUD | `suit-oxygen.md` R7, `watering-system.md` §6, `design/ux/hud.md` | Oxygen readout, contextual watering prompts, and the level tally. **Carry state is diegetic — not a HUD element** (§6 amended 2026-08-15). **No HUD scene exists** |
 | Physics props | `physics-props.md` | No props exist in any level |
 | Bucket economy | `watering-system.md` | All 8 levels use the old one-bucket / many-plants model |
 | Oxygen budgets | `suit-oxygen.md` R6 | `O_level` not yet computed for any level |
