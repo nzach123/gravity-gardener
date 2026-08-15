@@ -1,12 +1,18 @@
 # HUD Design
 
-> **Status**: Complete draft — all 10 sections authored and approved. **Awaiting re-review.**
+> **Status**: Complete draft — all 10 sections authored and approved.
 > **Reviewed**: `/ux-review` 2026-08-15 — verdict **NEEDS REVISION**, 7 blocking findings.
-> **All seven are now closed**: Acceptance Criteria (H1–H27, 18 BLOCKING) · Tuning Knobs
+> **All seven are now closed**: Acceptance Criteria · Tuning Knobs
 > with placement routed to the Presentation-tier ADR (Q16) · `tally_duration` = 1.2 s ·
 > the single Z2 slot and the `E2/E3 → E5 → E4` priority order · the completed Z1/Z2 collision rule ·
 > the paused HUD state (Q7) · the carry-indicator divergence (Q9), ratified into
 > `watering-system.md` §6 and `systems-index.md:102` on 2026-08-15.
+> **Re-reviewed**: `/ux-review` 2026-08-15 — verdict **NEEDS REVISION**, 1 blocking finding
+> (Z1 occluding the play area), **now closed** by the Z1 occlusion rule, `z1_max_footprint`,
+> and H28/H29. The criteria set is now **H1–H29, 19 BLOCKING**. Five advisory findings remain
+> open: the stale carry-indicator entries in `architecture.md:108` and `TR-watering-017/018`
+> (both assigned to ADR-0010), E1's null / pre-injection state, no size cap on Z2 (**Q17**),
+> no character budget for E2's label, and no HUD frame-cost criterion.
 > **Author**: user + ux-designer
 > **Last Updated**: 2026-08-15
 > **Template**: HUD Design
@@ -187,7 +193,8 @@ Therefore **every element in this spec is specified in viewport space.** Positio
 **Z1 — Player-tracked readout** *(Must Show)*
 
 Oxygen gauge. Position: the player's projected viewport position, offset a fixed distance
-toward viewport-up. Rotation: always zero relative to the viewport.
+along **eased gravity-up (`up_dir`)**, projected into viewport space. Rotation: always zero
+relative to the viewport.
 
 - Never rotates with gravity or with the camera — satisfies R7 identically in both camera
   modes. This is the resolution of the R7 conflict flagged in HUD Philosophy.
@@ -268,6 +275,39 @@ and may overlap. **Z1 never yields** — R7 makes the oxygen readout non-negotia
 Magnitudes are knobs, not fixed values — see **Tuning Knobs**. The behaviours above are
 the part that had to be specified here; the pixel figures are playtest targets.
 
+### Z1 occlusion rule
+
+Z1 is permanent and sits adjacent to the player, so it necessarily covers world. R7 forbids
+the usual remedy — hiding it — so occlusion is bounded by *placement* and *size* instead.
+
+**Placement: the offset follows gravity-up, not viewport-up.** The player's sustained travel
+direction is gravity-down; falling is how hazards are reached and how the player dies.
+Offsetting along `up_dir` puts the gauge opposite the fall path in every gravity basis.
+
+| Camera mode | Effect |
+|---|---|
+| Follow + rotate (`level_01`, `level_07`) | **No change.** The camera basis already equals the gravity basis, so viewport-up and gravity-up coincide. H1 is unaffected |
+| Static (`level_02`–`06`, `08`) | Under inverted or rotated gravity the gauge moves to the opposite side of the player — off the direction the player is falling |
+
+`up_dir` is already eased at `direction_ease_rate` (`gravity.md` R3), so the gauge arcs around
+the player in step with the sprite and the control basis. No new duration, no new knob, and no
+flicker: `lerp_angle` easing is continuous and gravity changes are discrete zone events, not
+per-frame noise. On a 180° flip the gauge sweeps through the horizontal, passing briefly
+beside the player — matching the sprite's own sweep.
+
+**Size: the footprint is capped.** Z1's rendered extent — bar, outline, and numerals at their
+largest, i.e. any band at or below caution — must not exceed `z1_max_footprint`.
+
+**Opacity is deliberately not used.** Fading the backing plate over busy terrain was
+considered and **declined**: the plate is what H22's contrast figures rest on, so reducing it
+trades a legibility problem for a legibility problem.
+
+**This rule covers Z1 only.** Z2 still offsets toward viewport-up from its owning object, so a
+plant mounted on a ceiling under inverted gravity would render its prompt into the geometry.
+The remedy may be this same one line — but Z2's anchor arguably belongs to the object's
+mounting surface rather than to gravity, which is a different question and not one Z1's
+reasoning settles. Logged as **Q17**.
+
 ---
 
 ## HUD Elements
@@ -280,7 +320,7 @@ Seven elements. E1 is the only permanent one; E3 lives inside E2; E7 is dev-only
 |---|---|
 | Zone / category | Z1 · **Must Show** |
 | Content | `oxygen_fraction` as bar length; `oxygen_remaining` in seconds as numerals **only when `oxygen_fraction <= 0.50`** |
-| Form | Horizontal bar, viewport-upright, offset above the player's projected position |
+| Form | Horizontal bar, viewport-upright, offset **along gravity-up** from the player's projected position |
 | Update | Real-time, per frame, from `OxygenState` |
 | Trigger | Always — R7 |
 | Data | `OxygenState.remaining` / `.capacity`; thresholds from `OxygenTuning` |
@@ -688,7 +728,8 @@ Values this spec introduces that a designer should be able to change without edi
 |---|---|---|---|
 | `death_hold_duration` | 0.35 s *(playtest target)* | 0.2 – 1.0 s | E6. How long the frame of death holds before restart. Past ~1.0 s it fights a loop built on repeated attempts |
 | `tally_duration` | **1.2 s** | 0.6 – 1.5 s | E5. **The ceiling is structural, not feel** — above ~1.5 s consecutive tallies can overlap and E5 needs a queue rule it deliberately does not have |
-| `z1_offset` | 24 px *(playtest target)* | 12 – 64 px | Z1. Viewport-pixel distance from the player's projected position toward viewport-up. Too small and E1 overlaps the sprite; too large and it leaves the region the player is actually watching |
+| `z1_offset` | 24 px *(playtest target)* | 12 – 64 px | Z1. Viewport-pixel distance from the player's projected position **along eased gravity-up**. Too small and E1 overlaps the sprite; too large and it leaves the region the player is actually watching |
+| `z1_max_footprint` | 96 × 24 px *(playtest target)* | 64×16 – 160×40 px | Z1 occlusion rule. The permanent element's maximum rendered extent. Past ~160 px wide it covers a meaningful share of the frame in every level |
 | `z2_offset` | 24 px *(playtest target)* | 12 – 64 px | Z2. The same measurement, taken from the owning object |
 | `z2_displacement` | 48 px *(playtest target)* | 24 – 96 px | Z1/Z2 collision rule. Too small and the boxes still intersect after displacing, which defeats the rule |
 | `z2_release_hysteresis` | 8 px *(playtest target)* | 4 – 24 px | Z1/Z2 collision rule. Below ~4 px the displacement flickers when the player stands at the intersection boundary |
@@ -748,6 +789,8 @@ them — a second copy of a threshold is a divergence waiting to happen.
 | H3 | When E1 and E2 are both visible, no part of either overlaps the other; the displacement does not flicker while the player stands at the intersection boundary; and when the player is against a viewport edge, E1 stays fully inside it and E2 displaces toward the player rather than off screen | Z1/Z2 collision rule | UI — ADVISORY |
 | H4 | No more than two player-facing elements render simultaneously — in every state in the Density profile, in the overlapping-interact-area case of `watering-system.md` §5, **on the frame a `buckets_required = 1` plant fills while the player remains in its interact area** (E5 must suppress E4), **and when a pour is resumed on a `buckets_required` ≥ 2 plant while the tally is still showing** (E5 must dismiss, and E3's fill must remain visible throughout) | Visual budget, single Z2 slot, priority order | Integration — BLOCKING |
 | H5 | A release export contains no E7: F3 produces no overlay and no input action is registered for it | E7, Platform variants | Integration — BLOCKING |
+| H28 | E1's offset from the player follows eased gravity-up: with gravity inverted, E1 renders on the opposite side of the player from where it renders under default gravity, in every static-camera level. During the transition it arcs continuously around the player with no snap, jump, or flicker. In `level_01` and `level_07` the behaviour is visually unchanged from viewport-up offsetting | Z1 occlusion rule | Integration — BLOCKING |
+| H29 | E1's rendered extent, including outline and numerals in the critical band, stays within `z1_max_footprint` at every supported aspect ratio | Z1 occlusion rule | UI — ADVISORY |
 
 ### Per-context correctness
 
@@ -797,12 +840,13 @@ them — a second copy of a threshold is a divergence waiting to happen.
 
 ### Answer to Q8
 
-**Eighteen** of the criteria above are BLOCKING. Q8 asked whether it was acceptable
+**Nineteen** of the criteria above are BLOCKING. Q8 asked whether it was acceptable
 that AC9 and AC10 — both advisory — were the only HUD acceptance criteria. This
 section supersedes that state. **Q8 is closed.**
 
 > The count rose from seventeen to eighteen when **H14** was written against the
-> paused-state rules. No criterion was removed.
+> paused-state rules, and to nineteen when **H28** was written against the Z1 occlusion
+> rule. No criterion was removed.
 
 ### Criteria still blocked
 
@@ -839,7 +883,7 @@ Paused state section respectively.
 | # | Question | Resolution |
 |---|---|---|
 | Q7 | HUD behaviour while paused | **Closed.** Dynamic Behaviors § *Paused state* — the HUD freezes, nothing hides or dims, and E3 suspends rather than draining. H14 is written against it |
-| Q8 | Whether advisory-only HUD criteria were acceptable | **Closed.** The Acceptance Criteria section now carries 18 BLOCKING criteria |
+| Q8 | Whether advisory-only HUD criteria were acceptable | **Closed.** The Acceptance Criteria section now carries 19 BLOCKING criteria |
 | Q9 | `watering-system.md` §6 carry indicator vs. this spec's diegetic treatment | **Closed 2026-08-15 by `/propagate-design-change watering-system.md`.** Ratified, not reversed: §6's HUD row now states there is no carry indicator, and `systems-index.md:102` matches. 0 of the 5 ADRs referencing that GDD were affected — ADR-0002's `HUD ← LevelState` binding survives, because the HUD still reads `carrying_bucket` as an E2 precondition and owns the level tally |
 
 ### Conflicts requiring resolution outside this spec
@@ -857,3 +901,4 @@ Paused state section respectively.
 |---|---|
 | Q14 | **How E7 is stripped at export is unspecified.** A build-configuration decision (feature tags, conditional instancing) that this spec states as a requirement without prescribing a mechanism |
 | Q15 | **BUG-0001 blocks E6 verification.** Kill planes never fire in `level_05` and `level_06`, so the death sequence cannot be tested against them until the mask is fixed |
+| Q17 | **Z2's offset direction under non-default gravity is unspecified.** The Z1 occlusion rule keyed Z1 to eased gravity-up; Z2 still offsets toward viewport-up, so a ceiling-mounted plant under inverted gravity renders its prompt into the geometry. Deferred deliberately: Z2 tracks static level objects, so its anchor may belong to the mounting surface rather than to gravity — Z1's fall-path reasoning does not decide it. Needs a decision before ADR-0010 |

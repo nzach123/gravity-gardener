@@ -4,7 +4,7 @@
 
 - Version: 1.0
 - Last Updated: 2026-08-13
-- Engine: Godot 4.7 (GL Compatibility, 2D)
+- Engine: Godot 4.7.1 (GL Compatibility, 2D)
 - GDDs Covered: `gravity.md`, `watering-system.md`, `suit-oxygen.md`, `physics-props.md`
 - Technical Requirements Baseline: 52 requirements (TR-gravity / TR-watering / TR-oxygen / TR-props)
 - ADRs Referenced: none exist — 12 required, see Required ADRs
@@ -80,7 +80,7 @@ that would otherwise have shaped level design.
 │                LevelValidation* · Tuning Resources* ·              │
 │                CollisionLayerRegistry                              │
 ├────────────────────────────────────────────────────────────────────┤
-│ PLATFORM       Godot 4.7 · GL Compatibility · 2D physics server ·  │
+│ PLATFORM       Godot 4.7.1 · GL Compatibility · 2D physics server  │
 │                Input map (A/D · Space · E · Shift)                 │
 └────────────────────────────────────────────────────────────────────┘
                                             * = does not exist yet
@@ -510,16 +510,32 @@ class_name LevelState extends RefCounted
 
 signal goal_unlocked_changed(unlocked: bool)
 
-var buckets_total: int
-var buckets_consumed: int
-var carrying_bucket: bool
-var goal_unlocked: bool      # derived, read-only
-var level_complete: bool     # D5 — write-once; suppresses every death path
+var _buckets_total: int
+var _buckets_consumed: int
+var _goal_unlocked: bool
+var _level_complete: bool
+
+var buckets_total: int:
+    get: return _buckets_total      # seeded at construction; never written again
+var buckets_consumed: int:
+    get: return _buckets_consumed   # written only by consume_bucket()
+var goal_unlocked: bool:
+    get: return _goal_unlocked      # derived
+var level_complete: bool:
+    get: return _level_complete     # D5 — write-once; suppresses every death path
+
+var carrying_bucket: bool           # genuinely read-write
 
 func _init(buckets_total: int) -> void
 func consume_bucket() -> void
 func mark_complete() -> void    # ADR-0005 — sole writer is LevelRoot; no un-set
 ```
+
+> **Read-only means getter-only.** Every derived or externally-immutable value is a
+> getter-only computed property over a private backing field, never a plain `var`. A
+> plain `var` in GDScript is a public field with an implicit setter, so
+> `level_state.goal_unlocked = true` would compile and succeed silently from any
+> script. *(ADR-0002 — engine specialist review A2-01.)*
 
 **Callers must:** pass `buckets_total` at construction (immutable thereafter); call
 `consume_bucket()` only on a completed pour; call `mark_complete()` only from
@@ -538,13 +554,26 @@ enum Band { NOMINAL, CAUTION, WARNING, CRITICAL }
 signal depleted
 signal threshold_changed(band: Band)
 
-var capacity: float
-var remaining: float
-var fraction: float
+var _capacity: float
+var _remaining: float
+var _band: Band
+
+var capacity: float:
+    get: return _capacity               # immutable after construction
+var remaining: float:
+    get: return _remaining              # monotonically decreasing; no setter
+var fraction: float:
+    get: return _remaining / _capacity  # derived
+var band: Band:
+    get: return _band
 
 func _init(capacity: float, tuning: OxygenTuning) -> void
 func drain(delta: float) -> void
 ```
+
+> Same getter-only rule as `LevelState`. This is what makes oxygen AC3 ("no game
+> action increases oxygen") a property of the type — `remaining` has no setter to
+> call — rather than a rule policed in review. *(ADR-0002, A2-01.)*
 
 **Callers must:** pass `capacity > 0` at construction — an invalid `OxygenState` is
 not constructible, so oxygen AC7's runtime failure mode is unreachable
@@ -679,7 +708,8 @@ which case no interaction engages and no progress accumulates (watering §5).
 
 ```gdscript
 class_name PropBody extends RigidBody2D
-# collision_layer = PROP(4) ; collision_mask = WORLD(1) | PROP(4)
+# collision_layer = 8  (PROP)          — ADR-0004 D4.1
+# collision_mask  = 9  (WORLD | PROP)  — ADR-0004 D4.3
 ```
 
 **Callers must never:** add the `player` or `item` bits to the mask. Props AC1

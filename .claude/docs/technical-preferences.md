@@ -5,7 +5,7 @@
 
 ## Engine & Language
 
-- **Engine**: Godot 4.7
+- **Engine**: Godot 4.7.1
 - **Language**: GDScript
 - **Rendering**: GL Compatibility
 - **Physics**: Jolt Physics

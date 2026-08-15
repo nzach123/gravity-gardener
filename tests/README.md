@@ -1,6 +1,6 @@
 # Test Infrastructure
 
-**Engine**: Godot 4.7 (GL Compatibility)
+**Engine**: Godot 4.7.1 (GL Compatibility)
 **Test Framework**: GdUnit4 6.2.1
 **CI**: `.github/workflows/tests.yml`
 **Setup date**: 2026-08-13

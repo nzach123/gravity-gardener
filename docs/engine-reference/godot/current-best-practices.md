@@ -1,6 +1,6 @@
-# Godot — Current Best Practices (4.5–4.7)
+# Godot — Current Best Practices (4.5–4.7.1)
 
-Last verified: 2026-08-13
+Last verified: 2026-08-15
 
 ## Architecture & Code Organization
 
@@ -30,6 +30,25 @@ Last verified: 2026-08-13
 - **HDR output** (4.7): Desktop platforms support HDR. Configure in project settings
   if targeting HDR displays.
 
+## UI / Control (4.7+)
+
+- **`Control.offset_transform_*`**: Use these to slide, rotate, or scale a Control for
+  juice and transitions. Containers apply their own transform to children and discard
+  child transform changes whenever they re-sort (on add, remove, or reorder) — the
+  offset transform survives that, the way a CSS `transform` does. This replaces the
+  pre-4.7 workarounds of wrapping the Control in a spacer node or re-applying the
+  transform after every sort.
+- **`offset_transform_enabled` defaults to `false`** — setting `offset_transform_position`
+  alone is a silent no-op. The scene (or code) must enable it. This project relies on it:
+  `src/scripts/gravity_zone.gd:42` writes `offset_transform_position`, and it only works
+  because `gravity_zone.tscn:38` sets `offset_transform_enabled = true`. Verified 2026-08-13.
+- **`offset_transform_visual_only` defaults to `true`** — mouse input hits the *un-offset*
+  rect. Harmless for a read-only HUD; a real trap for an animated pause menu, where a
+  moved button stays clickable at its original position. Set it `false` when input must
+  follow the transform.
+- **`RichTextLabel` images**: pass `width_unit`/`height_unit` with `RichTextLabel.ImageUnit`.
+  The old `width_in_percent`/`height_in_percent` booleans are gone (4.7).
+
 ## Editor Workflow (4.6+)
 
 - **"Modern" editor theme**: Improved readability. Use as the default.
@@ -48,6 +67,17 @@ Last verified: 2026-08-13
   var speed: float = 200.0
   func get_direction() -> Vector2:
   ```
+- **Overrides need an explicit `return`** (4.7): An override inherits the return type of
+  the method it overrides, so a body that used to fall off the end is now an error:
+  ```gdscript
+  # Base declares:  func get_target() -> Node2D:
+  func get_target():        # inherits -> Node2D in 4.7
+      if not _has_target:
+          return null       # required — implicit fallthrough no longer compiles
+      return _target
+  ```
+  This matters more than it looks: gdUnit4 treats GDScript warnings as errors during
+  test discovery, so one missing `return` fails the entire suite at compile time.
 - **@export annotations**: Prefer `@export` over `export` (Godot 4 syntax).
 - **Signal syntax**: Use `signal_name.emit()` not `emit_signal("signal_name")`.
 - **Type hints on signals**: `signal health_changed(new_health: int)`.
