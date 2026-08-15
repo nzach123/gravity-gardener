@@ -17,7 +17,7 @@ Proposed
 | **Knowledge Risk** | **LOW** for this domain. `VERSION.md` rates the 4.7 project HIGH overall, but `modules/physics-2d.md` (verified 2026-08-13) states the 2D physics engine is unchanged 4.4 → 4.7 and instructs that 2D decisions be treated as settled. |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `docs/engine-reference/godot/modules/physics-2d.md` · `docs/engine-reference/godot/breaking-changes.md` · `docs/engine-reference/godot/deprecated-apis.md` |
 | **Post-Cutoff APIs Used** | **None.** `PhysicsServer2D.area_set_param`, `RigidBody2D.sleeping`, `lerp_angle`, and autoload registration all predate 4.4 and are unchanged through 4.7. `CollisionShape2D.one_way_collision_direction` is new in 4.7 and is deliberately **not** used by this decision. |
-| **Verification Required** | 1. Exact enum spelling of `PhysicsServer2D.AREA_PARAM_GRAVITY_VECTOR` / `AREA_PARAM_GRAVITY` — confirm at implementation, not at decision time. 2. Confirm a default-space gravity write reaches every `RigidBody2D` on the same physics frame. 3. Confirm a sleeping `RigidBody2D` still requires an explicit wake after a space-gravity change (this is the assumption `physics-props.md` R5 rests on). |
+| **Verification Required** | **Items 1 and 3 resolved 2026-08-14** by engine specialist review — see `architecture-review-2026-08-14.md` §R1 and A1-02. `AREA_PARAM_GRAVITY = 1` / `AREA_PARAM_GRAVITY_VECTOR = 2` spellings confirmed, and `World2D.space` is documented as deliberately dual-registered as both space and area, making the part-4 snippet the officially sanctioned pattern. A sleeping `RigidBody2D` does require an explicit wake; `prop.sleeping = false` is the call. **Item 2 remains**, narrowed: the same-frame guarantee holds only if the write happens in `_physics_process` (part 4a) — confirm during implementation that a default-space write made there reaches every `RigidBody2D` in that step. |
 
 Jolt is explicitly out of scope. `project.godot` sets `3d/physics_engine="Jolt Physics"`,
 but this is a 2D game and the setting is inert. No part of this decision may be
@@ -146,11 +146,28 @@ one to itself.
 authority therefore rewrites both space params every physics frame while
 `gravity != target_gravity`, and idles once the ease completes.
 
+The write **must happen in `_physics_process`, never `_process`.** `_physics_process`
+is called before every physics step, so the write lands before the step that
+integrates it and AC12's same-frame guarantee holds. `_process` runs once per
+rendered frame and is decoupled from the fixed-timestep loop — relative to a given
+physics step it may run zero, one or several times, so a write there has no defined
+phase relationship to integration and AC12 would hold only by accident. ADR-0005
+later assigns this node `process_physics_priority = -100`, which presupposes
+`_physics_process`; the requirement originates here, with the guarantee that depends
+on it. *(Added 2026-08-14 — engine specialist review A1-01.)*
+
 **4b — Registered props are woken while the vector is moving.** Space gravity does
-**not** wake a sleeping body. `GravityAuthority` owns a prop registry
+**not** wake a sleeping body — a sleeping `RigidBody2D` wakes only via collision,
+`apply_impulse()` or `apply_force()`. `GravityAuthority` owns a prop registry
 (`register_prop` / `unregister_prop`) and force-wakes every registered prop on each
 frame the vector changes — not only on the frame the zone fires, since a prop can
-settle part-way through the ease. This is the single most likely implementation bug
+settle part-way through the ease.
+
+The wake call is **`prop.sleeping = false`**. Neither `apply_impulse()` nor
+`apply_force()` may be used for this purpose: both do wake a body, but by adding
+momentum, which is a visible nudge rather than a silent wake. (`can_sleep = false`
+on an individual prop is a valid escape hatch — the wake loop is then a harmless
+no-op for that prop.) *(Clarified 2026-08-14 — engine specialist review A1-02.)* This is the single most likely implementation bug
 in the game (`physics-props.md` R5, AC3), and it is the authority's job, not each
 prop's. `unregister_prop()` is mandatory: `physics-props.md` R7 frees out-of-bounds
 props, so without it the registry accumulates freed references and the wake loop
@@ -163,9 +180,15 @@ R7 freeing and scene reload.
 **not** deferred to the props epic. Left in place, they would give props
 *per-region* gravity straight from the physics server, contradicting `gravity.md`
 R2/R9 ("no per-body or per-region gravity") and breaking AC12. It would present as
-props behaving correctly only while inside a zone's bounds — a hard bug to read.
-The change is behaviourally neutral today, which is exactly why it is cheap to do
-now and expensive to do later.
+props behaving correctly only *outside* a zone's bounds, and pinned to a stale
+straight-down vector while inside one — a hard bug to read. (`gravity_space_override
+= 3` is `SPACE_OVERRIDE_REPLACE`, which replaces gravity outright, "even the
+defaults"; since the authority writes only the *default* space and never each
+zone's own area RID, a prop inside an un-cleared zone is stuck on that zone's
+never-updated `-980.0` regardless of any later flip.) The change is behaviourally
+neutral today, which is exactly why it is cheap to do now and expensive to do
+later. *(Symptom description corrected 2026-08-14 — engine specialist review
+A1-04; it was previously stated inverted.)*
 
 **6 — Levels declare a default gravity; restart restores it.** An autoload survives
 `reload_current_scene()`, so without this the player would restart a level carrying
@@ -291,6 +314,13 @@ pass `multiplier > 0` and a non-zero direction; call `unregister_prop()` from
 A bare script autoload gives `@export var direction_ease_rate` no inspector
 surface, which would make the export decorative and leave the value effectively
 hardcoded — the exact defect the export exists to fix.
+
+**Do not declare `class_name GravityAuthority` on `gravity_authority.gd`.** The
+script is reached only through the autoload singleton name; declaring both creates
+two competing global identifiers of the same name. This follows the existing
+`gamemanager.gd` precedent, which correctly has no `class_name` — but note the
+habit runs the other way, since 13 of the 14 other scripts in `src/scripts/` do
+declare one. *(Added 2026-08-14 — engine specialist review A1-03.)*
 
 `PlayerGravityComponent` retains: `initialize(max_speed)`, `apply_gravity()`,
 `jump_velocity`, and the derived basis. It loses: `gravity`, `target_gravity`,

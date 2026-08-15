@@ -16,8 +16,8 @@ Proposed
 | **Domain** | Core (SceneTree / frame lifecycle), Physics-2D adjacent |
 | **Knowledge Risk** | **LOW for this ADR.** `VERSION.md` rates the project HIGH overall, but `modules/physics-2d.md` certifies 2D physics and its callback model unchanged 4.4 → 4.7, and node process ordering is 4.x-stable. The two APIs this ADR depends on were verified against the live 4.7 class reference on 2026-08-14 (see below). |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `docs/engine-reference/godot/modules/physics-2d.md`, `docs/engine-reference/godot/breaking-changes.md`, `docs/engine-reference/godot/deprecated-apis.md` |
-| **Post-Cutoff APIs Used** | None. `Node.process_physics_priority` and `Area2D.body_entered` both predate the training cutoff. |
-| **Verification Required** | None outstanding. Both load-bearing facts were verified on 2026-08-14 — see *Engine facts this decision rests on*. |
+| **Post-Cutoff APIs Used** | None. `Node.process_physics_priority` was introduced in **4.1** (verified against engine source 2026-08-14 — absent in 4.0-stable, present in 4.1-stable); `Area2D.body_entered` is far older. Both predate the training cutoff. |
+| **Verification Required** | None outstanding. F1 and F2 were verified 2026-08-14 and **independently re-verified** in the engine specialist review the same day, which additionally resolved F2's open corollary and established F3 (global process-group ordering). See *Engine facts this decision rests on* and `architecture-review-2026-08-14.md`. Note the review found the inter-area `body_entered` delivery order to be genuinely undetermined — that gap is closed by design in D5.4 rather than by verification. |
 
 ### Engine facts this decision rests on
 
@@ -52,14 +52,49 @@ by the physics step that runs after the batch.
 
 - <https://docs.godotengine.org/en/stable/classes/class_area2d.html>
 
-**F2 corollary — this decision is immune to the one phase question left open.**
-Whether `body_entered` is emitted at the tail of step N or when physics queries are
-flushed at the head of frame N+1 could not be settled from the class reference
-alone (it is engine-internal ordering, not documented API). It does not matter.
-Under **both** readings the signal arrives strictly after frame N's `+100` callback
-and strictly before frame N+1's. The armed-death design in this ADR depends only on
-that ordering, which both readings satisfy. No implementation-time verification is
-therefore owed.
+**F2 corollary — RESOLVED 2026-08-14.** This originally hedged between two readings
+of when `body_entered` is emitted — tail of step N, or head of frame N+1 — and
+argued the choice did not matter. The engine specialist review settled it, and the
+answer is a third and stronger reading than either. `Main::iteration()` runs, per
+physics substep:
+
+```
+PhysicsServer2D::sync()
+PhysicsServer2D::flush_queries()   ← body_entered fires here
+SceneTree::physics_process()       ← all _physics_process, priority-ordered
+PhysicsServer2D::end_sync()
+PhysicsServer2D::step()            ← overlaps computed here
+```
+
+`flush_queries()` fires signals from pairs computed by the *previous* substep's
+`step()`. So an overlap caused by frame N's `move_and_slide()` is computed by frame
+N's `step()` — which runs after every node's `_physics_process`, including
+`OxygenDrain` at `+100` — and the resulting `body_entered` is delivered at the very
+**start** of frame N+1, before *any* node's `_physics_process` that frame, not
+merely before `OxygenDrain`'s. D5.2's diagram is correct, and the armed-death design
+rests on firmer ground than the two-readings hedge could show.
+
+- `main/main.cpp` — `Main::iteration()` loop body
+
+**F3 — `process_physics_priority` ordering is a single global sort, not per-parent.**
+Verified 2026-08-14. Physics-processing nodes are held in one flat vector per
+process group, sorted by a global priority comparator with a scene-tree-position
+tiebreak. Autoloads — direct children of the SceneTree root — and ordinary scene
+descendants share the single `default_process_group`. There is no per-parent
+partitioning and no separately-scheduled autoload branch.
+
+This is what licenses the `-100` row: `GravityAuthority` is an autoload living in a
+different branch of the tree from the scene nodes it must precede, and had ordering
+been scoped per-parent the priority table would have ordered nothing — reproducing
+the exact class of defect F1 exists to correct. The guarantee is conditional on no
+node in the chain setting `process_thread_group` away from default; see Risks.
+
+`Node.process_physics_priority` was introduced in **4.1** (absent in 4.0-stable,
+present in 4.1-stable), which is what makes this ADR's "Post-Cutoff APIs Used: None"
+claim correct rather than merely plausible.
+
+- `scene/main/scene_tree.cpp` — `_process_group()`, `default_process_group`
+- `scene/main/node.h`
 
 ## ADR Dependencies
 
@@ -95,12 +130,12 @@ unimplementable as written, and this ADR exists to resolve all three:
    effect.
 2. **An impossible row.** D5 places `Goal._physics_process` at `+50` resolving
    airlock entry between the player's movement at `0` and the death check at
-   `+100`. `goal.gd:34` resolves entry through `Area2D.body_entered`, and by F2 no
+   `+100`. `goal.gd:15` resolves entry through `Area2D.body_entered`, and by F2 no
    overlap-based mechanism can observe an entry caused by movement earlier in the
    same batch. On the exact frame AC8 describes, `OxygenDrain` at `+100` would run
    with `level_complete` still false and kill the player. **D5 as written fails
    AC8** — the criterion it was drafted to satisfy.
-3. **Two clocks.** `plant.gd:31` accumulates `water_progress` in `_process`, the
+3. **Two clocks.** `plant.gd:34` accumulates `water_progress` in `_process`, the
    render frame, while oxygen drains in `_physics_process`. "The same frame" in
    AC13 is not a defined concept across two clocks running at unrelated rates.
 
@@ -117,7 +152,7 @@ unimplementable as written, and this ADR exists to resolve all three:
 - `suit-oxygen.md` R3 and AC2 require oxygen death to be **indistinguishable** from
   spike and kill-area death. Any guard that protects only the oxygen path leaves
   the other two paths behaving differently on the completion frame.
-- `main.gd:60` already routes restart through `call_deferred("reload_current_scene")`,
+- `main.gd:62` already routes restart through `call_deferred("reload_current_scene")`,
   and `change_level()` through `change_scene_to_packed()`. Both take effect at the
   end of the current frame, not instantly — so there is a live window between
   "the level was won" and "the scene actually changed".
@@ -214,6 +249,21 @@ oversight: ADR-0002 assigns the oxygen kill *decision* to `OxygenDrain`, and the
 chokepoint is a backstop for every path, including ones added later by an author
 who never reads this ADR.
 
+**The latch alone is not sufficient — a `_transition_pending` guard is also
+required.** *(Added 2026-08-14 — engine specialist review A5-02.)* `body_entered`
+for *different* `Area2D` nodes delivered in the same `flush_queries()` batch is not
+ordered by `process_physics_priority` — that property governs `_physics_process`
+dispatch, not signal-callback dispatch during query flush — and no deterministic
+inter-area delivery order could be established from documentation or source. If
+level geometry ever lets the player enter a goal trigger and a hazard trigger within
+one physics tick, and the hazard handler happens to run first, `restart_level()`
+queues a reload while `level_complete` is still `false`; the goal handler then
+latches completion and queues a scene change, leaving both pending for the same
+frame. Guarding on `level_complete` alone cannot close this, because the order in
+which the two handlers run is the very thing in question. An idempotent
+transition latch checked and set by *both* paths closes it regardless of order —
+see Key Interfaces.
+
 ### D5.5 — Load-bearing gameplay timing moves to `_physics_process`
 
 `plant.gd`'s `water_progress` accumulation migrates from `_process` to
@@ -224,6 +274,22 @@ clocks with no fixed relationship.
 
 Cosmetic work — camera follow, sprite placement, animation — legitimately stays in
 `_process`. The line is whether a rule reads the value.
+
+**What moves, exactly.** *(Enumerated 2026-08-14 — engine specialist review A5-04.)*
+In the current `plant.gd` the accumulation is entangled in one conditional structure
+with the interact polling, the completion check, and the animation calls. Moving
+only the `+=` line would leave completion detection on the idle clock, reading a
+value physics wrote with no defined phase relationship — reproducing the two-clocks
+defect named in Context problem #3 while appearing to have fixed it. All four of the
+following move to `_physics_process` together:
+
+- `Input.is_action_pressed("interact")` / `is_action_just_released` polling
+- `water_progress += delta`
+- the `water_progress >= water_duration` completion check
+- the `_complete_watering()` and `_reset_watering()` calls
+
+Only `animated_sprite_2d.speed_scale` and `.play(…)` stay in `_process`, reading
+state that `_physics_process` has already written.
 
 ### Architecture Diagram
 
@@ -258,27 +324,42 @@ Cosmetic work — camera follow, sprite placement, animation — legitimately st
 
 ```gdscript
 # LevelState — extends the ADR-0002 contract
-var level_complete: bool = false        # read-only to everything but mark_complete()
+var _level_complete: bool = false
+var level_complete: bool:
+    get: return _level_complete         # getter-only: no external writer exists
+                                        # (ADR-0002 A2-01 — a plain var would not
+                                        #  enforce this)
 
 func mark_complete() -> void:
     # Write-once. No un-set, no reset — restart is reconstruction (ADR-0002).
     # Idempotent: a second call is a no-op, not an error.
-    level_complete = true
+    _level_complete = true
+
+
+# FramePriority — const-only script. The single source of the ordering contract.
+# NOT on LevelRoot: GravityAuthority is an autoload present before any level scene
+# loads, and must not source a constant from a per-level scene script. (A5-05.)
+class_name FramePriority
+const GRAVITY : int = -100
+const PLAYER  : int = 0
+const OXYGEN  : int = +100
 
 
 # LevelRoot — sole writer of the latch, sole owner of the death chokepoint
-const PRIORITY_GRAVITY  : int = -100
-const PRIORITY_PLAYER   : int = 0
-const PRIORITY_OXYGEN   : int = +100
+var _transition_pending: bool = false   # D5.4 — order-independent guard
 
 func _on_player_reached_goal() -> void:
     # Ordered explicitly. Signal connection order is NOT a contract (D5.3).
+    if _transition_pending:
+        return
+    _transition_pending = true
     level_state.mark_complete()
     change_level()
 
 func restart_level() -> void:
-    if level_state.level_complete:
+    if level_state.level_complete or _transition_pending:
         return                          # D5.4 — completion already won this frame
+    _transition_pending = true
     get_tree().call_deferred("reload_current_scene")
 
 
@@ -422,6 +503,17 @@ checks exactly as ADR-0002 requires.**
   that knows the player arrived. *Mitigation*: registered forbidden pattern
   `level_complete_written_outside_level_root`; `mark_complete()` on `LevelRoot`'s
   handler is the only sanctioned path.
+- **A node in the ordering chain sets `process_thread_group` away from default.**
+  The global sort guaranteed by F3 is scoped to the default process group;
+  `process_thread_group` (`SUB_THREAD` / `MAIN_THREAD`) moves a node and its subtree
+  into a separately-scheduled group with an independent priority sort. Nothing sets
+  it today, so there is no live bug — but a future author enabling multithreaded
+  processing on `Player`, `OxygenDrain` or `GravityAuthority`, plausibly while
+  chasing a performance win, would silently detach that node from the `-100`/`0`/
+  `+100` contract. No compile error, no symptom until a frame-perfect AC8 or AC13
+  case fails. *Mitigation*: registered forbidden pattern
+  `process_thread_group_split_in_frame_chain`. *(Added 2026-08-14 — engine
+  specialist review A5-01.)*
 - **The single-frame window in which the player is alive at zero oxygen.** No
   current mechanic can exploit 16.6 ms. *Mitigation*: noted, not defended against;
   revisit only if a mechanic ever grants meaningful action inside one frame.
@@ -452,26 +544,37 @@ checks exactly as ADR-0002 requires.**
 
 ## Migration Plan
 
-1. `LevelState` — add `level_complete: bool` and `mark_complete()`. No setter, no
-   clear, no `reset()` (ADR-0002).
+0. **New** `FramePriority` — a const-only script holding `GRAVITY` / `PLAYER` /
+   `OXYGEN`. Not on `LevelRoot` (A5-05).
+1. `LevelState` — add `_level_complete` with a getter-only `level_complete`
+   property and `mark_complete()`. No setter, no clear, no `reset()` (ADR-0002).
 2. `LevelRoot` (`main.gd`) — replace the two `player_reached_goal` connections at
    `main.gd:16-18` with the single ordered handler `_on_player_reached_goal()`.
-   Keep `player.win_level()` wired; order it after `mark_complete()`.
-3. `LevelRoot.restart_level()` — add the `level_complete` early return
-   (`main.gd:58`). Leave the existing `call_deferred("reload_current_scene")` as
-   is; delete the `GameManager.reset_level_state()` call per ADR-0002.
+   Keep `player.win_level()` wired; order it after `mark_complete()`. Add the
+   `_transition_pending` field (D5.4).
+3. `LevelRoot.restart_level()` (`main.gd:59`) — add the
+   `level_complete or _transition_pending` early return. Leave the existing
+   `call_deferred("reload_current_scene")` (`main.gd:62`) as is; delete the
+   `GameManager.reset_level_state()` call per ADR-0002.
 4. `OxygenDrain` (new node, ADR-0002) — implement `_physics_process` in the exact
    order given in *Key Interfaces*: freeze check, armed check, drain, arm. Comment
    the deferral with a pointer to this ADR and to AC8.
 5. `GravityAuthority`, `Player`, `OxygenDrain` — assign `process_physics_priority`
-   in `_ready()` from the `LevelRoot` constants. **Not** `process_priority` (F1).
-6. `plant.gd` — move the `water_progress` accumulation block from `_process` to
-   `_physics_process` (D5.5). Animation and sprite work stay in `_process`.
-   Note that `plant.gd:73-79`'s `GameManager` write is removed separately by
+   in `_ready()` from the `FramePriority` constants. **Not** `process_priority` (F1),
+   and do not set `process_thread_group` on any of the three (F3, Risks).
+6. `plant.gd` — move interact polling, the `water_progress` accumulation
+   (`plant.gd:34`), the `water_duration` completion check, and the
+   `_complete_watering()` / `_reset_watering()` calls from `_process` to
+   `_physics_process` (D5.5). Only `speed_scale` and `play()` stay in `_process`.
+   Note that `plant.gd:76-79`'s `GameManager` write is removed separately by
    ADR-0002; these two migrations touch the same function and should land together.
-7. `goal.gd` — no change to entry detection. Its `GameManager.goal_unlocked` polling
-   in `_process` becomes a `LevelState` read under ADR-0002; that is ADR-0002's
-   migration, not this one.
+7. `goal.gd` — no change to entry detection (`body_entered` connected at
+   `goal.gd:15`, handler at `goal.gd:38-42`). Its `GameManager.goal_unlocked`
+   polling in `_process` becomes a `LevelState` read under ADR-0002; that is
+   ADR-0002's migration, not this one.
+
+> *Line citations corrected 2026-08-14 — engine specialist review A5-07.* Several
+> were 1–4 lines off against live source; `main.gd:16-18` was accurate as cited.
 
 Steps 1–5 are inert until `OxygenDrain` exists, so this ADR's migration lands with
 ADR-0002's or after it — never before.
@@ -490,9 +593,18 @@ project testing standards.
    `level_complete == false` throughout.
 3. **Chokepoint** — trigger `inc_hazard_dmg` on the frame after `mark_complete()`.
    Expected: no reload; the completed level still changes scene.
-4. **Ordering** — assert at runtime that `GravityAuthority.process_physics_priority
-   < Player.process_physics_priority < OxygenDrain.process_physics_priority`, and
-   that all three are non-zero-by-accident (explicitly assigned, not defaulted).
+4. **Ordering** — a **static/grep-level** check that each of the three `_ready()`
+   methods contains a literal `process_physics_priority = FramePriority.*`
+   assignment, plus a runtime assertion that
+   `GravityAuthority.process_physics_priority < Player.process_physics_priority
+   < OxygenDrain.process_physics_priority`.
+   *(Amended 2026-08-14 — engine specialist review A5-03.)* This originally asked
+   for a runtime assertion that all three were "explicitly assigned, not defaulted."
+   That is not implementable: `Player`'s assigned priority is `0`, which is also the
+   engine default for every node that never touches the property, so a runtime read
+   cannot distinguish the two. The criterion could not detect its own failure mode
+   for the one node whose correct value coincides with the default. The grep check
+   can, and matches the pattern criterion 5 already uses.
 5. **Clock** — assert `Plant` has `_physics_process` and no `_process` accumulation
    of `water_progress`. A grep-level check is sufficient and cheap to keep in CI.
 6. **Latch** — call `mark_complete()` twice; assert idempotent and that no code path

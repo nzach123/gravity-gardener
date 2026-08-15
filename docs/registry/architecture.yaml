@@ -11,7 +11,7 @@
 #   - `status` is inherited from the owning ADR (proposed | accepted | superseded).
 #
 # Created: 2026-08-14 by ADR-0001
-# Contributors: ADR-0001, ADR-0002, ADR-0005
+# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0005
 
 version: 1
 last_updated: 2026-08-14
@@ -313,6 +313,44 @@ interfaces:
         freezing is not refilling and remaining still has no setter.
       note: "Recorded as an explicit narrowing, not a supersession. The ADR-0002 entry is unmodified."
 
+  - name: LevelValidation.contract
+    kind: method_contract
+    signature: |
+      static validate(level: Node) -> PackedStringArray
+      static count_buckets(level: Node) -> int
+    owner: LevelValidation
+    adr: ADR-0003
+    status: proposed
+    preconditions:
+      - "validate() is called from LevelRoot._ready() BEFORE LevelState/OxygenState are constructed [ADR-0003 D3.1]"
+      - "the caller push_error()s each returned finding; validate() itself pushes nothing"
+      - "LevelRoot seeds buckets_total from count_buckets(), never from an independent count [D3.5]"
+    guarantees:
+      - "returns ALL contract breaches, never only the first [watering-system.md R8]"
+      - "pure: no side effects, no mutation, idempotent across repeated calls"
+      - "reads authored @export values and subtree shape ONLY — never LevelState, OxygenState, or bind() output"
+      - "callable on a scene instantiated but never added to the SceneTree [ADR-0003 E1/E2]"
+      - "finding codes are stable contract; message prose may be reworded freely"
+    rules:
+      - "V-BUCKET-SUM  count_buckets(level) == sum(plant.buckets_required)  [watering R8/AC7]"
+      - "V-PLANT-MIN   every Plant has buckets_required >= 1                [watering R5]"
+      - "V-OXY-CAP     oxygen_capacity > 0                                 [suit-oxygen §5/AC7]"
+      - "V-GRAV-EXPORT default_gravity_direction non-zero, multiplier > 0   [ADR-0001, delegated]"
+      - "V-PROP-BUDGET PropBody count <= PropTuning.props_per_level_budget  [props R8/§7 — BLOCKED on ADR-0006]"
+      - "V-WIRING      required consumer NodePath exports resolve           [ADR-0002, delegated]"
+    narrows:
+      entry: level_state_injection
+      adr: ADR-0002
+      precondition: "ADR-0002 requested a 'required consumers bound' check"
+      scope: >
+        V-WIRING checks consumers are WIRED, not BOUND. Validation runs at
+        LevelRoot._ready() step (a) and bind() at step (c), so binding has not
+        happened and cannot be observed. V-WIRING verifies the exported NodePaths
+        are non-empty and resolve — the condition under which step (c) will
+        succeed. ADR-0002's per-consumer guard still catches the never-bound case
+        at first use. Complementary; neither subsumes the other.
+      note: "A narrowing of ADR-0002's request, not a refusal. The ADR-0002 entry is unmodified."
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -435,6 +473,46 @@ api_decisions:
       OxygenDrain keeps its own level_complete check as deliberate redundancy —
       ADR-0002 assigns it the oxygen kill DECISION; the chokepoint is a backstop
       for every path.
+
+  - decision: level_validation_before_construction
+    choice: "LevelValidation.validate() runs at LevelRoot._ready() step (a), BEFORE LevelState/OxygenState are constructed, reading raw authored scene data"
+    rejected:
+      - "architecture.md as written — construct state at (a), validate at (b)"
+      - "validating against the constructed state objects"
+    adr: ADR-0003
+    status: proposed
+    rationale: >
+      ADR-0002's oxygen_state_constructor_injection makes OxygenState
+      un-constructible at capacity <= 0. Under architecture.md's published order a
+      level breaching V-OXY-CAP therefore FAILS AT CONSTRUCTION BEFORE validate()
+      ever runs — the one input validate() exists to describe is the one input on
+      which it never executes, and the return-all-failures guarantee dies exactly
+      where it was needed. Validating first also makes validate() a pure predicate
+      over a Node, testable by handing it a synthetic tree.
+    consequence: >
+      architecture.md §Frame update path must swap steps (a) and (b) and note that
+      validation reads raw scene data. NOT YET AMENDED as of 2026-08-14 — the ADR
+      is written but the blueprint still carries the defective order.
+
+  - decision: level_validation_ci_gate
+    choice: "A headless GdUnit4 test instantiates all 8 level scenes and asserts validate() returns empty; lands WITH the migration epic"
+    rejected:
+      - "runtime validation only"
+      - "@tool + _get_configuration_warnings() edit-time validation"
+      - "per-system self-validation distributed across subsystems"
+    adr: ADR-0003
+    status: proposed
+    rationale: >
+      Runtime validation fires only on levels someone plays, and the QQ-03
+      migration touches all 8. More decisively: watering-system.md AC7 and
+      suit-oxygen.md AC7 are both Logic-typed and therefore BLOCKING under the
+      coding standards, and a push_error side-effect is not cleanly assertable —
+      the returned PackedStringArray is what makes those two ACs automatable at
+      all. Viable because instantiate() populates exports without running _ready()
+      (ADR-0003 E1/E2, verified 2026-08-14).
+    implementation_notes:
+      - "The suite-wide test is RED until the migration epic completes (all 8 levels currently fail V-GRAV-EXPORT and V-OXY-CAP). Coding standards forbid committing a skipped test, so it lands WITH the epic, not before. Per-rule unit tests land immediately."
+      - "gdUnit4 treats GDScript warnings as errors at test discovery — a shadowed native method name fails the ENTIRE suite at compile time. Run the headless command locally before calling the test step done."
 
 performance_budgets:
   - system: prop_gravity
@@ -594,4 +672,68 @@ forbidden_patterns:
       not be written as a deterministic test at all. Cosmetic work — camera
       follow, sprite placement, animation — legitimately stays in _process. The
       line is whether a RULE reads the value.
-    remediation: "plant.gd water_progress accumulation moves to _physics_process (ADR-0005 D5.5), landing with ADR-0002's removal of the plant.gd:73-79 GameManager write."
+    remediation: "plant.gd moves interact polling, water_progress accumulation, the water_duration completion check and the _complete_watering()/_reset_watering() calls to _physics_process (ADR-0005 D5.5); only speed_scale and play() stay in _process. Lands with ADR-0002's removal of the plant.gd:76-79 GameManager write. Moving the accumulation alone is insufficient — see engine specialist review A5-04."
+
+  - pattern: process_thread_group_split_in_frame_chain
+    description: "Setting process_thread_group away from the default on GravityAuthority, Player or OxygenDrain"
+    adr: ADR-0005
+    status: proposed
+    source: engine specialist review 2026-08-14 (A5-01)
+    reason: >
+      The -100 / 0 / +100 ordering contract depends on all three nodes sharing the
+      single default_process_group, where physics-processing nodes are held in one
+      flat vector sorted by a global priority comparator (ADR-0005 F3, verified
+      2026-08-14). process_thread_group (SUB_THREAD / MAIN_THREAD) moves a node and
+      its subtree into a separately-scheduled group with an independent priority
+      sort. Nothing sets it today. A future author enabling multithreaded processing
+      — plausibly while chasing a performance win — would silently detach that node
+      from the contract: no compile error, no symptom, until a frame-perfect
+      suit-oxygen.md AC8 or watering-system.md AC13 case fails. Same silent-failure
+      shape as physics_order_via_process_priority.
+
+  - pattern: validation_first_failure_return
+    description: "LevelValidation.validate() returning early on the first breach instead of collecting all of them"
+    adr: ADR-0003
+    status: proposed
+    reason: >
+      watering-system.md R8 is explicit that a silently unwinnable level is the
+      dangerous failure mode, and a level can breach the bucket contract and the
+      oxygen contract simultaneously. Returning one at a time costs a full run per
+      defect. Reads like an efficiency win and destroys the requirement the
+      function exists to serve.
+    remediation: "The recursion must carry a comment citing watering-system.md R8 and ADR-0003, in the same spirit as ADR-0005's deferral comment."
+
+  - pattern: group_based_level_discovery
+    description: "Discovering plants, buckets or props via get_nodes_in_group() inside LevelValidation"
+    adr: ADR-0003
+    status: proposed
+    reason: >
+      Two independent reasons. (1) TECHNICAL: get_nodes_in_group() is a SceneTree
+      method. ADR-0003 D3.7's CI test instantiates each level and never adds it to
+      a tree, so get_tree() is null and group lookup is UNAVAILABLE on the code
+      path this ADR requires — not merely inadvisable. (2) AUTHORING: group
+      membership is invisible bookkeeping with no other consequence, so a node an
+      author forgot to add is invisible to validation and the level reports clean.
+      That is the exact failure architecture.md P4 exists to close, reintroduced
+      inside the mechanism meant to close it.
+    note: >
+      Narrows ADR-0002's parenthetical "seed from the bucket group count". The
+      QUANTITY ADR-0002 defines is unchanged — buckets_total is still the count of
+      buckets present at level load (watering-system.md R6) — only the mechanism
+      for counting them changes. The ADR-0002 entry is unmodified.
+
+  - pattern: find_children_owned_default
+    description: "Using Node.find_children() with the default owned=true for LevelValidation's node discovery"
+    adr: ADR-0003
+    status: proposed
+    source: engine specialist review 2026-08-14 (F3)
+    reason: >
+      find_children()'s `owned` parameter defaults to TRUE — "only descendants with
+      a valid owner node are checked" — so it can silently drop nodes and
+      reintroduce the same silent-miss failure class this ADR rejects
+      group_based_level_discovery for, by a different route. The hazard is that it
+      arrives disguised as a cleanup: the built-in does the same type matching the
+      hand-rolled recursion does, so substituting it looks like removing
+      boilerplate. Plain get_children() recursion applies NO owner filtering and
+      descends into instantiated sub-scenes correctly regardless of `editable path`.
+    remediation: "Keep the hand-rolled get_children() recursion. If find_children() is ever used here it must pass owned = false explicitly."

@@ -23,7 +23,7 @@ Proposed
 | **Knowledge Risk** | **LOW** |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `docs/engine-reference/godot/breaking-changes.md` · `docs/engine-reference/godot/deprecated-apis.md` |
 | **Post-Cutoff APIs Used** | **None.** `RefCounted`, `_init()` argument passing, signals, `@export`, `reload_current_scene()` and bottom-up `_ready()` ordering are all pre-4.4 and unchanged through 4.7. |
-| **Verification Required** | None. `breaking-changes.md` lists nothing for Core or GDScript beyond unspecified 4.3 → 4.4 language improvements; `deprecated-apis.md` lists nothing in this domain. No module reference exists for Core and none is required. |
+| **Verification Required** | **Amended 2026-08-14.** This originally read "None," which was overstated: the in-repo engine references cover only `physics-2d` and `ui-control`, so the Core/GDScript facts this ADR rests on were asserted without independent checking. Four were verified in the engine specialist review (see `architecture-review-2026-08-14.md`): bottom-up `_ready()` and autoload-before-scene ordering ✅ · signal connections to a `RefCounted` are weak references ✅ · `assert()` compiles out in release exports while `push_error()` does not ✅ · **getter-only property enforcement — the one that did not hold as written, see A2-01.** Nothing outstanding. |
 
 ## ADR Dependencies
 
@@ -127,6 +127,24 @@ runs bottom-up, a consumer cannot read injected state during its own `_ready()`.
 **every consumer refuses to operate before it is bound**, with `push_error()` —
 exactly the pattern `GravityAuthority.initialize()` established in ADR-0001 part 7.
 
+The guard shape is exactly this, and the `return` is mandatory:
+
+```gdscript
+if not _bound:
+    push_error("…")
+    return
+```
+
+`push_error()` logs to the debugger and terminal but **does not pause execution** —
+it is a logging call, not an exception. Without the early return the consumer
+continues against an unset reference, producing a null dereference or a silent read
+of default field values instead of the refusal this decision promises.
+
+`push_error()` and **not** `assert()`: `assert()` is compiled out entirely in
+release exports, so every bind guard in the project would silently vanish from the
+shipped build. Recorded here so the substitution is not made later as an apparent
+cleanup. *(Added 2026-08-14 — engine specialist review A2-02.)*
+
 | Consumer | Receives | Reached via |
 |---|---|---|
 | `Player` / `PlayerWateringComponent` | `LevelState` | existing `@export var player` |
@@ -201,15 +219,34 @@ class_name LevelState extends RefCounted
 signal goal_unlocked_changed(unlocked: bool)
 signal bucket_consumed(consumed: int, total: int)
 
-var buckets_total: int         # seeded once by LevelRoot; never written again
-var buckets_consumed: int      # read-only outside consume_bucket()
-var carrying_bucket: bool
-var goal_unlocked: bool        # derived, read-only
-var level_complete: bool       # declared here; ADR-0005 owns read/write ordering
+var _buckets_total: int
+var _buckets_consumed: int
+var _goal_unlocked: bool
+var _level_complete: bool
+
+var buckets_total: int:
+    get: return _buckets_total     # seeded once by LevelRoot; never written again
+var buckets_consumed: int:
+    get: return _buckets_consumed  # written only by consume_bucket()
+var goal_unlocked: bool:
+    get: return _goal_unlocked     # derived
+var level_complete: bool:
+    get: return _level_complete    # ADR-0005 owns read/write ordering
+
+var carrying_bucket: bool          # genuinely read-write
 
 func _init(buckets_total: int) -> void
 func consume_bucket() -> void
 ```
+
+> **Read-only means getter-only.** Every derived or externally-immutable value is a
+> getter-only computed property over a private backing field, not a plain `var`. A
+> plain `var` in GDScript is a public field with an implicit setter —
+> `level_state.goal_unlocked = true` would compile, run and succeed silently from
+> any script, and V2 below could never pass. Assignment to a getter-only property
+> raises a runtime error, which is what makes the guarantees below properties of the
+> type rather than rules to police. *(Corrected 2026-08-14 — engine specialist
+> review A2-01, the one blocking finding.)*
 
 **Callers must**: pass `buckets_total >= 0` at construction; call
 `consume_bucket()` only on a *completed* pour (`watering-system.md` R3), never on
@@ -231,14 +268,27 @@ enum Band { NOMINAL, CAUTION, WARNING, CRITICAL }
 signal threshold_changed(band: Band)
 signal depleted
 
-var capacity: float            # immutable after construction
-var remaining: float           # monotonically decreasing
-var fraction: float            # remaining / capacity
-var band: Band
+var _capacity: float
+var _remaining: float
+var _band: Band
+
+var capacity: float:
+    get: return _capacity                  # immutable after construction
+var remaining: float:
+    get: return _remaining                 # monotonically decreasing; no setter
+var fraction: float:
+    get: return _remaining / _capacity     # derived
+var band: Band:
+    get: return _band
 
 func _init(capacity: float, tuning: OxygenTuning) -> void
 func drain(delta: float) -> void
 ```
+
+Same rule as `LevelState`: getter-only properties over private backing fields. This
+is what makes `suit-oxygen.md` AC3 ("no game action increases oxygen") a property of
+the type — `remaining` has no setter to call — rather than a rule that has to be
+policed in review. *(A2-01.)*
 
 **Callers must**: pass `capacity > 0` — construction fails otherwise
 (`suit-oxygen.md` AC7); call `drain()` exactly once per physics frame,
@@ -382,6 +432,7 @@ ADR-0008; the ordering belongs to ADR-0005.
 | **`architecture.md` D2 left stale**, so a later ADR is written against `GameManager` ownership | Amend D2 in the same changeset as this ADR; registry entry supersession recorded below |
 | **`buckets_total` seeded from the wrong source** — R6 says "buckets present at level load", R8 says it must equal `Σ buckets_required` | Seed from the bucket group count (R6 is the definition); ADR-0003's `validate()` asserts the R8 equality. Two independent sources is the point — agreement is the check |
 | **A dynamically spawned object needs level state** | Not required by any current GDD. If it becomes required, the spawner injects at construction; do not reintroduce a global |
+| **A bound consumer outlives the scene reload**, holding a stale state object. `LevelRoot` is *not* the sole owner — `Player`, `Goal`, `HUD` and `OxygenDrain` each hold a strong reference | Signal connections to a `RefCounted` are **weak** and do not keep it alive, so the `Plant.pour_completed` wiring is safe. Reconstruction works because every strong holder is freed in the same synchronous teardown pass as `LevelRoot`. **Invariant: every bound consumer must be a descendant of `LevelRoot`.** A persistent or cross-scene HUD would hold a stale `LevelState` with no error and no crash — `RefCounted` leaks are invisible and there is no watchdog *(added 2026-08-14 — engine specialist review A2-03)* |
 | **`depleted` reconnected directly to `restart_level()`** by someone following `architecture.md`'s signal table | Breaks `suit-oxygen.md` AC8. Registered as a forbidden pattern; ADR-0008 owns the correct death path |
 
 ## GDD Requirements Addressed
