@@ -266,7 +266,8 @@ is the exact failure this ADR exists to prevent.
 
 All five defects get a numbered remedy in *Migration Plan*. No `.tscn`, `.gd` or
 `project.godot` file is edited by this ADR, consistent with ADR-0001 through
-ADR-0003. Defect 1 is additionally filed as a bug report, because a live
+ADR-0003. Defect 1 is additionally filed as a bug report — **BUG-0001**
+(`production/qa/bugs/BUG-0001.md`, filed 2026-08-14) — because a live
 player-facing defect should not exist only inside an architecture document.
 
 ### Architecture Diagram
@@ -453,7 +454,7 @@ optional cleanup.
    `2d_physics/layer_4="prop"`, and `2d_physics/layer_3="item"` is **removed** (D4.2).
 2. **Create `src/scripts/collision_layers.gd`** with the D4.4 contract verbatim.
    Must be warning-clean (F5).
-3. **Fix the dead kill plane** *(defect 1, specialist F1, filed separately as a bug)*.
+3. **Fix the dead kill plane** *(defect 1, specialist F1, filed as **BUG-0001**)*.
    `level_05.tscn:386` and `level_06.tscn:392` each gain `collision_layer = 0` and
    `collision_mask = 2`. **Requires a playtest of both levels** — see *Negative
    consequences*; this restores behaviour that has never actually run.
