@@ -351,6 +351,36 @@ interfaces:
         at first use. Complementary; neither subsumes the other.
       note: "A narrowing of ADR-0002's request, not a refusal. The ADR-0002 entry is unmodified."
 
+  - name: CollisionLayers.allocation
+    kind: constant_table
+    signature: |
+      const WORLD: int  = 1 << 0   # 1  terrain, AnimatableBody2D platforms
+      const PLAYER: int = 1 << 1   # 2  the Player CharacterBody2D, and nothing else
+      # bit 3 (value 4) RETIRED — occupied by nothing, do not claim
+      const PROP: int   = 1 << 3   # 8  PropBody RigidBody2D
+      const ALLOCATED: int = WORLD | PLAYER | PROP   # 11
+      const PLAYER_MASK: int   = WORLD               # 1
+      const PROP_MASK: int     = WORLD | PROP        # 9
+      const DETECTOR_MASK: int = PLAYER              # 2
+      const DETECTOR_LAYER: int = 0
+    owner: CollisionLayers
+    adr: ADR-0004
+    status: proposed
+    guarantees:
+      - "prop.collision_mask & PLAYER == 0 AND player.collision_mask & PROP == 0 [physics-props.md R1/R2, AC1]"
+      - "detector areas mask PLAYER only, so props are invisible to them        [physics-props.md AC2]"
+      - "no scene claims a bit outside ALLOCATED — (layer|mask) & ~ALLOCATED == 0"
+      - "every TileSet.physics_layer_0/collision_layer == WORLD"
+    preconditions:
+      - "values are AUTHORED in .tscn files; never assigned at runtime (see runtime_collision_mask_mutation)"
+    note: >
+      Authoritative over project.godot's layer_names, which are editor-facing only;
+      on divergence this table is correct and project.godot is the bug. Renamed from
+      architecture.md's `CollisionLayerRegistry` (ADR-0004 D4.4) — it registers
+      nothing at runtime, it is a constant table. Detectors need NO layer of their
+      own: Area2D.body_entered gates on the AREA's mask vs the BODY's layer only
+      (godot_area_pair_2d.cpp:36, verified 2026-08-14).
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -513,6 +543,41 @@ api_decisions:
     implementation_notes:
       - "The suite-wide test is RED until the migration epic completes (all 8 levels currently fail V-GRAV-EXPORT and V-OXY-CAP). Coding standards forbid committing a skipped test, so it lands WITH the epic, not before. Per-rule unit tests land immediately."
       - "gdUnit4 treats GDScript warnings as errors at test discovery — a shadowed native method name fails the ENTIRE suite at compile time. Run the headless command locally before calling the test step done."
+
+  - decision: collision_layer_central_allocation
+    choice: "project.godot layer_names for editor readability PLUS a `class_name CollisionLayers` const script that is authoritative on divergence"
+    rejected:
+      - "project.godot layer_names only — nothing testable, no code reference (this is the status quo that produced all five defects)"
+      - "assigning layers in _ready() from constants — editor checkboxes would never show runtime truth, and it REQUIRES the mutation D4.6 bans"
+    adr: ADR-0004
+    status: proposed
+    rationale: >
+      Bit allocation had no owner. Each node was configured by whoever authored it
+      against no written table, which is the "depends on every author remembering
+      it" failure architecture.md P2 rejects. Claiming any of bits 5-32 now requires
+      amending ADR-0004.
+    implementation_notes:
+      - "bit 3 ('item') is RETIRED, not merely unused — the name is REMOVED from project.godot so the editor stops offering it."
+      - "architecture.md:171 documents bit 3 as live and masked by the player; the blueprint is wrong and the code is right. Corrected by ADR-0004 D4.2."
+      - "Enforced by a gdUnit4 scene test, NOT a seventh LevelValidation rule — ADR-0003 D3.3's six-rule set stays frozen."
+
+  - decision: prop_isolation_by_mask
+    choice: "PropBody layer 8 / mask 9 (world|prop); Player layer 2 / mask 1; detector Area2Ds layer 0 / mask 2"
+    rejected:
+      - "conditional guards in handlers (`if body is PropBody: return`) — forbidden by physics-props.md R2 by name"
+      - "activating bit 3 and inverting detection so the player queries items"
+    adr: ADR-0004
+    status: proposed
+    rationale: >
+      Body-vs-body pairing is an OR, not an AND — godot_body_pair_2d.cpp:256-260
+      requires `collide_A || collide_B`, so a ONE-SIDED mask mistake still produces
+      contact. The guarantee therefore has to be zero in both directions, and is:
+      prop.mask(9)&player.layer(2)=0, player.mask(1)&prop.layer(8)=0,
+      area.mask(2)&prop.layer(8)=0. Verified against engine source 2026-08-14.
+    implementation_notes:
+      - "Area2D is NEVER solid — a RigidBody2D is detected by an area, never blocked by it. So prop/interactable isolation rests on detection filtering alone."
+      - "Guards would fire AFTER contact already occurred in the physics step: the prop has pushed the player and the handler only suppresses the reaction."
+      - "Whether KillArea2D should also mask prop (mask 10) for physics-props.md R7 is ADR-0011's decision, not this one's."
 
 performance_budgets:
   - system: prop_gravity
@@ -737,3 +802,43 @@ forbidden_patterns:
       boilerplate. Plain get_children() recursion applies NO owner filtering and
       descends into instantiated sub-scenes correctly regardless of `editable path`.
     remediation: "Keep the hand-rolled get_children() recursion. If find_children() is ever used here it must pass owned = false explicitly."
+
+  - pattern: runtime_collision_mask_mutation
+    description: "Calling set_collision_layer_value() / set_collision_mask_value(), or assigning collision_layer / collision_mask, at runtime on any gameplay node"
+    adr: ADR-0004
+    status: proposed
+    source: engine specialist review 2026-08-14 (F8)
+    reason: >
+      ADR-0004's isolation guarantee covers AUTHORED state only, and the scene test
+      that verifies it reads .tscn files. A single runtime mutation would break
+      physics-props.md R1 invisibly to every check in the project. Recorded plainly:
+      this is the WEAKEST link in the ADR-0004 chain — it is enforced by review and
+      grep rather than by structure, which is the very property ADR-0004 criticises
+      elsewhere. It also forecloses a legitimate Godot technique (one-way platforms,
+      temporary invulnerability, phasing); any such feature must revise ADR-0004
+      rather than just implement.
+    remediation: "Layers are authored data. A CI grep step asserting no file outside collision_layers.gd matches these calls would make the ban structural; recommended and left to the epic."
+
+  - pattern: prop_isolation_by_conditional_guard
+    description: "Enforcing prop isolation with type checks in handlers — `if body is PropBody: return` — instead of layer/mask configuration"
+    adr: ADR-0004
+    status: proposed
+    reason: >
+      physics-props.md R2 forbids it by name: "enforced by collision layer and mask,
+      NOT by conditional logic". Beyond the GDD instruction, it does not work: by the
+      time a handler runs, the contact has already been resolved in the physics step,
+      so the prop has already pushed the player and the guard only suppresses the
+      reaction. It also re-imposes the burden on every future detector author.
+    remediation: "Configure the mask. If a prop can reach a handler at all, the layer setup is the bug (physics-props.md R2)."
+
+  - pattern: unallocated_collision_bit
+    description: "Using 2D physics bit 3, or any of bits 5-32, on any node or TileSet"
+    adr: ADR-0004
+    status: proposed
+    reason: >
+      Only WORLD(1), PLAYER(2) and PROP(8) are allocated. Bit 3 was named "item" but
+      occupied by nothing — a named-but-free bit is an invitation for the next author
+      needing "an item layer" to find one apparently ready and wire half a system to
+      it. Silent claims on bits 5-32 reintroduce the no-owner condition ADR-0004 exists
+      to end.
+    remediation: "The scene test asserts (layer|mask) & ~CollisionLayers.ALLOCATED == 0, which fails on any unallocated bit. Claiming a new bit requires amending ADR-0004 and adding it to ALLOCATED."
