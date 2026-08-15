@@ -11,7 +11,7 @@
 #   - `status` is inherited from the owning ADR (proposed | accepted | superseded).
 #
 # Created: 2026-08-14 by ADR-0001
-# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0005
+# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006
 
 version: 1
 last_updated: 2026-08-14
@@ -381,6 +381,38 @@ interfaces:
       own: Area2D.body_entered gates on the AREA's mask vs the BODY's layer only
       (godot_area_pair_2d.cpp:36, verified 2026-08-14).
 
+  - name: Tuning.constants
+    kind: constant_table
+    signature: |
+      class_name Tuning
+      const WATERING: WateringTuning = preload("res://src/resources/tuning/watering_tuning.tres")
+      const OXYGEN:   OxygenTuning   = preload("res://src/resources/tuning/oxygen_tuning.tres")
+      const PROP:     PropTuning     = preload("res://src/resources/tuning/prop_tuning.tres")
+    owner: Tuning
+    adr: ADR-0006
+    status: proposed
+    guarantees:
+      - "exactly one instance per tuning class, project-wide [T3 + D6.9]"
+      - "resolves with NO SceneTree involvement at all — script-load time, not tree time [T2]"
+      - "zero per-frame allocation and zero file I/O after parse"
+      - "a missing or renamed .tres fails at PARSE time, not at first use"
+    preconditions:
+      - "Tuning is NOT an autoload and must never become one — preload already gives universal reach"
+      - "consumers reach tuning ONLY through Tuning; no consumer names a .tres path"
+      - "resource_local_to_scene stays false on all three resources (D6.9)"
+    consumers:
+      - "GravityAuthority  <- Tuning.PROP.prop_gravity_scale       (autoload, per easing frame, ADR-0001 part 4)"
+      - "LevelValidation   <- Tuning.PROP.props_per_level_budget   (static, NULL tree, ADR-0003 V-PROP-BUDGET)"
+      - "LevelRoot         <- Tuning.OXYGEN                        (OxygenState.new(cap, tuning), ADR-0002)"
+      - "PropBody          <- Tuning.PROP.prop_max_speed           (ADR-0011)"
+    note: >
+      Same const-table pattern as CollisionLayers (ADR-0004), for the same reason:
+      one invariant written down once. The decisive constraint was ADR-0003 E1/E2 —
+      LevelValidation runs with get_tree() == null, so an autoload holder is
+      UNAVAILABLE, not merely inelegant. preload is a DIFFERENT mechanism from
+      E1/E2 (which cover @export values surviving instantiate()); the two facts are
+      independent and both hold.
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -578,6 +610,47 @@ api_decisions:
       - "Area2D is NEVER solid — a RigidBody2D is detected by an area, never blocked by it. So prop/interactable isolation rests on detection filtering alone."
       - "Guards would fire AFTER contact already occurred in the physics step: the prop has pushed the player and the handler only suppresses the reaction."
       - "Whether KillArea2D should also mask prop (mask 10) for physics-props.md R7 is ADR-0011's decision, not this one's."
+
+  - decision: tuning_per_system_granularity
+    choice: "Three separate Resource subclasses — WateringTuning, OxygenTuning, PropTuning — exactly as the three GDDs name them"
+    rejected:
+      - "a single combined GameTuning resource holding all ten knobs"
+    adr: ADR-0006
+    status: proposed
+    rationale: >
+      A combined resource would hand ADR-0008, ADR-0009 and ADR-0011 one shared
+      surface, making "which module owns this value" un-answerable by inspection —
+      the precise inference architecture.md P5 forbids ("never inferred from where
+      the value happens to be read"). Three classes make ownership structural and
+      keep ADR-0002's frozen OxygenState._init(capacity, tuning: OxygenTuning)
+      honest: OxygenState is statically incapable of reading a watering knob.
+    implementation_notes:
+      - "Per-instance knobs are NOT in these resources and that is deliberate: buckets_required/water_duration on Plant, oxygen_capacity on the level root, mass/friction/bounce/damping per prop scene. Each GDD §7 assigns them."
+      - "Every knob that IS in a tuning resource is a GLOBAL feel constant by the GDDs' own classification. That is why no per-level override mechanism exists — nothing in the design asks for one."
+
+  - decision: tuning_reach_via_preload_const
+    choice: "A `class_name Tuning` const holder with three preload()ed constants; the ONLY place a tuning .tres path appears"
+    rejected:
+      - "@export var tuning: PropTuning on each consumer, authored per scene — cannot work for LevelValidation (static, no node) or GravityAuthority (autoload, pre-level)"
+      - "a Tuning autoload — UNAVAILABLE to LevelValidation, whose CI gate never adds the scene to a tree"
+      - "ProjectSettings entries — tree-free but untyped, un-inspectable, string-keyed"
+      - "a preload() const on each consumer individually — one invariant repeated in N files"
+      - "static factory PropTuning.get_default() — load() at call time loses the parse-time failure"
+    adr: ADR-0006
+    status: proposed
+    rationale: >
+      Three consumers have INCOMPATIBLE reach: an autoload that exists before any
+      level, a static function running with get_tree() == null, and a level root.
+      preload resolves at script-load time and never consults the tree, so it is
+      the only mechanism all three can share. The autoload option is disqualified
+      on the same technical ground as group_based_level_discovery (ADR-0003) —
+      unavailable on a required code path, not merely inadvisable.
+    implementation_notes:
+      - "preload NOT load: a missing or renamed .tres becomes a script parse error at startup rather than a null dereference on the first gravity flip (architecture.md P4)."
+      - "No autoload parse-order hazard: class_name registration happens at project load BEFORE autoloads instantiate, and tuning.gd loads on first reference. Verified 2026-08-14 (specialist F5)."
+      - "Files: src/scripts/tuning/*.gd and src/resources/tuning/*.tres. Deliberate deviation from ADR-0004's flat collision_layers.gd placement — four related files are a group."
+    verify_at_implementation:
+      - "T4 — whether @export_range clamps a value loaded from a hand-edited .tres. Documented as inspector-only but NOT executed against the pinned 4.7.1 binary."
 
 performance_budgets:
   - system: prop_gravity
@@ -842,3 +915,66 @@ forbidden_patterns:
       it. Silent claims on bits 5-32 reintroduce the no-owner condition ADR-0004 exists
       to end.
     remediation: "The scene test asserts (layer|mask) & ~CollisionLayers.ALLOCATED == 0, which fails on any unallocated bit. Claiming a new bit requires amending ADR-0004 and adding it to ALLOCATED."
+
+  - pattern: tuning_resource_runtime_mutation
+    description: "Assigning to any property of Tuning.WATERING / Tuning.OXYGEN / Tuning.PROP, or calling .duplicate() on a tuning resource to obtain a mutable copy"
+    adr: ADR-0006
+    status: proposed
+    reason: >
+      Godot caches resources BY PATH, so every preload of the same .tres yields the
+      same object (T3, verified 2026-08-14). A single runtime assignment therefore
+      (1) changes the value for every consumer at once, including consumers in other
+      systems that never asked; (2) SURVIVES level transitions, because the cache
+      outlives reload_current_scene() — the same autoload-shaped hazard ADR-0001
+      part 6 had to close for gravity, arriving through a different door; and (3) can
+      be written back to DISK if it happens in the editor or a tool script, silently
+      editing the authored source of truth in version control.
+      Recorded plainly: like ADR-0004's runtime_collision_mask_mutation, this is
+      enforced by review and grep rather than by structure. GDScript has no readonly
+      resource.
+    remediation: "A CI grep asserting no file assigns to a Tuning.* property and none calls .duplicate() on one would make the ban structural; recommended as V7 and left to the epic. The most likely violator is an accessibility settings menu writing drain_rate — see ADR-0006 D6.6, which assigns that composition to ADR-0008 and does NOT relax this ban."
+
+  - pattern: tuning_resource_local_to_scene
+    description: "Setting resource_local_to_scene = true on watering_tuning.tres, oxygen_tuning.tres or prop_tuning.tres"
+    adr: ADR-0006
+    status: proposed
+    source: engine specialist review 2026-08-14 (F4)
+    reason: >
+      The flag makes the engine hand EACH instantiating scene its own copy. On a
+      tuning resource it silently destroys the guarantee the whole ADR is built on:
+      T3's cache identity stops holding, "exactly one instance project-wide" quietly
+      becomes false, and D6.5's read-only reasoning — which rests on there being a
+      single shared object — no longer describes reality. Nothing errors. Nothing
+      logs. It is a legitimate engine feature (independent materials per instance),
+      it is one inspector checkbox, and it is inert today — the same hazard shape as
+      ADR-0005's process_thread_group_split_in_frame_chain.
+    remediation: "Stated explicitly in ADR-0006 D6.9 rather than left as an assumed default, and asserted by V9. Defaults are what get changed by an author exploring the inspector."
+
+  - pattern: gravity_tuning_resource
+    description: "Creating a GravityTuning resource, or relocating jump_height / jump_distance_to_peak / jump_distance_to_land off Player into a .tres"
+    adr: ADR-0006
+    status: proposed
+    reason: >
+      ADR-0001 decision part 7 keeps the jump constants as @exports on Player. That
+      was a USER DECISION made against the standing recommendation on 2026-08-13 and
+      reaffirmed 2026-08-14, and the documented price is that gravity.md §5's
+      "initialisation order is load-bearing" edge case STAYS LIVE in the GDD.
+      Restated here as a forbidden pattern because ADR-0006 is the document a future
+      author reads when asking "where do tuning values live?", and its general rule
+      would otherwise imply the jump constants belong in a resource too. Creating
+      GravityTuning would silently overturn a decision made twice and reverse a
+      documented trade-off.
+    remediation: "Changing this requires SUPERSEDING ADR-0001's jump_constants_location, not extending ADR-0006. V8 recommends a CI grep asserting no GravityTuning class or gravity_tuning.tres exists."
+
+  - pattern: tuning_path_literal_outside_holder
+    description: "Any file outside src/scripts/tuning/ containing a res://src/resources/tuning/ path literal, via preload() or load()"
+    adr: ADR-0006
+    status: proposed
+    reason: >
+      The .tres path is written down exactly once, in tuning.gd. Repeating it in
+      each consumer is the same defect as ADR-0004's defect 5 — terrain's collision
+      layer configured in five independent places — reached from the other
+      direction: one invariant with N copies and no owner. Moving or renaming a
+      resource would become a multi-file edit with no compiler help until each file
+      is parsed.
+    remediation: "V6 recommends a CI grep. NOTE: V6 is recommended-not-asserted, so this stance currently has NO automated backing — it is enforced by review alone until the epic lands the grep."
