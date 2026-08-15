@@ -4,7 +4,7 @@
 > **Reviewed**: `/ux-review` 2026-08-15 — verdict **NEEDS REVISION**, 7 blocking findings.
 > **All seven are now closed**: Acceptance Criteria (H1–H27, 18 BLOCKING) · Tuning Knobs
 > with placement routed to the Presentation-tier ADR (Q16) · `tally_duration` = 1.2 s ·
-> the single Z2 slot and the E5→E4 suppression rule · the completed Z1/Z2 collision rule ·
+> the single Z2 slot and the `E2/E3 → E5 → E4` priority order · the completed Z1/Z2 collision rule ·
 > the paused HUD state (Q7) · the carry-indicator divergence (Q9), ratified into
 > `watering-system.md` §6 and `systems-index.md:102` on 2026-08-15.
 > **Author**: user + ux-designer
@@ -463,7 +463,7 @@ This is the load-bearing argument for E1 being Must Show, beyond R7's bare wordi
 | E2 prompt | Player enters the resolved target plant's interact area while carrying, plant has capacity | On exit, on capacity fill, or when the resolved target changes |
 | E3 fill | `interact` pressed while E2 shown | Released (drains to zero) or completed |
 | E4 refusal | The Z2 slot resolves to a capped plant in range **and** E5 is not showing | On exit, or when E5 fires |
-| E5 tally | `buckets_consumed` advances | After 1.2 s |
+| E5 tally | `buckets_consumed` advances | After 1.2 s, or immediately when a pour target resolves |
 | E6 death | Any death, after the `level_complete` guard clears | After ~0.35 s, into restart |
 
 ### Paused state
@@ -508,6 +508,7 @@ Recorded so the absence reads as a decision rather than an oversight.
 | Pouring | E1 + E2/E3 |
 | At a capped plant | E1 + E4 |
 | Pour just completed | E1 + E5 |
+| Re-pour begun while the tally is up | E1 + E2/E3 — E5 dismissed |
 | Dying | E6 (covers everything) |
 
 **Never more than two player-facing elements at once.** This is the minimal claim from
@@ -515,21 +516,29 @@ HUD Philosophy expressed as a number the spec can be tested against. If a future
 breaks it, what changed is the philosophy — not just the count.
 
 **What makes this structurally true rather than aspirational is the single Z2 slot plus
-one suppression rule.** E1 is permanent and Z2 holds at most one, which caps the common
-cases at two. Z3 is what would break it:
+a priority order.** E1 is permanent and Z2 holds at most one, which caps the common cases
+at two. Z3 is what would break it:
 
-> **While E5 is showing, Z2 is suppressed.**
+> **Z3's tally never coexists with a Z2 element. Priority, highest first: E2/E3 → E5 → E4.**
 
-Without that rule the budget fails on the most ordinary event in the game. Completing a
-pour on a `buckets_required = 1` plant dismisses E2, fires E5, and leaves the plant capped
-with the player still standing in its interact area — so rule 2 of the single Z2 slot
-awards E4, and E1 + E4 + E5 renders three elements at once.
+**E5 suppresses E4** for its duration. Without that the budget fails on the most ordinary
+event in the game: completing a pour on a `buckets_required = 1` plant dismisses E2, fires
+E5, and leaves the plant capped with the player still standing in its interact area — so
+rule 2 of the single Z2 slot awards E4, and E1 + E4 + E5 renders three elements at once.
 
 Suppression is the right resolution rather than a reordering because **E5 already carries
 E4's message.** "3 / 5 buckets delivered" is only true because the plant in front of the
 player just filled; showing a capped marker beside it restates that. E4 exists for the
 player who *arrives* at a plant already full, which is a different moment. When E5 clears
 after 1.2 s, Z2 resolves normally and E4 appears if the player is still in range.
+
+**A resolved pour target dismisses E5 immediately.** That argument does not run the other
+way: a tally says nothing about pour progress, so E5 must never suppress E2 — and because
+**E3 lives inside E2**, suppressing it would hide the fill of an *active pour*. The case is
+reachable: on a plant with `buckets_required` ≥ 2, a player who fetches a nearby bucket and
+resumes within `tally_duration` is pouring while the tally is still up. E5 yields instead,
+because by then the player has moved on and the tally has been read or missed. The next
+pour re-fires it at least `water_duration` later.
 
 E6 is the deliberate exception to everything: it covers the screen because the level is
 ending.
@@ -737,7 +746,7 @@ them — a second copy of a threshold is a divergence waiting to happen.
 | H1 | E1 renders at zero rotation relative to the viewport in both camera modes — verified mid-gravity-flip in `level_01` (follow+rotate) and in `level_02` (static) | Z1, R7 | Integration — BLOCKING |
 | H2 | E1 remains fully within the viewport at every position the player can reach in all 8 levels, including against the top edge of the visible area | Z1 | Integration — BLOCKING |
 | H3 | When E1 and E2 are both visible, no part of either overlaps the other; the displacement does not flicker while the player stands at the intersection boundary; and when the player is against a viewport edge, E1 stays fully inside it and E2 displaces toward the player rather than off screen | Z1/Z2 collision rule | UI — ADVISORY |
-| H4 | No more than two player-facing elements render simultaneously — in every state in the Density profile, in the overlapping-interact-area case of `watering-system.md` §5, **and on the frame a `buckets_required = 1` plant fills while the player remains in its interact area** (E5 must suppress E4) | Visual budget, single Z2 slot | Integration — BLOCKING |
+| H4 | No more than two player-facing elements render simultaneously — in every state in the Density profile, in the overlapping-interact-area case of `watering-system.md` §5, **on the frame a `buckets_required = 1` plant fills while the player remains in its interact area** (E5 must suppress E4), **and when a pour is resumed on a `buckets_required` ≥ 2 plant while the tally is still showing** (E5 must dismiss, and E3's fill must remain visible throughout) | Visual budget, single Z2 slot, priority order | Integration — BLOCKING |
 | H5 | A release export contains no E7: F3 produces no overlay and no input action is registered for it | E7, Platform variants | Integration — BLOCKING |
 
 ### Per-context correctness
