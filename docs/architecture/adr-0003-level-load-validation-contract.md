@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+**Accepted** — 2026-08-15
 
 ## Date
 
@@ -233,9 +233,9 @@ does not misapply A1-03 as a blanket ban.
 | `V-OXY-CAP` | `LevelRoot.oxygen_capacity > 0` | `suit-oxygen.md` §5, AC7 |
 | `V-GRAV-EXPORT` | `default_gravity_direction` is non-zero **and** `default_gravity_multiplier > 0` | ADR-0001 (delegated), `gravity.md` R7 |
 | `V-PROP-BUDGET` | `PropBody` count `<= PropTuning.props_per_level_budget` | `physics-props.md` R8, §5, §7 |
-| `V-WIRING` | every required consumer `NodePath` export on `LevelRoot` is non-empty and resolves | ADR-0002 (delegated) |
+| `V-WIRING` | every **required** consumer `NodePath` export on `LevelRoot` is non-empty and resolves — required set enumerated below | ADR-0002 (delegated) |
 
-Two notes on the set.
+Three notes on the set.
 
 **`V-BUCKET-SUM` compares two genuinely independent quantities.** ADR-0002 is
 explicit that this is the point — "agreement is the check". `buckets_total` comes
@@ -253,6 +253,36 @@ An unwired consumer is caught here at load; a consumer that is wired but whose
 `bind()` call was never written is caught by ADR-0002's per-consumer guard at first
 use. The two checks are complementary and neither subsumes the other. This
 resolution is a narrowing of ADR-0002's request, not a refusal of it.
+
+**The required-consumer set, and how it grows.** *(Added 2026-08-15 — resolves
+conflict C1 of `architecture-review-2026-08-15.md`.)* A consumer is **required** when
+the ADR that introduces it is **Accepted**. The set as of 2026-08-15:
+
+| Export | Consumer | Owning ADR | Required |
+|---|---|---|---|
+| `player` | `Player` / `PlayerWateringComponent` | ADR-0002 (Accepted) | **Yes** |
+| `goal` | `Goal` | ADR-0002 (Accepted) | **Yes** |
+| `hud` | `HUD` | **ADR-0010 — unwritten** | **No** — admitted when ADR-0010 is Accepted |
+
+`OxygenDrain` is out of scope for this rule entirely: ADR-0002 part 4 makes it a
+*child* of `LevelRoot`, not a `NodePath` export, so there is no path for `V-WIRING`
+to resolve. Its binding failure mode is covered by ADR-0002's per-consumer guard.
+
+**Why the scoping is necessary rather than a convenience.** ADR-0002 part 3 adds
+`@export var hud: HUD` and lists `HUD` as a bound consumer. No HUD scene exists —
+`systems-index.md` files it under *Designed but not built*, it belongs to ADR-0010,
+which is Presentation tier, and no level wires one. An unqualified reading of "every
+required consumer" therefore makes this ADR's own close condition unreachable:
+Migration Plan step 6 and Validation Criterion 5 both require every level to return
+empty from `validate()` before the level migration epic closes, and no step in that
+plan authors a HUD. The epic would close with the gate red, or `V-WIRING` would be
+quietly weakened during implementation — which is how a validation rule becomes
+decoration, the exact failure `architecture.md` P4 exists to close.
+
+**This is an obligation on ADR-0010, recorded here so its author inherits it rather
+than discovers it.** When ADR-0010 is Accepted, `hud` moves to Required and every
+level must wire one. Any future ADR that adds a `LevelRoot` consumer export adds a
+row to this table in the same changeset.
 
 ### D3.4 — Findings are coded strings
 

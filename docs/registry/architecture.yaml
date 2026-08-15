@@ -9,12 +9,19 @@
 #   - To change a stance, mark the old entry `status: superseded` with
 #     `superseded_by: ADR-NNNN` and append the replacement.
 #   - `status` is inherited from the owning ADR (proposed | accepted | superseded).
+#   - EXCEPTION — transcription errors. An entry that MISSTATES its own ADR is
+#     corrected in place and carries a `corrected:` key naming the date and the
+#     reason. This is not a supersession: supersession records that the stance
+#     CHANGED, and using it here would falsely imply the ADR once said the wrong
+#     thing. The append-only rule governs changed stances, not entries that never
+#     matched their source. (Convention settled 2026-08-15, applied to
+#     frame_ordering_contract and restart_level_chokepoint_guard.)
 #
 # Created: 2026-08-14 by ADR-0001
 # Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006
 
 version: 1
-last_updated: 2026-08-14
+last_updated: 2026-08-15
 
 state_ownership:
   - state: world_gravity_vector
@@ -29,7 +36,7 @@ state_ownership:
     owner: GravityAuthority
     owner_kind: autoload
     adr: ADR-0001
-    status: proposed
+    status: accepted
     interface: |
       Read via GravityAuthority.gravity / up_dir / right_dir, or by connecting to
       gravity_changed(direction, multiplier). Written ONLY by
@@ -62,7 +69,7 @@ state_ownership:
     owner_kind: scene_export
     adr: ADR-0002
     supersedes: ADR-0001
-    status: proposed
+    status: accepted
     interface: |
       Authored per level as @export on the level root. Applied via
       GravityAuthority.reset_to() from LevelRoot._ready() (init step 3e).
@@ -83,7 +90,7 @@ state_ownership:
     owner_kind: refcounted
     constructed_by: LevelRoot
     adr: ADR-0002
-    status: proposed
+    status: accepted
     interface: |
       Constructed in LevelRoot._ready() and injected via bind(). Written only
       through consume_bucket(). goal_unlocked is derived and has no setter.
@@ -102,7 +109,7 @@ state_ownership:
     owner_kind: refcounted
     constructed_by: LevelRoot
     adr: ADR-0002
-    status: proposed
+    status: accepted
     interface: |
       Constructed in LevelRoot._ready() from the oxygen_capacity export and
       injected via bind(). Mutated only by drain(). No setter exists for
@@ -119,7 +126,7 @@ state_ownership:
     owner_kind: refcounted
     written_by: LevelRoot._on_player_reached_goal
     adr: ADR-0005
-    status: proposed
+    status: accepted
     interface: |
       Read freely. Written ONLY through LevelState.mark_complete(), and only from
       LevelRoot._on_player_reached_goal(). Write-once: there is no un-set, no
@@ -141,7 +148,7 @@ interfaces:
       - LevelRoot          # camera rotation
       - PhysicsProps       # indirect, via default-space gravity
     adr: ADR-0001
-    status: proposed
+    status: accepted
     note: >
       The single broadcast. Zones must NOT emit directly to consumers, and
       consumers must NOT subscribe to individual zones.
@@ -154,7 +161,7 @@ interfaces:
       set_gravity(direction: Vector2, multiplier: float) -> void
     owner: GravityAuthority
     adr: ADR-0001
-    status: proposed
+    status: accepted
     preconditions:
       - "initialize() must be called before any set_gravity() or reset_to()"
       - "multiplier > 0"
@@ -174,7 +181,7 @@ interfaces:
       descent_magnitude() -> float
     owner: GravityAuthority
     adr: ADR-0001
-    status: proposed
+    status: accepted
     preconditions:
       - "unregister_prop() MUST be called from PropBody._exit_tree()"
     guarantees:
@@ -192,7 +199,7 @@ interfaces:
       signal bucket_consumed(consumed: int, total: int)
     owner: LevelState
     adr: ADR-0002
-    status: proposed
+    status: accepted
     preconditions:
       - "buckets_total >= 0, passed at construction, immutable thereafter"
       - "consume_bucket() is called ONLY on a completed pour (watering R3) — never on pickup or early release"
@@ -210,7 +217,7 @@ interfaces:
       signal depleted
     owner: OxygenState
     adr: ADR-0002
-    status: proposed
+    status: accepted
     preconditions:
       - "capacity > 0 — construction fails otherwise [suit-oxygen AC7]"
       - "drain() called exactly once per physics frame, unconditionally, in every player state [suit-oxygen R2/AC1]"
@@ -228,7 +235,7 @@ interfaces:
     kind: lifecycle_contract
     signature: "bind(...) called by LevelRoot._ready() on every consumer"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     consumers:
       - "Player / PlayerWateringComponent  <- LevelState   (via @export var player)"
       - "Goal                              <- LevelState   (via @export var goal)"
@@ -249,7 +256,7 @@ interfaces:
     signature: "mark_complete() -> void"
     owner: LevelState
     adr: ADR-0005
-    status: proposed
+    status: accepted
     preconditions:
       - "called ONLY from LevelRoot._on_player_reached_goal()"
       - "called BEFORE change_level() in that handler — connection order is not a contract"
@@ -264,15 +271,21 @@ interfaces:
   - name: frame_ordering_contract
     kind: lifecycle_contract
     signature: |
-      process_physics_priority, assigned in _ready() from LevelRoot constants:
+      process_physics_priority, assigned in _ready() from FramePriority constants:
         -100  GravityAuthority   ease, space gravity, force-wake props
            0  Player (+ components inline), Plant   pour, movement, move_and_slide()
         +100  OxygenDrain        armed-kill evaluation, then drain
     adr: ADR-0005
-    status: proposed
+    status: accepted
     preconditions:
       - "process_physics_priority, NOT process_priority — the latter orders _process (ADR-0005 F1, verified 2026-08-14)"
       - "assigned in code, never per-scene in the inspector: 8 level scenes = 8 chances to drift"
+      - "constants live on a const-only FramePriority script, NOT on LevelRoot (ADR-0005 A5-05): GravityAuthority is an autoload present before any level scene loads and must not source a constant from a per-level scene script — architecture.md:359, no module calls upward"
+    corrected: >
+      2026-08-15 — signature said "from LevelRoot constants", contradicting the
+      ADR-0005 Key Interfaces block that hoisted them off LevelRoot. Corrected in
+      place, not superseded: the stance never changed, the entry misstated its own
+      ADR. Conflict C4 of architecture-review-2026-08-15.md.
     guarantees:
       - "no consumer can read a stale gravity vector [gravity.md AC12]"
       - "the pour resolves before the drain in every frame [watering AC13]"
@@ -292,7 +305,7 @@ interfaces:
         if remaining <= 0.0:    _death_armed = true
     owner: OxygenDrain
     adr: ADR-0005
-    status: proposed
+    status: accepted
     preconditions:
       - "the four steps run in exactly this order"
       - "arming and killing NEVER happen in the same callback [suit-oxygen AC8]"
@@ -320,7 +333,7 @@ interfaces:
       static count_buckets(level: Node) -> int
     owner: LevelValidation
     adr: ADR-0003
-    status: proposed
+    status: accepted
     preconditions:
       - "validate() is called from LevelRoot._ready() BEFORE LevelState/OxygenState are constructed [ADR-0003 D3.1]"
       - "the caller push_error()s each returned finding; validate() itself pushes nothing"
@@ -365,7 +378,7 @@ interfaces:
       const DETECTOR_LAYER: int = 0
     owner: CollisionLayers
     adr: ADR-0004
-    status: proposed
+    status: accepted
     guarantees:
       - "prop.collision_mask & PLAYER == 0 AND player.collision_mask & PROP == 0 [physics-props.md R1/R2, AC1]"
       - "detector areas mask PLAYER only, so props are invisible to them        [physics-props.md AC2]"
@@ -390,7 +403,7 @@ interfaces:
       const PROP:     PropTuning     = preload("res://src/resources/tuning/prop_tuning.tres")
     owner: Tuning
     adr: ADR-0006
-    status: proposed
+    status: accepted
     guarantees:
       - "exactly one instance per tuning class, project-wide [T3 + D6.9]"
       - "resolves with NO SceneTree involvement at all — script-load time, not tree time [T2]"
@@ -420,7 +433,7 @@ api_decisions:
       - "per-prop apply_central_force each frame"
       - "props subscribing to a re-emitted Player signal"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     rationale: >
       Space gravity is symmetric by nature (physics-props.md R4, zero code) and
       reaches every RigidBody2D in the same physics frame (gravity.md AC12,
@@ -437,7 +450,7 @@ api_decisions:
     rejected:
       - "bare script autoload"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     rationale: >
       A bare script autoload gives @export var direction_ease_rate no inspector
       surface, making the export decorative and leaving the value effectively
@@ -448,7 +461,7 @@ api_decisions:
     rejected:
       - "GravityTuning .tres resource"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     rationale: >
       USER DECISION on 2026-08-13, made against the standing recommendation and
       reaffirmed 2026-08-14. Keeps designer knobs on the node they already live on.
@@ -465,7 +478,7 @@ api_decisions:
       - "hybrid — LevelRoot constructs, GameManager publishes for global lookup"
       - "one autoload per state object"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     rationale: >
       USER DECISION 2026-08-14, deviating from architecture.md D2. reset_level_state()
       existed only because an autoload survives reload_current_scene(), and
@@ -485,7 +498,7 @@ api_decisions:
     rejected:
       - "configure(capacity, tuning) called after construction"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     rationale: >
       An OxygenState with non-positive capacity is not constructible, making
       suit-oxygen.md AC7's runtime failure mode unreachable. LevelValidation
@@ -499,7 +512,7 @@ api_decisions:
       - "same-frame physics shape query in Goal (intersect_shape at +50)"
       - "architecture.md D5 as originally written — Goal._physics_process at +50"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     rationale: >
       Area overlap is resolved once per physics step, not when a body moves, so
       NOTHING later in the batch that moved the player can observe the entry.
@@ -519,11 +532,12 @@ api_decisions:
       authored to begin on the depletion frame rather than on the restart.
 
   - decision: restart_level_chokepoint_guard
-    choice: "LevelRoot.restart_level() returns early when level_complete is true"
+    choice: "LevelRoot.restart_level() returns early when level_complete is true OR _transition_pending is set; both the restart path and the completion path check and set _transition_pending"
     rejected:
       - "guarding only OxygenDrain (the literal reading of architecture.md and ADR-0002)"
+      - "guarding on level_complete alone — ADR-0005 D5.4 declares this INSUFFICIENT, see below"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     rationale: >
       suit-oxygen.md R3/AC2 requires oxygen, spike and kill-area death to be
       INDISTINGUISHABLE. Guarding only the oxygen path makes oxygen the sole death
@@ -531,10 +545,29 @@ api_decisions:
       restart a level already won. The chokepoint costs two lines and closes the
       whole class, including death paths added later by an author who never reads
       ADR-0005.
+    implementation_notes: >
+      The level_complete latch ALONE IS NOT SUFFICIENT (ADR-0005 D5.4, specialist
+      finding A5-02). body_entered for DIFFERENT Area2D nodes delivered in the same
+      flush_queries() batch is not ordered by process_physics_priority — that property
+      governs _physics_process dispatch, not signal-callback dispatch during query
+      flush — and no deterministic inter-area delivery order could be established from
+      documentation or source. If a hazard trigger and the goal trigger are both
+      entered within one physics tick and the hazard handler runs first, restart_level()
+      queues a reload while level_complete is still false; the goal handler then latches
+      completion and queues a scene change, leaving both pending for the same frame.
+      Guarding on level_complete cannot close this, because the handler order is the
+      very thing in question. An idempotent _transition_pending latch checked and set by
+      BOTH paths closes it regardless of order.
     consequence: >
       OxygenDrain keeps its own level_complete check as deliberate redundancy —
       ADR-0002 assigns it the oxygen kill DECISION; the chokepoint is a backstop
       for every path.
+    corrected: >
+      2026-08-15 — the entry recorded only the level_complete latch, a guard ADR-0005
+      D5.4 explicitly declares insufficient. Corrected in place, not superseded: the
+      stance never changed, the entry understated its own ADR. This is the more
+      consequential of the two 2026-08-15 registry corrections because the gap it left
+      is a race, not a naming error. Conflict C5 of architecture-review-2026-08-15.md.
 
   - decision: level_validation_before_construction
     choice: "LevelValidation.validate() runs at LevelRoot._ready() step (a), BEFORE LevelState/OxygenState are constructed, reading raw authored scene data"
@@ -542,7 +575,7 @@ api_decisions:
       - "architecture.md as written — construct state at (a), validate at (b)"
       - "validating against the constructed state objects"
     adr: ADR-0003
-    status: proposed
+    status: accepted
     rationale: >
       ADR-0002's oxygen_state_constructor_injection makes OxygenState
       un-constructible at capacity <= 0. Under architecture.md's published order a
@@ -563,7 +596,7 @@ api_decisions:
       - "@tool + _get_configuration_warnings() edit-time validation"
       - "per-system self-validation distributed across subsystems"
     adr: ADR-0003
-    status: proposed
+    status: accepted
     rationale: >
       Runtime validation fires only on levels someone plays, and the QQ-03
       migration touches all 8. More decisively: watering-system.md AC7 and
@@ -582,7 +615,7 @@ api_decisions:
       - "project.godot layer_names only — nothing testable, no code reference (this is the status quo that produced all five defects)"
       - "assigning layers in _ready() from constants — editor checkboxes would never show runtime truth, and it REQUIRES the mutation D4.6 bans"
     adr: ADR-0004
-    status: proposed
+    status: accepted
     rationale: >
       Bit allocation had no owner. Each node was configured by whoever authored it
       against no written table, which is the "depends on every author remembering
@@ -599,7 +632,7 @@ api_decisions:
       - "conditional guards in handlers (`if body is PropBody: return`) — forbidden by physics-props.md R2 by name"
       - "activating bit 3 and inverting detection so the player queries items"
     adr: ADR-0004
-    status: proposed
+    status: accepted
     rationale: >
       Body-vs-body pairing is an OR, not an AND — godot_body_pair_2d.cpp:256-260
       requires `collide_A || collide_B`, so a ONE-SIDED mask mistake still produces
@@ -616,7 +649,7 @@ api_decisions:
     rejected:
       - "a single combined GameTuning resource holding all ten knobs"
     adr: ADR-0006
-    status: proposed
+    status: accepted
     rationale: >
       A combined resource would hand ADR-0008, ADR-0009 and ADR-0011 one shared
       surface, making "which module owns this value" un-answerable by inspection —
@@ -637,7 +670,7 @@ api_decisions:
       - "a preload() const on each consumer individually — one invariant repeated in N files"
       - "static factory PropTuning.get_default() — load() at call time loses the parse-time failure"
     adr: ADR-0006
-    status: proposed
+    status: accepted
     rationale: >
       Three consumers have INCOMPATIBLE reach: an autoload that exists before any
       level, a static function running with get_tree() == null, and a level root.
@@ -656,14 +689,14 @@ performance_budgets:
   - system: prop_gravity
     budget: "0 per-frame script cost in steady state; <=40-prop wake pass only while the vector is easing (~6-7 frames per change at 60 FPS)"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     verified_by: "physics-props.md AC10 — a room of props at budget holds 60 FPS during a gravity flip (owned by ADR-0011)"
 
 forbidden_patterns:
   - pattern: area2d_gravity_space_override
     description: "Setting gravity_space_override (or `gravity`) on any Area2D, including GravityZone"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     reason: >
       Gives props PER-REGION gravity from the physics server, contradicting
       gravity.md R2/R9 ("no per-body or per-region gravity") and breaking AC12.
@@ -673,19 +706,19 @@ forbidden_patterns:
   - pattern: per_prop_gravity_application
     description: "apply_central_force for gravity, or per-prop gravity_scale tuning"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     reason: "40 script callbacks + 40 force applications per frame to buy variation physics-props.md R4/§7 explicitly forbids. Use default-space gravity."
 
   - pattern: private_gravity_copy
     description: "Any node caching its own gravity/target_gravity instead of reading GravityAuthority"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     reason: "Defeats gravity.md R9. There must be exactly one vector; a cached copy can silently diverge."
 
   - pattern: recompute_jump_velocity
     description: "Recalculating jump_velocity after initialize() — including any bucket-carry weight penalty"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     reason: >
       gravity.md R5/R10 and watering-system.md R2/AC1. Fixed launch velocity is
       what lets level design prove a gap is crossable from the zone multiplier
@@ -694,19 +727,19 @@ forbidden_patterns:
   - pattern: broadcast_before_initialize
     description: "Calling set_gravity() or reset_to() before GravityAuthority.initialize()"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     reason: "ascent_descent_ratio is still 1.0, so the asymmetry is silently lost. gravity.md §5. Must push_error and refuse, never broadcast."
 
   - pattern: zone_targets_player_directly
     description: "Connecting GravityZone.gravity_changed to the player, or calling Player.set_gravity()"
     adr: ADR-0001
-    status: proposed
+    status: accepted
     reason: "Player.set_gravity() is removed by ADR-0001. Zones report to GravityAuthority; the player is a subscriber like any other consumer."
 
   - pattern: global_level_state_access
     description: "Reaching level or oxygen state through an autoload (GameManager.level_state, a new singleton, or a service locator)"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     reason: >
       Level state is owned by LevelRoot and injected. A global access path
       reintroduces the singleton the coding standard exists to remove, and creates
@@ -716,7 +749,7 @@ forbidden_patterns:
   - pattern: level_state_reset_method
     description: "Adding reset() to LevelState or OxygenState, or reintroducing GameManager.reset_level_state()"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     reason: >
       Restart is reconstruction: reload_current_scene() discards LevelRoot and
       both state objects. A reset() re-creates the hand-maintained-clear problem
@@ -726,7 +759,7 @@ forbidden_patterns:
   - pattern: depleted_wired_to_restart
     description: "Connecting OxygenState.depleted directly to LevelRoot.restart_level()"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     reason: >
       Breaks suit-oxygen.md AC8 — airlock entry on the frame oxygen reaches zero
       must complete the level, not kill. depleted is a pure state signal;
@@ -737,7 +770,7 @@ forbidden_patterns:
   - pattern: state_access_before_bind
     description: "A consumer reading LevelState or OxygenState in its own _ready(), or before bind() is called"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     reason: >
       _ready() is bottom-up, so children run before LevelRoot constructs the
       state. Every consumer must guard and push_error(). Same class of hazard as
@@ -746,7 +779,7 @@ forbidden_patterns:
   - pattern: plant_decides_level_outcome
     description: "Plant (or any single objective) writing level-wide state or deciding the level is complete"
     adr: ADR-0002
-    status: proposed
+    status: accepted
     reason: >
       watering-system.md R6 — "no single plant should be deciding whether the room
       is breathable." Plant emits pour_completed and holds no level state.
@@ -755,7 +788,7 @@ forbidden_patterns:
   - pattern: physics_order_via_process_priority
     description: "Using process_priority to order _physics_process callbacks"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     reason: >
       process_priority orders _process (the idle/render callback);
       _physics_process is ordered by the SEPARATE process_physics_priority.
@@ -768,7 +801,7 @@ forbidden_patterns:
   - pattern: same_frame_oxygen_kill
     description: "Restarting the level in the same _physics_process callback that observed remaining <= 0"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     reason: >
       Breaks suit-oxygen.md AC8. Area overlap is resolved once per physics step,
       not when a body moves, so the player's entry into the airlock cannot be
@@ -780,7 +813,7 @@ forbidden_patterns:
   - pattern: level_complete_written_outside_level_root
     description: "Any node other than LevelRoot._on_player_reached_goal() setting level_complete, or setting it to false anywhere"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     reason: >
       The latch is write-once with a single writer. Goal is the tempting culprit —
       it is the node that knows the player arrived — but Goal writing level state
@@ -791,7 +824,7 @@ forbidden_patterns:
   - pattern: unguarded_restart_path
     description: "A death or reset path that reloads the level without consulting level_complete"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     reason: >
       suit-oxygen.md R3/AC2 — the three death paths (oxygen, spike_hazard
       inc_hazard_dmg, kill area) must be indistinguishable. All must route through
@@ -802,7 +835,7 @@ forbidden_patterns:
   - pattern: gameplay_timing_in_idle_process
     description: "Accumulating or evaluating rule-bearing quantities in _process — pour progress, oxygen, timers whose value on a specific frame decides an outcome"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     reason: >
       plant.gd advanced water_progress in _process while oxygen drains in
       _physics_process. "The same frame" in watering-system.md AC13 is not a
@@ -815,7 +848,7 @@ forbidden_patterns:
   - pattern: process_thread_group_split_in_frame_chain
     description: "Setting process_thread_group away from the default on GravityAuthority, Player or OxygenDrain"
     adr: ADR-0005
-    status: proposed
+    status: accepted
     source: engine specialist review 2026-08-14 (A5-01)
     reason: >
       The -100 / 0 / +100 ordering contract depends on all three nodes sharing the
@@ -832,7 +865,7 @@ forbidden_patterns:
   - pattern: validation_first_failure_return
     description: "LevelValidation.validate() returning early on the first breach instead of collecting all of them"
     adr: ADR-0003
-    status: proposed
+    status: accepted
     reason: >
       watering-system.md R8 is explicit that a silently unwinnable level is the
       dangerous failure mode, and a level can breach the bucket contract and the
@@ -844,7 +877,7 @@ forbidden_patterns:
   - pattern: group_based_level_discovery
     description: "Discovering plants, buckets or props via get_nodes_in_group() inside LevelValidation"
     adr: ADR-0003
-    status: proposed
+    status: accepted
     reason: >
       Two independent reasons. (1) TECHNICAL: get_nodes_in_group() is a SceneTree
       method. ADR-0003 D3.7's CI test instantiates each level and never adds it to
@@ -863,7 +896,7 @@ forbidden_patterns:
   - pattern: find_children_owned_default
     description: "Using Node.find_children() with the default owned=true for LevelValidation's node discovery"
     adr: ADR-0003
-    status: proposed
+    status: accepted
     source: engine specialist review 2026-08-14 (F3)
     reason: >
       find_children()'s `owned` parameter defaults to TRUE — "only descendants with
@@ -879,7 +912,7 @@ forbidden_patterns:
   - pattern: runtime_collision_mask_mutation
     description: "Calling set_collision_layer_value() / set_collision_mask_value(), or assigning collision_layer / collision_mask, at runtime on any gameplay node"
     adr: ADR-0004
-    status: proposed
+    status: accepted
     source: engine specialist review 2026-08-14 (F8)
     reason: >
       ADR-0004's isolation guarantee covers AUTHORED state only, and the scene test
@@ -895,7 +928,7 @@ forbidden_patterns:
   - pattern: prop_isolation_by_conditional_guard
     description: "Enforcing prop isolation with type checks in handlers — `if body is PropBody: return` — instead of layer/mask configuration"
     adr: ADR-0004
-    status: proposed
+    status: accepted
     reason: >
       physics-props.md R2 forbids it by name: "enforced by collision layer and mask,
       NOT by conditional logic". Beyond the GDD instruction, it does not work: by the
@@ -907,7 +940,7 @@ forbidden_patterns:
   - pattern: unallocated_collision_bit
     description: "Using 2D physics bit 3, or any of bits 5-32, on any node or TileSet"
     adr: ADR-0004
-    status: proposed
+    status: accepted
     reason: >
       Only WORLD(1), PLAYER(2) and PROP(8) are allocated. Bit 3 was named "item" but
       occupied by nothing — a named-but-free bit is an invitation for the next author
@@ -919,7 +952,7 @@ forbidden_patterns:
   - pattern: tuning_resource_runtime_mutation
     description: "Assigning to any property of Tuning.WATERING / Tuning.OXYGEN / Tuning.PROP, or calling .duplicate() on a tuning resource to obtain a mutable copy"
     adr: ADR-0006
-    status: proposed
+    status: accepted
     reason: >
       Godot caches resources BY PATH, so every preload of the same .tres yields the
       same object (T3, verified 2026-08-14). A single runtime assignment therefore
@@ -937,7 +970,7 @@ forbidden_patterns:
   - pattern: tuning_resource_local_to_scene
     description: "Setting resource_local_to_scene = true on watering_tuning.tres, oxygen_tuning.tres or prop_tuning.tres"
     adr: ADR-0006
-    status: proposed
+    status: accepted
     source: engine specialist review 2026-08-14 (F4)
     reason: >
       The flag makes the engine hand EACH instantiating scene its own copy. On a
@@ -953,7 +986,7 @@ forbidden_patterns:
   - pattern: gravity_tuning_resource
     description: "Creating a GravityTuning resource, or relocating jump_height / jump_distance_to_peak / jump_distance_to_land off Player into a .tres"
     adr: ADR-0006
-    status: proposed
+    status: accepted
     reason: >
       ADR-0001 decision part 7 keeps the jump constants as @exports on Player. That
       was a USER DECISION made against the standing recommendation on 2026-08-13 and
@@ -969,7 +1002,7 @@ forbidden_patterns:
   - pattern: tuning_path_literal_outside_holder
     description: "Any file outside src/scripts/tuning/ containing a res://src/resources/tuning/ path literal, via preload() or load()"
     adr: ADR-0006
-    status: proposed
+    status: accepted
     reason: >
       The .tres path is written down exactly once, in tuning.gd. Repeating it in
       each consumer is the same defect as ADR-0004's defect 5 — terrain's collision

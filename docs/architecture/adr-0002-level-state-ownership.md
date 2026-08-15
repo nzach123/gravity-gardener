@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+**Accepted** — 2026-08-15
 
 ## Date
 
@@ -430,7 +430,7 @@ ADR-0008; the ordering belongs to ADR-0005.
 | **A consumer reads state before `bind()`** — bottom-up `_ready()` makes this the natural mistake | Every consumer guards and `push_error()`s, mirroring `GravityAuthority.initialize()` from ADR-0001. The corrected init order is documented above. A test must assert the refusal, not just the happy path |
 | **A consumer is never wired** — new node added, `LevelRoot` not updated | Fails loudly at first use via the bind guard. ADR-0003 should add a "required consumers bound" check to `LevelValidation` |
 | **`architecture.md` D2 left stale**, so a later ADR is written against `GameManager` ownership | Amend D2 in the same changeset as this ADR; registry entry supersession recorded below |
-| **`buckets_total` seeded from the wrong source** — R6 says "buckets present at level load", R8 says it must equal `Σ buckets_required` | Seed from the bucket group count (R6 is the definition); ADR-0003's `validate()` asserts the R8 equality. Two independent sources is the point — agreement is the check |
+| **`buckets_total` seeded from the wrong source** — R6 says "buckets present at level load", R8 says it must equal `Σ buckets_required` | Seed from `LevelValidation.count_buckets()` (R6 is the definition); ADR-0003's `validate()` asserts the R8 equality. Two independent sources is the point — agreement is the check. *(Amended 2026-08-15 — was "the bucket group count". ADR-0003 D3.2 forbids group-based discovery outright: `get_nodes_in_group()` is a `SceneTree` method and is unavailable on the null-tree CI path. D3.5 requires `LevelRoot` and `validate()` to share the one `count_buckets()` primitive, so that `V-BUCKET-SUM` cannot pass while `LevelRoot` seeds from a subtly different count. **The two independent sources are unchanged** — bucket instances vs `Σ buckets_required` — only the mechanism for counting instances is now named. Resolves conflict C2 of `architecture-review-2026-08-15.md`.)* |
 | **A dynamically spawned object needs level state** | Not required by any current GDD. If it becomes required, the spawner injects at construction; do not reintroduce a global |
 | **A bound consumer outlives the scene reload**, holding a stale state object. `LevelRoot` is *not* the sole owner — `Player`, `Goal`, `HUD` and `OxygenDrain` each hold a strong reference | Signal connections to a `RefCounted` are **weak** and do not keep it alive, so the `Plant.pour_completed` wiring is safe. Reconstruction works because every strong holder is freed in the same synchronous teardown pass as `LevelRoot`. **Invariant: every bound consumer must be a descendant of `LevelRoot`.** A persistent or cross-scene HUD would hold a stale `LevelState` with no error and no crash — `RefCounted` leaks are invisible and there is no watchdog *(added 2026-08-14 — engine specialist review A2-03)* |
 | **`depleted` reconnected directly to `restart_level()`** by someone following `architecture.md`'s signal table | Breaks `suit-oxygen.md` AC8. Registered as a forbidden pattern; ADR-0008 owns the correct death path |
@@ -486,7 +486,9 @@ One atomic changeset — the 10 call sites cannot be migrated independently.
      `OxygenDrain`; connect each `Plant.pour_completed` to
      `level_state.consume_bucket()`
    - line 33 — replace `plants_total = plants.size()` with `buckets_total` seeded
-     from the bucket group count
+     from `LevelValidation.count_buckets()` (ADR-0003 D3.5 — **not** a group count;
+     group-based discovery is forbidden by D3.2, registered as
+     `group_based_level_discovery`). *(Amended 2026-08-15 — C2.)*
    - lines 46, 50 — read carry state from `level_state`
    - line 61 — delete the `reset_level_state()` call; `restart_level()` becomes
      `reload_current_scene()` alone

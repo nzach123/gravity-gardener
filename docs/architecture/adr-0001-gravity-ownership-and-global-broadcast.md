@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+**Accepted** — 2026-08-15
 
 ## Date
 
@@ -127,8 +127,15 @@ PhysicsServer2D.area_set_param(space,
         PhysicsServer2D.AREA_PARAM_GRAVITY_VECTOR, gravity.normalized())
 PhysicsServer2D.area_set_param(space,
         PhysicsServer2D.AREA_PARAM_GRAVITY,
-        descent_magnitude() * prop_tuning.prop_gravity_scale)
+        descent_magnitude() * Tuning.PROP.prop_gravity_scale)
 ```
+
+> *Amended 2026-08-15 by ADR-0006 — was the unqualified `prop_tuning.prop_gravity_scale`.*
+> *`Tuning.PROP` is the only sanctioned reach (ADR-0006 D6.3); a `.tres` path literal*
+> *outside the `Tuning` const holder is registered forbidden as*
+> *`tuning_path_literal_outside_holder`. This line is the evidence ADR-0006's Problem*
+> *Statement cites — at the time it was written, no document defined how a consumer*
+> *obtains a tuning resource. Resolves conflict C6 of `architecture-review-2026-08-15.md`.*
 
 Space gravity is symmetric by nature, which satisfies `physics-props.md` R4 with
 no code, and it reaches every `RigidBody2D` in the same physics frame, which gives
