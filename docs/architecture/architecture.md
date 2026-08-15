@@ -164,7 +164,7 @@ construct directly. `GameManager` keeps only cross-level concerns.
 | `LevelState` *(RefCounted)* | `buckets_consumed`, `buckets_total`, `goal_unlocked`, `carrying_bucket`, `level_complete` | `consume_bucket()`, `goal_unlocked_changed` signal | — | `RefCounted` |
 | `OxygenState` *(RefCounted)* | `remaining`, `capacity`, threshold band | `drain(delta)`, `fraction`, `depleted`, `threshold_changed` | `OxygenTuning` | `RefCounted` |
 | `LevelRoot` (`main.gd`) | Wiring, camera, `next_level`, restart path. **Constructs and owns `LevelState` + `OxygenState`, and injects them** *(ADR-0002)* | `restart_level()`, `change_level()` | Everything below | `Node2D`, `Camera2D`, `SceneTree`, `Tween` |
-| `LevelValidation` | Load-time contract rules | `validate(level) -> Array[String]` | `LevelState`, plants, props | `push_error` |
+| `LevelValidation` *(RefCounted, static)* | Load-time contract rules — six coded | `validate(level) -> PackedStringArray`, `count_buckets(level) -> int` | Authored scene data only: `LevelRoot` exports, plants, buckets, props *(ADR-0003)* | `Node`, `RefCounted` |
 | Tuning resources | Watering / Oxygen / Prop constants | `@export` properties | — | `Resource` (`.tres`) |
 | `CollisionLayerRegistry` | Layer/mask allocation | Named constants | — | `project.godot` `layer_names` |
 
@@ -434,6 +434,13 @@ initialises before `LevelRoot`. The order resolves cleanly:
 impossible under bottom-up `_ready()`. Binding is a step-3 activity, and every
 consumer guards against use before bind.)*
 
+*(Corrected 2026-08-14 by ADR-0003 D3.1. Steps 3(a) and 3(b) were published in the
+opposite order — construct, then validate. ADR-0002 made `OxygenState`
+un-constructible at `capacity <= 0`, so a level with a mis-authored capacity
+aborted at construction before validation ran: the one input `validate()` exists to
+describe was the one input on which it never executed, killing the report-all-
+failures guarantee exactly where it was needed. Validation now runs first.)*
+
 ```
 1. Autoloads      GameManager, GravityAuthority   (uninitialised, guarded)
 2. Level children, bottom-up
@@ -441,13 +448,21 @@ consumer guards against use before bind.)*
    ├─ Plants, Buckets, Props, Zones _ready()
    └─ HUD._ready()      build widgets ONLY — must not touch state yet
 3. LevelRoot._ready()   (parent, last)
-   a. construct LevelState(buckets_total) and OxygenState(capacity, tuning)
-   b. LevelValidation.validate(level)   → push_error on contract breach
+   a. LevelValidation.validate(self)    → push_error each finding
+   b. construct LevelState(count_buckets(self)) and OxygenState(capacity, tuning)
    c. bind state into Player, Goal, HUD, OxygenDrain
    d. connect each Plant.pour_completed → LevelState.consume_bucket()
    e. GravityAuthority.reset_to(default_gravity_*)   → first broadcast
    f. wire zones → GravityAuthority ; register props → GravityAuthority
 ```
+
+Step (a) runs against **raw authored scene data only** — `@export` values on
+`LevelRoot` and on the nodes beneath it, plus the shape of the subtree. It never
+reads `LevelState`, `OxygenState`, or anything produced by `bind()`, which is what
+lets it run before step (b) exists and makes it a pure predicate over a `Node`
+(ADR-0003 D3.1). Step (b) seeds `buckets_total` from
+`LevelValidation.count_buckets()` rather than an independent count, so validation
+cannot certify a total the game does not then use (D3.5).
 
 `TR-gravity-011` (the hardcoded `32.0` ease rate) is not closed by this decision
 and still needs an explicit export on `GravityAuthority`.
@@ -542,15 +557,47 @@ emits once · drain is unconditional across every player state (oxygen AC1).
 
 ```gdscript
 class_name LevelValidation
+extends RefCounted
+## Pure, static load-time contract checks over a level subtree.
+## Reads authored scene data only — never LevelState, OxygenState, or bind() output.
+## Discovery is hand-rolled get_children() recursion by design.
+## Do NOT substitute Node.find_children() — its `owned` defaults to true (ADR-0003 F3).
+
+const V_BUCKET_SUM  := "V-BUCKET-SUM"
+const V_PLANT_MIN   := "V-PLANT-MIN"
+const V_OXY_CAP     := "V-OXY-CAP"
+const V_GRAV_EXPORT := "V-GRAV-EXPORT"
+const V_PROP_BUDGET := "V-PROP-BUDGET"
+const V_WIRING      := "V-WIRING"
+
 static func validate(level: Node) -> PackedStringArray
+static func count_buckets(level: Node) -> int
 ```
 
-Checks `buckets_total == Σ buckets_required` (watering AC7) ·
-`oxygen_capacity > 0` (oxygen AC7) · prop count ≤ `props_per_level_budget`
-(props §7) · every plant `buckets_required >= 1`.
+*(Expanded 2026-08-14 by ADR-0003 D3.3/D3.4. This block previously listed four
+uncoded checks; the contract is six rules, each carrying a stable code.)*
+
+| Code | Rule | Source |
+|---|---|---|
+| `V-BUCKET-SUM` | `count_buckets(level) == Σ plant.buckets_required` | watering R8, AC7 |
+| `V-PLANT-MIN` | every `Plant` has `buckets_required >= 1` | watering R5 |
+| `V-OXY-CAP` | `LevelRoot.oxygen_capacity > 0` | oxygen §5, AC7 |
+| `V-GRAV-EXPORT` | `default_gravity_direction` non-zero **and** `default_gravity_multiplier > 0` | ADR-0001 (delegated), gravity R7 |
+| `V-PROP-BUDGET` | `PropBody` count ≤ `PropTuning.props_per_level_budget` | props R8, §5, §7 |
+| `V-WIRING` | every required consumer `NodePath` export on `LevelRoot` is non-empty and resolves | ADR-0002 (delegated) |
+
+**`V-PROP-BUDGET` is specified but inert until ADR-0006 lands `PropTuning`.** The
+other five are implementable now. **`V-WIRING` checks *wiring*, not *binding*** —
+validation runs at step (a) and `bind()` at step (c), so binding cannot be
+observed; ADR-0002's per-consumer guard still catches the never-bound case at
+first use.
 
 **Guarantees:** returns **all** failures rather than the first; never fails
-silently. The caller `push_error()`s each. `watering-system.md` R8 is explicit
+silently · pushes no errors and mutates nothing, so calling it twice is identical
+to calling it once — the **caller** `push_error()`s each finding · reads no
+injected state, so it is callable on a scene instantiated but never added to the
+tree (which is what makes the headless CI test over all 8 levels possible, D3.7) ·
+codes are stable across message rewording. `watering-system.md` R8 is explicit
 that a silently unwinnable level is the dangerous failure mode, and a level can
 breach the bucket contract and the oxygen contract simultaneously — returning one
 at a time would take two runs to discover.
