@@ -7,7 +7,7 @@
 - Engine: Godot 4.7.1 (GL Compatibility, 2D)
 - GDDs Covered: `gravity.md`, `watering-system.md`, `suit-oxygen.md`, `physics-props.md`
 - Technical Requirements Baseline: 52 requirements (TR-gravity / TR-watering / TR-oxygen / TR-props)
-- ADRs Referenced: 9 of 12 exist, all Accepted (ADR-0001–0009) — 3 remain (ADR-0010–0012), see Required ADRs
+- ADRs Referenced: 12 of 12 exist, all Accepted (ADR-0001–0012) — see Required ADRs
 - Technical Director Sign-Off: 2026-08-13 — **APPROVED WITH CONDITIONS**
 - Lead Programmer Feasibility: SKIPPED — Lean review mode (`production/review-mode.txt`)
 
@@ -19,8 +19,12 @@
    **Resolved 2026-08-15 (session 12)**: all 6 Foundation ADRs Accepted. ADR-0007
    (Core tier) also Accepted (session 17) — 28 of 52 requirements now covered by
    an accepted decision. ADR-0008 and ADR-0009 (Feature tier) also Accepted
-   (2026-08-16, session 19) — 40 of 52 requirements now covered. See
-   `docs/architecture/tr-registry.yaml` for authoritative current counts.
+   (2026-08-16, session 19) — 40 of 52 requirements now covered.
+   **Fully resolved 2026-08-16 (session 23)**: ADR-0010, ADR-0011 and ADR-0012
+   (Presentation tier) also Accepted — 49 of 52 requirements now covered. All 12
+   planned ADRs are Accepted. The one remaining non-covered requirement,
+   `TR-watering-002`, is deliberately unowned (see its `tr-registry.yaml` entry).
+   See `docs/architecture/tr-registry.yaml` for authoritative current counts.
 2. ~~C1 — `GravityAuthority` prop registry has no lifecycle counterpart~~
    **Resolved 2026-08-13**: `unregister_prop()` added to the contract.
 3. ~~C2 — `nearest_acceptable_plant()` had no specified input~~

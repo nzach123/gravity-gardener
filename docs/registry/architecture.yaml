@@ -18,10 +18,11 @@
 #     frame_ordering_contract and restart_level_chokepoint_guard.)
 #
 # Created: 2026-08-14 by ADR-0001
-# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006, ADR-0007
+# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006, ADR-0007,
+#   ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012
 
 version: 1
-last_updated: 2026-08-15
+last_updated: 2026-08-16 (session 23 — ADR-0010/0011/0012 Accepted)
 
 state_ownership:
   - state: world_gravity_vector
@@ -556,6 +557,95 @@ interfaces:
         node the "Plant" mention in its signature still applies to.
       note: "See also plant_gains_process_physics_priority (forbidden_patterns)."
 
+  - name: PropBody.contract
+    kind: method_contract
+    signature: |
+      class_name PropBody extends RigidBody2D
+      func _ready() -> void       # register_prop(self)
+      func _exit_tree() -> void   # unregister_prop(self)
+      func _integrate_forces(state: PhysicsDirectBodyState2D) -> void   # speed clamp
+    owner: PropBody
+    adr: ADR-0011
+    status: accepted
+    preconditions:
+      - "custom_integrator = false, gravity_scale = 1.0 — fixed, never authored per instance"
+      - "collision_layer / collision_mask fixed to CollisionLayers.PROP / PROP_MASK — never authored per instance"
+    guarantees:
+      - "speed never exceeds Tuning.PROP.prop_max_speed, at any gravity angle [physics-props.md AC7]"
+      - "_integrate_forces runs only on an active body, so a settled prop costs nothing in steady state"
+    note: >
+      mass, friction, bounce, linear_damp and angular_damp stay per-scene and
+      authored freely (physics-props.md §7, ADR-0006 D6.1).
+
+  - name: LevelRoot.level_bounds
+    kind: scene_export
+    signature: "@export var level_bounds: Area2D   # collision_layer 0 / mask 8 (prop)"
+    owner: LevelRoot
+    adr: ADR-0011
+    status: accepted
+    guarantees:
+      - "a PropBody exiting level_bounds is freed via queue_free() within one physics frame [physics-props.md R7/AC9]"
+    note: >
+      Replaces the KillArea2D option ADR-0004 left open (see
+      prop_isolation_by_mask's closure note below) — a plane catches one of four
+      gravity directions and six of eight levels have no plane at all.
+      level_bounds joins the V-WIRING required-consumer table as Required,
+      effective on this ADR's acceptance (ADR-0011 D11.7).
+
+  - name: HUD.contract
+    kind: method_contract
+    signature: |
+      class_name HUD extends Node
+      func bind(level_state: LevelState, oxygen_state: OxygenState) -> void
+      var is_bound: bool
+    owner: HUD
+    adr: ADR-0010
+    status: accepted
+    preconditions:
+      - "every read path checks is_bound and push_error()s once before bind() has run"
+    guarantees:
+      - "no HUD script calls a mutator on OxygenState, LevelState, Plant or PlayerWateringComponent — enforced by test, not structure [hud.md H19]"
+    note: >
+      Root is a plain Node, NOT a CanvasLayer — see hud_zones_via_sibling_canvaslayers.
+      No signal is added to any existing class; the HUD subscribes only to
+      signals that already exist.
+
+  - name: PauseController.contract
+    kind: method_contract
+    signature: |
+      class_name PauseController extends Node   # process_mode = PROCESS_MODE_ALWAYS
+      func toggle_pause() -> void
+      func set_paused(value: bool) -> void
+      var is_paused: bool
+    owner: PauseController
+    adr: ADR-0010
+    status: accepted
+    guarantees:
+      - "get_tree().paused is written ONLY here"
+    note: >
+      Owns the toggle, not a menu — no pause menu is designed by ADR-0010. Every
+      other HUD node stays at the default PROCESS_MODE_INHERIT (resolves to
+      PAUSABLE) so it freezes on pause; only PauseController and the debug
+      overlay E7 take PROCESS_MODE_ALWAYS.
+
+  - name: Bucket.throw_spent
+    kind: method_contract
+    signature: "func throw_spent(up_dir: Vector2, right_dir: Vector2) -> void"
+    owner: Bucket
+    adr: ADR-0012
+    status: accepted
+    preconditions:
+      - "called once, after consume(), from PlayerWateringComponent._complete_pour()"
+      - "up_dir / right_dir are captured into locals at the call, before any deferral"
+    guarantees:
+      - "monitorable is false on the same frame throw_spent() returns, no await needed [D12.4]"
+      - "a mid-flight gravity change does not re-aim the arc — the basis was already copied out [watering-system.md §5]"
+      - "the jug is freed within throw_duration + 0.1s of pour completion [AC10]"
+    note: >
+      consume() and update_pour() are unchanged and stay frozen. See
+      monitorable_write_window_by_call_site for why this write is synchronous
+      where on_picked_up()'s is deferred.
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -574,6 +664,108 @@ api_decisions:
       - "CharacterBody2D ignores space gravity, so the player keeps its asymmetric manual application."
     verify_at_implementation:
       - "exact enum spelling of AREA_PARAM_GRAVITY_VECTOR / AREA_PARAM_GRAVITY (Godot 4.7)"
+    extension:
+      adr: ADR-0011
+      change: >
+        reset_to() now performs the same two area_set_param writes SYNCHRONOUSLY,
+        in addition to setting gravity and target_gravity (D11.5). The original
+        decision wrote both params only while easing (gravity != target_gravity),
+        which is false immediately after reset_to() sets them equal — so the
+        write never fired on level load or restart, and a Viewport's World2D
+        space RID survives reload_current_scene(), so props fell the PREVIOUS
+        level's way until the first zone-triggered change. Found by the
+        session-18 review; ADR-0001's own V6 asserted the gravity field only and
+        would have passed while the defect was live. This is an addition to the
+        decision, not a reversal — the per-frame ease-gate write is unchanged.
+
+  - decision: hud_zones_via_sibling_canvaslayers
+    choice: "HUD root is a plain Node; its four zones are SIBLING CanvasLayer children (Z1-Z4), never nested"
+    rejected:
+      - "a CanvasLayer root with the four zones nested inside it — the ADR's own first draft, reverted at engine review"
+      - "one CanvasLayer root with the zones as ordinary Control containers ordered by tree order or z_index"
+    adr: ADR-0010
+    status: accepted
+    rationale: >
+      A CanvasLayer does not observe the Camera2D transform at all, which is
+      the documented mechanism for screen-fixed UI — this is what holds every
+      HUD element upright through the camera's 0.6s rotation tween in level_01
+      and level_07 (hud.md H1), structurally rather than by per-frame
+      counter-rotation arithmetic. Nesting CanvasLayer under CanvasLayer was
+      rejected at engine review: it is not the documented arrangement, and
+      nested layers have open, unresolved engine issues where the declared
+      `layer` order is not honoured (godotengine/godot#25384, #22687) — a
+      hazard this ADR cannot accept for a load-bearing ordering requirement.
+    implementation_notes:
+      - "Ordering is by CanvasLayer.layer, an explicit integer, never by scene-tree position — a tree reorder must not change which zone occludes which."
+      - "follow_viewport_enabled stays false (engine default) on all four layers; enabling it would silently break the viewport-pixel projection."
+
+  - decision: hud_tuning_via_scene_exports
+    choice: "The HUD's 10 layout knobs are @export vars on hud.gd, edited on the single hud.tscn — no fourth Tuning resource"
+    rejected:
+      - "a fourth HudTuning resource alongside WateringTuning/OxygenTuning/PropTuning"
+    adr: ADR-0010
+    status: accepted
+    rationale: >
+      ADR-0006 D6.1 sized the tuning-resource set at exactly three, one per
+      GDD. The HUD is not a GDD. Every HUD knob is a viewport-pixel layout
+      measurement or an animation duration, never a gameplay balance value, so
+      the coding standard's "gameplay values must be data-driven" rule does not
+      reach them. Adding a fourth resource would extend a frozen ADR-0006
+      decision to hold values that aren't gameplay data.
+    note: "Closes hud.md Q16. Recoverable later by promoting to a resource without changing any call site."
+
+  - decision: world_to_canvas_via_global_transform_with_canvas
+    choice: "Z1/Z2 project world position with tracked.get_global_transform_with_canvas().origin, not get_viewport().get_canvas_transform() * tracked.global_position"
+    rejected:
+      - "the canvas-transform multiply form — algebraically equivalent for a bare position, but unconfirmable under simultaneous camera rotation and non-default zoom at engine review"
+    adr: ADR-0010
+    status: accepted
+    rationale: >
+      Both forms are equivalent for a bare position since global_position
+      already bakes in every ancestor transform, but get_global_transform_with_canvas()
+      is the class-documented API for "where does this CanvasItem sit in canvas
+      space right now" and costs nothing extra to prefer. V1/V2 test the result
+      empirically under a live camera tween regardless of which form ships.
+
+  - decision: prop_speed_cap_via_integrate_forces
+    choice: "PropBody clamps linear_velocity magnitude inside _integrate_forces(state), never in _physics_process"
+    rejected:
+      - "clamping linear_velocity from an ordinary _physics_process override"
+      - "a high linear_damp producing a terminal velocity instead of a hard clamp"
+    adr: ADR-0011
+    status: accepted
+    rationale: >
+      _integrate_forces is called only on an active body — confirmed against
+      4.7.1-stable engine source at review (godot_step_2d.cpp:140,151;
+      godot_body_2d.cpp:139-147) — so a settled prop sleeps and costs zero
+      per-frame script cost, satisfying the architecture.yaml prop_gravity
+      budget line. Clamping magnitude (not axis-by-axis) keeps the cap
+      gravity-angle agnostic with no angle-aware code. linear_damp was
+      rejected because it slows the WHOLE fall, not only its top end,
+      breaking the props-and-player-fall-together property physics-props.md
+      §4 names as what makes a flip read as one event.
+
+  - decision: monitorable_write_window_by_call_site
+    choice: "Bucket.throw_spent() sets monitorable = false SYNCHRONOUSLY, unlike on_picked_up()'s set_deferred() write"
+    rejected:
+      - "deferring the write by analogy with on_picked_up() — the ADR's own first draft, reverted at engine review"
+    adr: ADR-0012
+    status: accepted
+    rationale: >
+      on_picked_up() is called from _on_body_entered, which fires during
+      PhysicsServer2D::flush_queries() — mutating an Area2D monitor flag there
+      raises a runtime error, forcing set_deferred(). throw_spent()'s only call
+      path is _complete_pour() -> update_pour() -> Player._physics_process
+      step 2, which core.md places strictly AFTER flush_queries() has
+      returned — a different physics window, so the synchronous write is
+      safe. The first draft deferred it "for the same reason on_picked_up()
+      defers", reasoning by analogy instead of tracing the call path; the
+      godot-specialist gate caught it. Recorded here so a future reader does
+      not re-derive the correction, and so any future Area2D monitor-flag call
+      site in this project is checked against its own window rather than an
+      adjacent one.
+    implementation_notes:
+      - "Also closes the one-frame window in which a jug already in flight would still be detectable, and keeps V1/V2 genuine Logic tests — a deferred write needs a live SceneTree iteration to flush, which a headless single-frame test never does."
 
   - decision: gravity_authority_autoload_kind
     choice: "scene autoload (gravity_authority.tscn with script attached)"
@@ -773,6 +965,16 @@ api_decisions:
       - "Area2D is NEVER solid — a RigidBody2D is detected by an area, never blocked by it. So prop/interactable isolation rests on detection filtering alone."
       - "Guards would fire AFTER contact already occurred in the physics step: the prop has pushed the player and the handler only suppresses the reaction."
       - "Whether KillArea2D should also mask prop (mask 10) for physics-props.md R7 is ADR-0011's decision, not this one's."
+    closed_by:
+      adr: ADR-0011
+      answer: "No."
+      reason: >
+        A kill plane is authored for one gravity direction and this game
+        rotates through four, so it catches at most one of the four sides a
+        prop can leave through — and six of eight levels have no KillArea2D at
+        all. ADR-0011 D11.3 frees out-of-bounds props with a per-level
+        LevelBounds Area2D instead (see LevelRoot.level_bounds above), which is
+        gravity-agnostic on all four sides. KillArea2D never needs mask bit 8.
 
   - decision: tuning_per_system_granularity
     choice: "Three separate Resource subclasses — WateringTuning, OxygenTuning, PropTuning — exactly as the three GDDs name them"
@@ -1306,6 +1508,47 @@ forbidden_patterns:
       water_duration. Same silent-failure shape as ADR-0005's
       process_thread_group_split_in_frame_chain.
     remediation: "PlayerWateringComponent's script must never define _process or _physics_process. update_pour() is called explicitly, only from Player._physics_process step 2."
+
+  - pattern: runtime_prop_instantiation
+    description: "Spawning, pooling, respawning, or persisting any PropBody at runtime — props are authored scene children only"
+    adr: ADR-0011
+    status: accepted
+    reason: >
+      physics-props.md R6/AC8 needs every prop back at its authored transform
+      after a restart. ADR-0002's reconstruction restart (reload_current_scene())
+      already delivers this for free, because the nodes holding authored
+      transforms are new after a reload — but only if every prop IS an authored
+      scene child with nothing to reconstruct at runtime. A runtime-spawned prop
+      has no authored transform to return to, turning R6 from a property of
+      object lifetime back into a reset function someone has to maintain — the
+      exact failure ADR-0002 exists to remove.
+    remediation: "A future feature wanting a breakable crate spawning debris, or a prop dropped by an event, needs a new ADR decision first."
+
+  - pattern: hud_zone_via_nested_canvaslayer
+    description: "Nesting a CanvasLayer inside another CanvasLayer to order HUD zones, or ordering HUD zones by scene-tree position instead of CanvasLayer.layer"
+    adr: ADR-0010
+    status: accepted
+    source: engine specialist review 2026-08-16 (blocking finding, fixed before the ADR-0010 write)
+    reason: >
+      Nested CanvasLayer has open, unresolved engine issues where the declared
+      layer order is not honoured (godotengine/godot#25384, #22687). hud.md's
+      "the debug overlay must not obscure any player-facing element" rule is
+      load-bearing and must not rest on that undefined behaviour, or on tree
+      order that anyone can silently change by dragging a node in the editor.
+    remediation: "Four sibling CanvasLayer zones under a plain Node root, ordered by an explicit layer integer 1-4. See hud_zones_via_sibling_canvaslayers."
+
+  - pattern: hud_writes_game_state
+    description: "Any HUD script (or any node under hud.tscn) calling a mutator on OxygenState, LevelState, Plant, or PlayerWateringComponent"
+    adr: ADR-0010
+    status: accepted
+    reason: >
+      hud.md H19 requires the HUD be strictly read-only against these four
+      types. No read-only facade wraps them (OxygenState already has no setter
+      of any kind; LevelState's two mutators already name their only legal
+      callers in other Accepted ADRs), so this is enforced by test rather than
+      by structure — recorded honestly as a weaker guarantee in ADR-0010
+      Consequences → Negative.
+    remediation: "V9 greps every HUD script for a mutator call on the four named types and asserts zero matches."
 
   - pattern: watering_component_subscribes_gravity_changed
     description: "PlayerWateringComponent, Plant, or Bucket connecting to GravityAuthority.gravity_changed for any reason"

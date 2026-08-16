@@ -50,7 +50,7 @@
 # Source: docs/architecture/architecture-review-2026-08-15.md § Traceability Matrix
 
 version: 1
-last_updated: 2026-08-16
+last_updated: 2026-08-16 (session 23)
 
 baseline:
   total: 52
@@ -61,8 +61,8 @@ baseline:
     props: 9
 
 coverage:
-  covered_by_accepted_adr: 40
-  gap_assigned_to_unwritten_adr: 9
+  covered_by_accepted_adr: 49
+  gap_assigned_to_unwritten_adr: 0
   gap_unowned: 1
   parked_or_implemented: 2
   note: >
@@ -90,6 +90,17 @@ coverage:
     gap_assigned_to_unwritten_adr (22 → 9, after also subtracting the 12 newly
     covered). 40 + 9 + 1 + 2 = 52, verified against a full count of this
     file's per-entry `status:` values, 2026-08-16.
+
+    2026-08-16 (session 23): ADR-0010, ADR-0011 and ADR-0012 all became
+    Accepted in one pass, closing every requirement left in
+    gap_assigned_to_unwritten_adr — that bucket held exactly 9, and these three
+    ADRs' GDD Requirements Addressed tables account for exactly 9 between them.
+    ADR-0012 closes TR-watering-007 (1). ADR-0011 closes
+    TR-props-003/005/006/008 (4). ADR-0010 closes TR-oxygen-007/009 and
+    TR-watering-017/018 (4). covered_by_accepted_adr moves 40 → 49,
+    gap_assigned_to_unwritten_adr moves 9 → 0. 49 + 0 + 1 + 2 = 52. All 12
+    planned ADRs are now Accepted; the only remaining non-covered requirement
+    is TR-watering-002, deliberately unowned (see its entry).
 
 provenance_summary:
   verbatim: 7
@@ -360,8 +371,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: R7
       adr: ADR-0012
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-watering-008
@@ -463,8 +474,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: "§6"
       adr: ADR-0010
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       corrected:
         date: 2026-08-15
@@ -488,8 +499,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: "§5"
       adr: ADR-0010
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       corrected:
         date: 2026-08-15
@@ -572,9 +583,20 @@ requirements:
           automatically when SceneTree.paused is true — no bespoke pause-check
           code, enforced structurally rather than by discipline (P2). ADR-0008
           owns OxygenDrain and therefore owns this requirement. ADR-0010 (pause
-          menu / HUD) owns TOGGLING get_tree().paused and exempting its own
-          Controls with PROCESS_MODE_WHEN_PAUSED — a dependency, not a split
-          ownership claim.
+          menu / HUD) owns TOGGLING get_tree().paused — a dependency, not a
+          split ownership claim.
+
+          CORRECTED 2026-08-16 (session 22/23): the line above previously read
+          "exempting its own Controls with PROCESS_MODE_WHEN_PAUSED". The
+          godot-specialist gate on ADR-0010 confirmed WHEN_PAUSED runs ONLY
+          while the tree is paused — the exact inverse of PAUSABLE. Applied as
+          written, every player-facing HUD Control would go dark during normal
+          play. ADR-0010 D10.6 states the correct policy instead: player-facing
+          HUD Controls take NO exemption at all (freezing on pause is what
+          hud.md requires of them); only the debug overlay E7 and
+          PauseController itself get PROCESS_MODE_ALWAYS. Corrected in place
+          per this registry's own convention — the stance never changed, this
+          note misstated it.
       note: >
         Mechanism: SceneTree.paused, not an injected pause-state object.
         suit-oxygen.md §5 states it plainly: "when one is added, halting the
@@ -597,8 +619,8 @@ requirements:
       gdd: suit-oxygen.md
       gdd_anchor: "R7, AC9"
       adr: ADR-0010
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       note: >
         hud.md reconciles this with its adaptive philosophy by making E1
@@ -619,8 +641,8 @@ requirements:
       gdd: suit-oxygen.md
       gdd_anchor: "R7, AC10"
       adr: ADR-0010
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       note: >
         GDD internal tension, unresolved: §2 wants thirty-seconds-out awareness,
@@ -685,8 +707,8 @@ requirements:
       gdd: physics-props.md
       gdd_anchor: "R6, AC8"
       adr: ADR-0011
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-props-004
@@ -703,8 +725,8 @@ requirements:
       gdd: physics-props.md
       gdd_anchor: "R7, AC9"
       adr: ADR-0011
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-props-006
@@ -712,8 +734,8 @@ requirements:
       gdd: physics-props.md
       gdd_anchor: "§4, §7, AC7"
       adr: ADR-0011
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-props-007
@@ -730,8 +752,8 @@ requirements:
       gdd: physics-props.md
       gdd_anchor: AC10
       adr: ADR-0011
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-props-009

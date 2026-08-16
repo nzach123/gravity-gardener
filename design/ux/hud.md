@@ -9,12 +9,22 @@
 > `watering-system.md` §6 and `systems-index.md:102` on 2026-08-15.
 > **Re-reviewed**: `/ux-review` 2026-08-15 — verdict **NEEDS REVISION**, 1 blocking finding
 > (Z1 occluding the play area), **now closed** by the Z1 occlusion rule, `z1_max_footprint`,
-> and H28/H29. The criteria set is now **H1–H29, 19 BLOCKING**. Five advisory findings remain
-> open: the stale carry-indicator entries in `architecture.md:108` and `TR-watering-017/018`
-> (both assigned to ADR-0010), E1's null / pre-injection state, no size cap on Z2 (**Q17**),
-> no character budget for E2's label, and no HUD frame-cost criterion.
+> and H28/H29. The criteria set is now **H1–H30, 19 BLOCKING**.
+>
+> **Corrected 2026-08-16**, before this spec gains binding force through ADR-0010.
+> Seven edits: the accessibility tier now cites `accessibility-requirements.md` instead
+> of denying it exists · the E1 contrast figures are recomputed · every element now
+> carries its `interaction-patterns.md` pattern name · item #10 is re-categorised to
+> **On Demand** and **E8** is added · E1's pre-injection appearance is defined ·
+> **Q17 is closed** (Z2 offsets along eased `up_dir`, as Z1 does) · stale **Q1, Q3 and
+> Q5** are moved to *Resolved*.
+>
+> Still open, and not touched by that pass: the stale carry-indicator entries in
+> `architecture.md:108` and `TR-watering-017/018` (both assigned to ADR-0010), no size
+> cap on Z2, no character budget for E2's label, no HUD frame-cost criterion, and
+> **Q18** — E8's zone and budget arbitration, assigned to ADR-0010.
 > **Author**: user + ux-designer
-> **Last Updated**: 2026-08-15
+> **Last Updated**: 2026-08-16
 > **Template**: HUD Design
 > **Sources**: `suit-oxygen.md` (R7, §4, §5, AC9, AC10) · `watering-system.md` (R1, R3,
 > R5, R6, §5, §6, AC5, AC12, AC14) · `gravity.md` and `physics-props.md` state no UI
@@ -118,15 +128,15 @@ overlay is a separate tier and is deliberately excluded from this categorization
 | 7 | Pour refusal | **Contextual** | Must be *legible*, not merely absent (§5) |
 | 8 | Plant capacity | **Contextual** | Carried **inside** the #5 prompt, not a standalone element |
 | 9 | Pickup refusal | **Hidden — diegetic** | The untouched bucket staying put is the message |
-| 10 | Level progress | **Contextual** | Brief confirmation on pour completion, when the tally advances |
+| 10 | Level progress | **On Demand** | Held-key readout (E8), plus a brief confirmation when the tally advances (E5) |
 | 11 | `goal_unlocked` | **Hidden — diegetic** | The airlock changes state itself |
 | 12 | Gravity direction | **Hidden — diegetic** | Sprite rotates to the gravity basis |
 
-**Totals: 2 Must Show (one element) · 5 Contextual · 4 Hidden-diegetic · 0 On Demand.**
+**Totals: 2 Must Show (one element) · 4 Contextual · 4 Hidden-diegetic · 1 On Demand.**
 
 **Conflict check — passes.** There is one permanent element, and it is permanent only
-because R7 compels it. Every optional item resolved to Contextual or Hidden. This is
-consistent with the minimal stance in HUD Philosophy; no tension to resolve.
+because R7 compels it. Every optional item resolved to Contextual, On Demand, or Hidden.
+This is consistent with the minimal stance in HUD Philosophy. No tension to resolve.
 
 **On #8** — plant capacity rides *inside* the approach prompt rather than existing as its
 own element. Growth visuals alone are ambiguous: with `buckets_required` ranging 1–4, a
@@ -134,10 +144,25 @@ own element. Growth visuals alone are ambiguous: with `buckets_required` ranging
 count to the prompt resolves the ambiguity exactly when the player is deciding whether to
 pour, and adds no new screen element.
 
-**On #10** — the tally surfaces at the moment it changes rather than being monitored. The
-player is told "3 of 5" on completing a pour, then it clears. This covers the blind spot
-a purely diegetic reading has: buckets in rooms the player has not reached are
-uncountable.
+**On #10** — the tally has two surfaces, and it needs both.
+
+E5 pushes it at the moment it changes. The player is told "3 of 5" on completing a pour,
+then it clears. This covers the blind spot a purely diegetic reading has: buckets in
+rooms the player has not reached are uncountable.
+
+E8 lets the player pull it at any time. **Push alone was not enough.**
+`design/accessibility-requirements.md` § *Objective clarity* found that E5 is the only
+place `buckets_consumed / buckets_total` ever appears, so a player who looks away, or
+who returns after a break, cannot ask how many plants remain. The information sits in
+`LevelState` and was never queryable. The same document reaches the finding a second way
+under § *Cognitive load*: watering asks the player to track four things at once, and the
+compensating clarity is that three of them are spatial and read from the level itself.
+The tally is the one item with no spatial representation.
+
+**A held key rather than a permanent element**, because a permanent tally would spend
+the second slot of a two-element budget forever, which is exactly what the minimal
+stance excludes. **E5 keeps its 1.2 s duration** — that value rests on a structural
+argument (see E5) and this addition does not reopen it.
 
 ### Death sequence — a new requirement with no GDD home
 
@@ -208,8 +233,8 @@ relative to the viewport.
 **Z2 — World-tracked prompts** *(Contextual)*
 
 Interact prompt with embedded plant capacity, pour progress, and pour refusal. Position:
-tracks the owning object (plant, bucket, airlock), offset toward viewport-up. Rotation:
-zero relative to the viewport.
+tracks the owning object (plant, bucket, airlock), offset along **eased gravity-up
+(`up_dir`)**, the same axis Z1 uses. Rotation: zero relative to the viewport.
 
 - Prompts belong to the object, not the player. Several may exist in a level; only those
   within proximity render.
@@ -302,17 +327,55 @@ largest, i.e. any band at or below caution — must not exceed `z1_max_footprint
 considered and **declined**: the plate is what H22's contrast figures rest on, so reducing it
 trades a legibility problem for a legibility problem.
 
-**This rule covers Z1 only.** Z2 still offsets toward viewport-up from its owning object, so a
-plant mounted on a ceiling under inverted gravity would render its prompt into the geometry.
-The remedy may be this same one line — but Z2's anchor arguably belongs to the object's
-mounting surface rather than to gravity, which is a different question and not one Z1's
-reasoning settles. Logged as **Q17**.
+**This rule covers Z2 as well.** *(Extended 2026-08-16 — closes Q17.)* Z2 offsets from its
+owning object along the same eased `up_dir`, so a plant mounted on a ceiling under inverted
+gravity renders its prompt away from the geometry rather than into it.
+
+One offset rule now governs both zones. It reuses the `up_dir` the HUD already reads for Z1,
+adds no knob, and adds no per-object authored field.
+
+**The trade this accepts.** Z2's anchor arguably belongs to the object's *mounting surface*
+rather than to gravity, and Z1's fall-path reasoning genuinely does not settle that — the
+reasoning above is about where the player falls, which says nothing about an object bolted to
+a wall. A per-object authored anchor direction would be more precise. It was **declined**
+because it puts a new authored field on every plant, bucket, and airlock, and **no level
+instances a plant today** (`plant.tscn` exists and is used in none of the 8 level scenes,
+verified 2026-08-16). A single rule is worth more than a more precise one while there is no
+authored content to be precise about.
+
+**What would reopen this:** a level that mounts a prompt-owning object against gravity and
+reads badly under it. At that point the per-object anchor is the answer, and it is additive —
+an authored direction that defaults to `up_dir` changes no existing behaviour.
+
+`interaction-patterns.md` **O1** states the identical question for P2 and is owed this same
+closure. That is a separate file and a separate edit.
 
 ---
 
 ## HUD Elements
 
-Seven elements. E1 is the only permanent one; E3 lives inside E2; E7 is dev-only.
+Eight elements. E1 is the only permanent one. E3 lives inside E2. E7 is dev-only, and
+E8 shows only while its key is held.
+
+### Pattern mapping
+
+Every element implements a catalogued pattern from `design/ux/interaction-patterns.md`.
+That library postdates this spec, so the names are recorded here rather than being
+invented twice. **Use the pattern name in code and in review comments.**
+
+| Element | Pattern | Category |
+|---|---|---|
+| E1 oxygen gauge | **P1** — Viewport-Upright Tracked Readout | Data Display |
+| E2 interact prompt · E4 pour refusal | **P2** — World-Tracked Prompt Panel | Overlay / Feedback |
+| E3 pour progress | **P3** — Fill-on-Hold | Input / Feedback |
+| E5 tally confirmation | **P4** — Transient Confirmation | Feedback |
+| The single Z2 slot | **P5** — Single-Slot Priority Arbitration | Layout / Arbitration |
+| E8 on-demand tally | **P6** — On-Demand Readout | Data Display |
+| E7 diagnostic overlay | **P7** — Paged Diagnostic Overlay | Developer tooling |
+| E6 death sequence | *No pattern.* Full-viewport and used once | — |
+
+P1, P2 and P3 are the three this spec's Q5 named as uncatalogued. P4 and P5 were in use
+and unnamed. P6 is new and is what E8 implements.
 
 ### E1 — Oxygen gauge
 
@@ -343,6 +406,22 @@ E1 renders a **distinct error appearance** — not an empty bar, and not nothing
 
 Making the fault visible on screen, not only in the log, means a mis-authored level
 cannot ship unnoticed.
+
+**Pre-injection state — before `bind()` runs.** The HUD receives `OxygenState` and
+`LevelState` by injection from `LevelRoot._ready()`. `_ready()` runs bottom-up, so the
+HUD is ready *before* the state it reads exists, and there is a window in which E1 has
+no data source at all. This is a distinct condition from `oxygen_capacity <= 0`: there
+the level is mis-authored, here the level is merely still loading.
+
+**E1 renders the same error appearance in both cases, and the HUD pushes an error if it
+is ever asked to draw while unbound.** One appearance rather than two, because the
+player-facing meaning is identical — the readout cannot be trusted — and a second error
+visual would have to be distinguishable from the first for no player benefit. The two
+cases are told apart in the log, not on screen.
+
+The refusal itself is not this spec's to design: every injected consumer must refuse to
+operate before `bind()` and must `push_error()`, which is an architectural contract.
+This section states only what the player sees. **The mechanism belongs to ADR-0010.**
 
 ### E2 — Interact prompt
 
@@ -458,9 +537,49 @@ Two of these earn their place specifically:
   and a level setting one without the other inverts the player's controls against a view
   that never turned.
 
----
+### E8 — On-demand tally
 
-## Dynamic Behaviors
+| Field | Value |
+|---|---|
+| Zone / category | **Assigned to ADR-0010** — see *What this spec does not decide* below · **On Demand** |
+| Pattern | **P6** — On-Demand Readout |
+| Content | `buckets_consumed` / `buckets_total`. Identical to E5's content |
+| Form | Text readout with the same outline treatment as E1–E4 |
+| Trigger | A new progress-query input action, **held**. Appears on press, clears on release |
+| Duration | As long as the key is held. **No timer, no minimum, no maximum** |
+| Update | Live while held, in case a pour completes during the hold |
+| Data | `LevelState.buckets_consumed` / `.buckets_total` |
+
+**Held rather than toggled.** A toggle can be left on, which turns an on-demand element
+into a permanent one and defeats the reason it is on demand. Holding also needs no
+dismissal rule and cannot be left in a wrong state across a restart.
+
+**Content identical to E5, deliberately.** The player is asking the same question E5
+answers unprompted. Two different presentations of one fact would be two things to
+learn.
+
+**E8 does not announce the airlock unlock**, for the same reason E5 does not. On a
+complete level it reads `N / N` and nothing more.
+
+**Input.** This is the **second** new input action this spec requires, after F3. Neither
+is bound today. `interaction-patterns.md` O3 tracks a possible third, owed to ADR-0009's
+pour-toggle alternative, which this spec does not own.
+
+#### What this spec does not decide
+
+Three questions about E8 are architecture rather than UX, and
+`design/accessibility-requirements.md` § *Objective clarity* assigns all three to
+**ADR-0010** by name:
+
+1. **Which zone E8 occupies.** It tracks neither the player nor a world object, so none
+   of Z1, Z2, or Z3 obviously fits. `interaction-patterns.md` O5 records P6 as committed
+   but unplaced.
+2. **How E8 arbitrates against the single Z2 slot.** E1 is permanent and E8 is
+   player-invoked, so the pair is two elements and inside the budget. E1 + E2 + E8 is
+   three, and reachable — the player can hold the query key while standing at a plant.
+3. **Whether E8 suppresses a Z2 element, yields to one, or is refused while one is
+   showing.** This spec states the constraint the answer must satisfy and no more: the
+   two-element budget in *Density profile* is not waived for E8.
 
 ### Oxygen escalation
 
@@ -505,6 +624,7 @@ This is the load-bearing argument for E1 being Must Show, beyond R7's bare wordi
 | E4 refusal | The Z2 slot resolves to a capped plant in range **and** E5 is not showing | On exit, or when E5 fires |
 | E5 tally | `buckets_consumed` advances | After 1.2 s, or immediately when a pour target resolves |
 | E6 death | Any death, after the `level_complete` guard clears | After ~0.35 s, into restart |
+| E8 tally *(On Demand)* | The progress-query key is pressed | The key is released. No timer |
 
 ### Paused state
 
@@ -549,6 +669,8 @@ Recorded so the absence reads as a decision rather than an oversight.
 | At a capped plant | E1 + E4 |
 | Pour just completed | E1 + E5 |
 | Re-pour begun while the tally is up | E1 + E2/E3 — E5 dismissed |
+| Querying progress, in transit | E1 + E8 |
+| Querying progress at a plant | **Undecided — ADR-0010.** E1 + E2 + E8 would be three |
 | Dying | E6 (covers everything) |
 
 **Never more than two player-facing elements at once.** This is the minimal claim from
@@ -583,6 +705,13 @@ pour re-fires it at least `water_duration` later.
 E6 is the deliberate exception to everything: it covers the screen because the level is
 ending.
 
+**E8 is the one open hole in this budget.** Every case above is settled by the single Z2
+slot plus the priority order, because every element is either permanent or triggered by
+the world. E8 is triggered by the player, who can invoke it in any state including one
+that already renders two elements. The budget is **not waived** for it — the resolution
+is assigned to ADR-0010 (see E8 § *What this spec does not decide*), and until that
+lands the claim above holds for every state except a query made at a plant.
+
 ### Debug overlay paging
 
 **F3 cycles**: Off → Gravity → Player → Watering → Oxygen → Level flow → Validation →
@@ -609,21 +738,35 @@ The variants that do exist are internal:
 | **Aspect ratio** | `stretch/aspect="expand"` — the visible area grows in the spare dimension and is never cropped. Z4 anchors safely at any ratio; Z1/Z2/Z3 track objects and are unaffected |
 | **Release build** | **E7 is absent.** Stripped at export, along with its F3 binding |
 
-**Input additions required**: one new action, for the F3 debug toggle. No player-facing
-element consumes input — the HUD is entirely readouts and prompts.
+**Input additions required**: **two** new actions — the F3 debug toggle (E7, dev-only)
+and the progress-query key (E8, player-facing). Neither is bound today. The input map
+holds `move_left`, `move_right`, `jump`, `interact` and `crouch` only.
+
+E8 is the one player-facing element that consumes input, and it consumes it as a
+momentary hold rather than as a control to navigate. Everything else in the HUD is a
+readout or a prompt. `interaction-patterns.md` O3 tracks a possible third action, owed
+to ADR-0009's pour-toggle alternative, which this spec does not own.
 
 ---
 
 ## Accessibility
 
-**No accessibility tier is defined for this project** —
-`design/accessibility-requirements.md` does not exist. This spec is written against a
-WCAG-AA-informed baseline as a working assumption. Logged in Open Questions.
+**The accessibility tier is Standard, with reduced motion and one-hand mode elevated
+above it.** `design/accessibility-requirements.md` (2026-08-15) defines the tier and its
+commitments. This spec's WCAG-AA-informed contrast targets match that document's
+Standard baseline, so no target in this section changes. Where the two documents state a
+figure for the same thing, `accessibility-requirements.md` is authoritative.
 
 **Keyboard navigation: not applicable.** No player-facing HUD element is interactive —
 there are no buttons, no focus order, nothing to tab through. The prompts describe world
-interactions performed by the existing movement and `interact` bindings. The only HUD
-input is F3, which is dev-only.
+interactions performed by the existing movement and `interact` bindings. The two HUD
+inputs are both momentary readout toggles, not navigable controls: F3 pages E7, and the
+progress-query key holds E8 open.
+
+> This stops being true the moment a settings screen exists.
+> `interaction-patterns.md` § *Gaps & Patterns Needed* records that no button, focus,
+> slider, or key-capture pattern exists anywhere in the project, and that a
+> settings-screen UX spec should precede ADR-0010.
 
 **Text scale.** `default_texture_filter=0` (nearest) means non-integer scaling shimmers.
 Any text-size option must scale at integer factors.
@@ -660,16 +803,22 @@ to be read.
 
 | Band | Colour | Contrast vs `#000000` |
 |---|---|---|
-| Nominal | `#61D3E3` cyan | ~12:1 ✅ |
-| Caution | `#EBD320` yellow | ~14:1 ✅ |
-| Warning | `#FFA200` orange | ~10:1 ✅ |
-| Critical | `#E35100` red-orange | ~5.9:1 ✅ |
+| Nominal | `#61D3E3` cyan | ~11.8:1 ✅ |
+| Caution | `#EBD320` yellow | ~13.7:1 ✅ |
+| Warning | `#FFA200` orange | ~10.4:1 ✅ |
+| Critical | `#E35100` red-orange | ~5.4:1 ✅ |
+
+> **Figures corrected 2026-08-16.** This table previously read ~12 / ~14 / ~10 / ~5.9:1.
+> The recomputed values above come from `design/accessibility-requirements.md`
+> § *E1 band contrast*, which is authoritative. Every conclusion drawn from the old
+> numbers still holds — all four bands clear AA on black — so only the numbers changed.
+> The 2026-08-15 `/ux-review` raised this as advisory finding 4 and it was never applied.
 
 Text `#FFFFFF`; outline and backing `#000000`, matching `debugger.gd`'s existing black
 outline at size 4.
 
 **The outline must be black, not white.** Against `#FFFFFF` the critical colour falls to
-roughly 3.5:1 and fails AA. Against black all four bands clear 4.5:1 comfortably.
+roughly 3.9:1 and fails AA. Against black all four bands clear 4.5:1 comfortably.
 
 E1, E2, E3 and E4 all render over arbitrary terrain rather than a controlled background,
 so each requires that outline or backing plate. Text targets 4.5:1 against the
@@ -820,6 +969,7 @@ them — a second copy of a threshold is a divergence waiting to happen.
 | H18 | E2's embedded capacity readout matches the target plant's `buckets_received` / `buckets_required` and updates on pour completion without the player leaving the area | E2, #8 | Logic — BLOCKING |
 | H19 | No HUD element writes to `OxygenState`, `LevelState`, `Plant`, or `PlayerWateringComponent`. The HUD is read-only | Information Architecture | Logic — BLOCKING |
 | H20 | E1 tracks `oxygen_remaining` within 0.1 s at `drain_rate = 1.0` | `suit-oxygen.md` AC9 | UI — ADVISORY |
+| H30 | E8 appears while the progress-query key is held and clears on release, with no timer and no minimum display time. Its `buckets_consumed` / `buckets_total` matches E5's for the same `LevelState`, and a pour completing mid-hold updates it live | E8, P6 | UI — ADVISORY |
 
 ### Accessibility
 
@@ -846,7 +996,8 @@ section supersedes that state. **Q8 is closed.**
 
 > The count rose from seventeen to eighteen when **H14** was written against the
 > paused-state rules, and to nineteen when **H28** was written against the Z1 occlusion
-> rule. No criterion was removed.
+> rule. **H30 (2026-08-16, E8) is ADVISORY, so the BLOCKING count stays nineteen.**
+> No criterion has been removed.
 
 ### Criteria still blocked
 
@@ -863,13 +1014,15 @@ Paused state section respectively.
 
 ### Missing upstream documents
 
+> **Three of the five rows here were stale and have moved to *Resolved* below.**
+> Q1, Q3 and Q5 each named a document that now exists. Verified against the filesystem
+> on 2026-08-16, not inferred. Q2 and Q4 remain correct — those two files are still
+> absent.
+
 | # | Gap | Impact |
 |---|---|---|
-| Q1 | **No accessibility tier.** `design/accessibility-requirements.md` does not exist | This spec assumed WCAG-AA. If the project commits to a different tier, the contrast targets and colour-independence rules need re-checking |
 | Q2 | **No player journey map.** `design/player-journey.md` does not exist | Player context on arrival at each HUD state was inferred from the GDDs rather than read. Template at `.claude/docs/templates/player-journey.md` |
-| Q3 | **No game concept or pillars.** `systems-index.md:111` confirms neither exists | Nothing on disk arbitrates between the four GDDs. The minimal / adaptive / diegetic stance was chosen without a pillar to check it against |
 | Q4 | **No art bible.** The NES palette constraint is recorded in this spec because it has nowhere else to live | A project-wide constraint sitting in a HUD document. Needs relocation to `design/art/art-bible.md` |
-| Q5 | **No interaction pattern library.** This spec invents three patterns — world-tracked prompt panel, fill-on-hold, viewport-upright tracked readout | They should be catalogued in `design/ux/interaction-patterns.md` before a second screen reinvents them |
 
 ### Requirements with no owner
 
@@ -885,6 +1038,10 @@ Paused state section respectively.
 | Q7 | HUD behaviour while paused | **Closed.** Dynamic Behaviors § *Paused state* — the HUD freezes, nothing hides or dims, and E3 suspends rather than draining. H14 is written against it |
 | Q8 | Whether advisory-only HUD criteria were acceptable | **Closed.** The Acceptance Criteria section now carries 19 BLOCKING criteria |
 | Q9 | `watering-system.md` §6 carry indicator vs. this spec's diegetic treatment | **Closed 2026-08-15 by `/propagate-design-change watering-system.md`.** Ratified, not reversed: §6's HUD row now states there is no carry indicator, and `systems-index.md:102` matches. 0 of the 5 ADRs referencing that GDD were affected — ADR-0002's `HUD ← LevelState` binding survives, because the HUD still reads `carrying_bucket` as an E2 precondition and owns the level tally |
+| Q1 | No accessibility tier | **Closed 2026-08-16.** `design/accessibility-requirements.md` exists and sets the tier at **Standard**, with reduced motion and one-hand mode elevated above it. This spec's WCAG-AA assumption matches that baseline, so no contrast target or colour-independence rule changed. The Accessibility section now cites the tier instead of denying it |
+| Q3 | No game concept or pillars | **Closed 2026-08-16.** `design/gdd/game-concept.md` exists (reverse-documented). Its pillars, hook, audience and scope are user-confirmed; session structure, retention and comparable titles are marked ⚠ TBD. The minimal / adaptive / diegetic stance was chosen before it existed and has **not** been re-checked against it — worth one pass, but nothing here is known to conflict |
+| Q5 | No interaction pattern library | **Closed 2026-08-16.** `design/ux/interaction-patterns.md` exists and catalogues **P1–P7**. It named the three patterns this spec invented, plus two that were in use and unnamed (P4, P5) and one new one (P6). Every element now carries its pattern name — see HUD Elements § *Pattern mapping* |
+| Q17 | Z2's offset direction under non-default gravity | **Closed 2026-08-16 by decision.** Z2 offsets along eased `up_dir`, the same axis as Z1. One rule for both zones, no new knob, no per-object field. The per-object mounting-surface anchor was considered and declined while no level instances a plant. See Layout Zones § *Z1 occlusion rule*. `interaction-patterns.md` O1 is owed the same closure |
 
 ### Conflicts requiring resolution outside this spec
 
@@ -901,4 +1058,4 @@ Paused state section respectively.
 |---|---|
 | Q14 | **How E7 is stripped at export is unspecified.** A build-configuration decision (feature tags, conditional instancing) that this spec states as a requirement without prescribing a mechanism |
 | Q15 | **BUG-0001 blocks E6 verification.** Kill planes never fire in `level_05` and `level_06`, so the death sequence cannot be tested against them until the mask is fixed |
-| Q17 | **Z2's offset direction under non-default gravity is unspecified.** The Z1 occlusion rule keyed Z1 to eased gravity-up; Z2 still offsets toward viewport-up, so a ceiling-mounted plant under inverted gravity renders its prompt into the geometry. Deferred deliberately: Z2 tracks static level objects, so its anchor may belong to the mounting surface rather than to gravity — Z1's fall-path reasoning does not decide it. Needs a decision before ADR-0010 |
+| Q18 | **E8's zone, and how it arbitrates against the two-element budget, are undecided.** Assigned to ADR-0010 by `design/accessibility-requirements.md` § *Objective clarity*, together with `interaction-patterns.md` O5. See HUD Elements § E8 |
