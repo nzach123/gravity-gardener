@@ -18,7 +18,7 @@
 #     frame_ordering_contract and restart_level_chokepoint_guard.)
 #
 # Created: 2026-08-14 by ADR-0001
-# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006
+# Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006, ADR-0007
 
 version: 1
 last_updated: 2026-08-15
@@ -426,6 +426,41 @@ interfaces:
       E1/E2 (which cover @export values surviving instantiate()); the two facts are
       independent and both hold.
 
+  - name: GravityAuthority.apply_camera_relative_axis
+    kind: method_contract
+    signature: |
+      static func apply_camera_relative_axis(
+        input_axis: float, right_dir: Vector2, camera_rotation_enabled: bool
+      ) -> float
+    owner: GravityAuthority
+    adr: ADR-0007
+    status: accepted
+    guarantees:
+      - "the sole implementation of camera-relative axis inversion — PlayerMovementComponent and PlayerVisualComponent both call it instead of carrying independent copies [gravity.md TR-gravity-013]"
+    note: >
+      Static — touches no instance state, callable before GravityAuthority.initialize()
+      has run. The one static method on an otherwise all-instance-method autoload
+      script; colocated here because right_dir is its only external dependency and
+      GravityAuthority already owns it (ADR-0007 D7.4).
+
+  - name: Player.up_direction_sync
+    kind: lifecycle_contract
+    signature: "Player._physics_process sets up_direction = GravityAuthority.up_dir as its first statement, before any is_on_floor()/is_on_wall()/move_and_slide() call in the same callback"
+    owner: Player
+    adr: ADR-0007
+    status: accepted
+    preconditions:
+      - "must run before any floor/wall query in the same _physics_process callback"
+    guarantees:
+      - "CharacterBody2D floor/wall detection is correct at every gravity angle [gravity.md AC10]"
+    note: >
+      CharacterBody2D.up_direction is a property on Player itself; GravityAuthority
+      cannot set it from another node. ADR-0001 relocated up_dir ownership to
+      GravityAuthority but left this sync point unassigned — ADR-0007 closes it
+      (TD-ADR finding 1, 2026-08-15). Removing this line "as redundant" is the
+      likely failure mode: it compiles, it runs, and floor detection silently
+      breaks only under rotated gravity.
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -684,6 +719,25 @@ api_decisions:
       - "Files: src/scripts/tuning/*.gd and src/resources/tuning/*.tres. Deliberate deviation from ADR-0004's flat collision_layers.gd placement — four related files are a group."
     verify_at_implementation:
       - "T4 — whether @export_range clamps a value loaded from a hand-edited .tres. Documented as inspector-only but NOT executed against the pinned 4.7.1 binary."
+
+  - decision: player_gravity_component_basis_derivation
+    choice: "PlayerGravityComponent does NOT derive up_dir/right_dir itself; every consumer, including PlayerGravityComponent, reads GravityAuthority.up_dir/.right_dir directly"
+    rejected:
+      - "PlayerGravityComponent independently deriving up_dir/right_dir from the broadcast vector, per a literal reading of ADR-0001's Decision prose"
+    adr: ADR-0007
+    status: accepted
+    rationale: >
+      ADR-0001's Decision text says PlayerGravityComponent "derives its basis
+      (up_dir, right_dir)... from the broadcast vector," which reads as the
+      component computing its own copy. ADR-0001's own world_gravity_vector
+      registry entry lists up_dir/right_dir as GravityAuthority-owned fields with
+      "no consumer may cache it." The two cannot both hold. ADR-0007 resolves the
+      ambiguity in favor of the registry entry, not the prose — a component that
+      recomputes an already-broadcast basis is either a redundant duplicate or, if
+      it could ever disagree, a private_gravity_copy violation by another name.
+    consequence: >
+      This is a stated resolution of an ADR-0001 internal inconsistency, not a
+      supersession of ADR-0001's actual decision. See ADR-0007 D7.2's override note.
 
 performance_budgets:
   - system: prop_gravity
@@ -1011,3 +1065,16 @@ forbidden_patterns:
       resource would become a multi-file edit with no compiler help until each file
       is parsed.
     remediation: "V6 recommends a CI grep. NOTE: V6 is recommended-not-asserted, so this stance currently has NO automated backing — it is enforced by review alone until the epic lands the grep."
+
+  - pattern: watering_lockout_skips_visuals
+    description: "Player._physics_process returning early from the watering-lockout branch before visual_component.update() runs, instead of gating only steps 3-7"
+    adr: ADR-0007
+    status: accepted
+    reason: >
+      watering-system.md AC9 requires the sprite to keep rotating with the gravity
+      easing throughout a pour lock and unlock cleanly into the new orientation.
+      An early return that skips visual_component.update() freezes the sprite
+      mid-pour and makes it snap on unlock. Presents as correct in any manual test
+      that doesn't hold a gravity flip open during a pour — an easy case to miss,
+      since most pours happen in an already-settled room.
+    remediation: "visual_component.update() must run unconditionally every physics frame, watering or not (ADR-0007 D7.3 step 8)."

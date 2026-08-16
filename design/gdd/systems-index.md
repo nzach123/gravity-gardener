@@ -108,7 +108,9 @@ each one needs a document.
 
 ## Not yet designed
 
-No game concept document or pillars exist (`game-concept.md`, `game-pillars.md`).
-The four documents above specify *mechanics* but nothing on disk states what the
-game is for or arbitrates a decision between them. Run `/brainstorm` if that
-becomes a blocker.
+`game-concept.md` was written 2026-08-15 via `/reverse-document`, sourced from
+the four GDDs below plus `src/`, to unblock the art bible gate. It carries
+several ⚠ TBD sections (session structure, retention systems, comparable
+titles) not yet confirmed by the user. `game-pillars.md` as a standalone
+document still does not exist — the three pillars currently live only inside
+`game-concept.md`.

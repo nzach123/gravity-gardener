@@ -61,13 +61,17 @@ baseline:
     props: 9
 
 coverage:
-  covered_by_accepted_adr: 22
-  gap_assigned_to_unwritten_adr: 28
+  covered_by_accepted_adr: 28
+  gap_assigned_to_unwritten_adr: 22
   parked_or_implemented: 2
   note: >
     All six Foundation ADRs became Accepted on 2026-08-15 (session 12). The
     source review recorded coverage-by-accepted as 0 of 52 because every ADR was
-    still Proposed when it ran. That figure is stale; 22 is current.
+    still Proposed when it ran. ADR-0007 (Player component contract and physics
+    step order) became Accepted later the same day (session 17), closing
+    TR-gravity-004/005/006/007/013 and TR-watering-014 — six requirements moving
+    gap → covered. TR-watering-002 was reassigned from ADR-0007 to ADR-0009 in the
+    same pass (see its entry's `corrected` note) and stays gap. 28 is current.
 
 provenance_summary:
   verbatim: 7
@@ -115,8 +119,8 @@ requirements:
       gdd: gravity.md
       gdd_anchor: R4
       adr: ADR-0007
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-gravity-005
@@ -124,8 +128,8 @@ requirements:
       gdd: gravity.md
       gdd_anchor: R5
       adr: ADR-0007
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-gravity-006
@@ -133,8 +137,8 @@ requirements:
       gdd: gravity.md
       gdd_anchor: R6
       adr: ADR-0007
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-gravity-007
@@ -142,8 +146,8 @@ requirements:
       gdd: gravity.md
       gdd_anchor: R10
       adr: ADR-0007
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-gravity-008
@@ -217,8 +221,8 @@ requirements:
       gdd: gravity.md
       gdd_anchor: "§6, AC8, AC10"
       adr: ADR-0007
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
   # --------------------------------------------------------------- watering --
@@ -236,10 +240,20 @@ requirements:
       requirement: "Carry scales max_speed only"
       gdd: watering-system.md
       gdd_anchor: R2
-      adr: ADR-0007
+      adr: ADR-0009
       adr_status: not_written
       status: gap
       provenance: derived
+      corrected: >
+        2026-08-15 — adr field changed ADR-0007 → ADR-0009. ADR-0007 (Player
+        component contract and physics step order) was drafted and explicitly
+        declines to cover this requirement: implementing the carry-speed multiplier
+        needs a carrying_bucket source that belongs to PlayerWateringComponent /
+        LevelState, not the components ADR-0007 owns. ADR-0007's own GDD
+        Requirements Addressed table states this plainly. Corrected in place, not
+        superseded — the original assignment wasn't stale when written (it followed
+        architecture.md's ADR table), it became wrong once ADR-0007's actual scope
+        was drafted.
 
     - id: TR-watering-003
       requirement: "Pour is time-based, held-input, and locks the player"
@@ -357,8 +371,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: AC1
       adr: ADR-0007
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       note: >
         Cross-document invariant. watering-system.md AC1 and gravity.md AC11 are
