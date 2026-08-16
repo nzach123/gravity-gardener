@@ -501,19 +501,30 @@ requirements:
       requirement: "Pause halts drain"
       gdd: suit-oxygen.md
       gdd_anchor: "§5"
-      adr: null
-      adr_status: unowned
+      adr: ADR-0008
+      adr_status: not_written
       status: gap
       provenance: derived
-      unowned: true
+      corrected:
+        date: 2026-08-15
+        was: "adr: null, adr_status: unowned — NO ADR CLAIMS THIS"
+        reason: >
+          User decision (session 18, /architecture-review): OxygenDrain uses the
+          engine's default process_mode (PROCESS_MODE_INHERIT), so it halts
+          automatically when SceneTree.paused is true — no bespoke pause-check
+          code, enforced structurally rather than by discipline (P2). ADR-0008
+          owns OxygenDrain and therefore owns this requirement. ADR-0010 (pause
+          menu / HUD) owns TOGGLING get_tree().paused and exempting its own
+          Controls with PROCESS_MODE_WHEN_PAUSED — a dependency, not a split
+          ownership claim.
       note: >
-        NO ADR CLAIMS THIS. architecture.md QQ-04 routes it to ADR-0010, whose
-        scope is HUD and Control offset usage. The node that must consult pause
-        state is OxygenDrain, which ADR-0008 owns. Neither claims it. Assign an
-        owner before either ADR is written. suit-oxygen.md §5 states it plainly:
-        "when one is added, halting the drain is a requirement, not a nicety."
-        No pause menu exists in src/. hud.md U10.3 already specifies the frozen
-        HUD state that depends on this.
+        Mechanism: SceneTree.paused, not an injected pause-state object.
+        suit-oxygen.md §5 states it plainly: "when one is added, halting the
+        drain is a requirement, not a nicety." No pause menu exists in src/ yet.
+        hud.md U10.3's frozen-HUD state should fall out of the same mechanism —
+        HUD's own Controls default to PROCESS_MODE_INHERIT too — unless ADR-0010
+        needs something (e.g. a pause-menu transition) to keep animating while
+        paused, in which case that exemption must be stated explicitly there.
 
     - id: TR-oxygen-007
       requirement: "Readout is always visible"
@@ -671,8 +682,11 @@ requirements:
 # ---------------------------------------------------------------------------
 open_items:
   - id: TR-oxygen-006
-    issue: "No ADR owns it. Assign before ADR-0008 or ADR-0010 is written."
-    severity: blocking_for_adr_0008
+    issue: >
+      Owner decided (session 18): ADR-0008, via SceneTree.paused. Still a gap
+      until ADR-0008 is actually written — this is a decision on record, not
+      a closed requirement.
+    severity: tracked_decision
 
   - id: TR-gravity-012
     issue: >

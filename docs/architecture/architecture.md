@@ -7,15 +7,18 @@
 - Engine: Godot 4.7.1 (GL Compatibility, 2D)
 - GDDs Covered: `gravity.md`, `watering-system.md`, `suit-oxygen.md`, `physics-props.md`
 - Technical Requirements Baseline: 52 requirements (TR-gravity / TR-watering / TR-oxygen / TR-props)
-- ADRs Referenced: none exist — 12 required, see Required ADRs
+- ADRs Referenced: 7 of 12 exist, all Accepted (ADR-0001–0007) — 5 remain (ADR-0008–0012), see Required ADRs
 - Technical Director Sign-Off: 2026-08-13 — **APPROVED WITH CONDITIONS**
 - Lead Programmer Feasibility: SKIPPED — Lean review mode (`production/review-mode.txt`)
 
 ### Sign-off conditions
 
-1. All 6 Foundation ADRs (ADR-0001 … ADR-0006) accepted before implementation
+1. ~~All 6 Foundation ADRs (ADR-0001 … ADR-0006) accepted before implementation
    begins. This is a hard gate: 0 of 52 requirements are covered by an accepted
-   decision today.
+   decision today.~~
+   **Resolved 2026-08-15 (session 12)**: all 6 Foundation ADRs Accepted. ADR-0007
+   (Core tier) also Accepted (session 17) — 28 of 52 requirements now covered by
+   an accepted decision.
 2. ~~C1 — `GravityAuthority` prop registry has no lifecycle counterpart~~
    **Resolved 2026-08-13**: `unregister_prop()` added to the contract.
 3. ~~C2 — `nearest_acceptable_plant()` had no specified input~~
@@ -105,9 +108,12 @@ that would otherwise have shaped level design.
 | `Bucket` | Feature | Pickup, consumption | Exists, wrong base class |
 | `GravityZone` | Feature | Zone direction + multiplier declaration | Exists |
 | `Goal` (airlock) | Feature | Unlock presentation, `player_reached_goal` | Exists, no change needed |
-| `HUD` | Presentation | Oxygen readout, thresholds, carry indicator | **New** |
+| `HUD` | Presentation | Oxygen readout, thresholds | **New** |
 | `PhysicsProps` | Presentation | Cosmetic rigid bodies | **New** |
 | `PlayerVisualComponent` | Presentation | Sprite rotation, squash/stretch, animation | Exists |
+
+*(Corrected 2026-08-15: "carry indicator" resolved diegetic, not HUD — session 11's
+`/propagate-design-change watering-system.md`, see `watering-system.md` §6.)*
 
 ### Binding layer decisions
 
@@ -189,7 +195,7 @@ a plant, bucket, or the airlock" — become structurally impossible to violate.
 | Module | Owns | Exposes | Consumes | Engine APIs |
 |---|---|---|---|---|
 | `Player` facade | Physics-step ordering, export forwarding | Proxy properties, `win_level()` | All components | `CharacterBody2D`, `move_and_slide()`, `is_on_floor/wall()`, `Input` |
-| `PlayerGravityComponent` | Derived basis, magnitudes, `jump_velocity` | `up_dir`, `right_dir`, `jump_velocity`, `apply_gravity()` | `GravityAuthority.gravity_changed` | `Node`, `Vector2` |
+| `PlayerGravityComponent` | `jump_velocity` (set once) | `initialize()`, `jump_velocity`, `apply_gravity()` | — *(no signal — `Player` passes `gravity`/`ascent_mag`/`descent_mag` as parameters, ADR-0007 D7.1)* | `Node`, `Vector2` |
 | `PlayerMovementComponent` | `max_speed`, accel, friction | `apply()` | Basis dirs, carry multiplier | `Node` |
 | `PlayerJumpComponent` | Coyote, buffer, `min_jump_velocity` | `update()`, `jumped`, `landed` | `jump_velocity`, `Input` | `Node`, `Input` |
 | `PlayerWallJumpComponent` | Wall-jump forces, cooldown | `try()`, `wall_jumped` | `get_wall_normal()` | `Node` |
@@ -216,9 +222,10 @@ a plant, bucket, or the airlock" — become structurally impossible to violate.
 ### Dependency direction
 
 ```
-        GravityZone ──set──▶ GravityAuthority ──gravity_changed──┬──▶ PlayerGravityComponent
-                                                                 ├──▶ PhysicsProps
+        GravityZone ──set──▶ GravityAuthority ──gravity_changed──┬──▶ PhysicsProps
                                                                  └──▶ LevelRoot (camera)
+
+                             GravityAuthority ◀── live read, every frame ── Player  (ADR-0007 D7.1 — no signal)
 
   PlayerWateringComponent ──▶ Plant ──pour_completed──▶ LevelState ──goal_unlocked──▶ Goal
                           └──▶ Bucket
@@ -310,11 +317,21 @@ GravityAuthority._physics_process(Δ)                 [-100]
    └─ for prop in props: prop.sleeping = false      (props R5)
         │
         ▼
+> **Amended 2026-08-15 by ADR-0007** in the `Player` block only (`GravityAuthority`
+> and `OxygenDrain` blocks unchanged). The original block showed `update_derived_dirs()`
+> — a method ADR-0007 deletes — and an early `return` on the watering branch, which
+> would skip the sprite-rotation visuals `watering-system.md` AC9 requires mid-pour.
+> ADR-0007's own review caught and rejected exactly that shape in its draft (TD-ADR
+> finding 2). It also showed a carry-speed multiplier no component implements yet —
+> `TR-watering-002` stays `gap`, owned by ADR-0009. See ADR-0007 D7.3 for the
+> authoritative 8-step order.
+
 Player._physics_process(Δ)                           [0]
-   ├─ if watering: accumulate water_progress, velocity = ZERO, return
-   ├─ update_derived_dirs()   ◀── reads GravityAuthority.gravity
-   ├─ apply_gravity() → wall jump → jump → movement (× carry multiplier)
-   └─ move_and_slide()
+   ├─ read GravityAuthority.gravity/up_dir/right_dir, set up_direction  (D7.1)
+   ├─ if watering: velocity = ZERO   ← does NOT return; visuals still run (AC9)
+   ├─ else: apply_gravity() → wall jump → jump → movement (no carry multiplier
+   │        yet — TR-watering-002 stays gap, owned by ADR-0009) → move_and_slide()
+   └─ visual_component.update()   ← ALWAYS runs, watering or not          (D7.3)
         │
         ▼
 OxygenDrain._physics_process(Δ)                      [+100]
@@ -361,7 +378,7 @@ Every cross-module link is a signal. No module calls upward.
 | Signal | Producer | Consumer(s) |
 |---|---|---|
 | `gravity_changed(dir, mult)` | `GravityZone` | `GravityAuthority` |
-| `gravity_changed(dir, mult)` | `GravityAuthority` | `PlayerGravityComponent`, `PhysicsProps`, `LevelRoot` (camera) |
+| `gravity_changed(dir, mult)` | `GravityAuthority` | `PhysicsProps`, `LevelRoot` (camera) *(not `PlayerGravityComponent` — `Player` live-reads every frame instead, ADR-0007 D7.1)* |
 | `pour_completed` | `Plant` | `LevelState` |
 | `goal_unlocked` | `LevelState` | `Goal`, `HUD` |
 | `threshold_changed(band)` | `OxygenState` | `HUD` |
@@ -490,6 +507,8 @@ func register_prop(prop: RigidBody2D) -> void
 func unregister_prop(prop: RigidBody2D) -> void
 func ascent_magnitude() -> float
 func descent_magnitude() -> float
+static func apply_camera_relative_axis(input_axis: float, right_dir: Vector2, camera_rotation_enabled: bool) -> float
+    # static (ADR-0007 D7.4) — colocated here since right_dir is already owned by GravityAuthority
 ```
 
 `unregister_prop()` is not optional. `physics-props.md` R7 frees props that leave
@@ -720,20 +739,28 @@ and AC2 are enforced by layer allocation, not by conditional logic (props R2).
 
 ## ADR Audit
 
-`docs/architecture/` did not exist before this session. **No ADRs exist**, so
-there is nothing to audit for engine compatibility, version recording, GDD
-linkage or conflicts with the decisions made here.
+*(Corrected 2026-08-15 — stale since session 12.)* `docs/architecture/` now holds
+7 ADRs (ADR-0001–0007), all **Accepted**. Engine compatibility, version recording,
+GDD linkage and cross-ADR conflicts are audited by `/architecture-review`, most
+recently `docs/architecture/architecture-review-2026-08-15-b.md` (verdict:
+CONCERNS, 28/52 covered).
 
-The binding decisions D1–D7 are currently recorded **only in this document**.
-That is the gap the Required ADRs section closes.
+The binding decisions D1–D7 above were this document's original proposal, written
+before any ADR existed. They are now formally recorded in ADR-0001 through
+ADR-0007, which are authoritative wherever the two diverge — see Module Ownership
+and API Boundaries below for the corrections that follow from ADR-0007.
 
 ### Traceability coverage
 
-**0 of 52 requirements covered. 52 gaps.**
+**28 of 52 requirements covered by an Accepted ADR. 22 gaps, 2 parked/implemented.**
+*(Corrected 2026-08-15 — was "0 of 52" when ADR-0001–0007 were all Proposed. See
+`docs/architecture/tr-registry.yaml` for authoritative current counts; regenerate
+via `/architecture-review`, do not hand-edit this table again.)*
 
 | Bucket | Count | Disposition |
 |---|---|---|
-| Assigned to a new ADR | 50 | See Required ADRs |
+| Covered by an Accepted ADR | 28 | ADR-0001–0007 |
+| Assigned to an unwritten ADR | 22 | ADR-0008–0012, see Required ADRs |
 | Parked by GDD design | 1 | `TR-gravity-008` — `zone_priority`. `gravity.md` R8 parks it explicitly, and D1's global broadcast keeps it parked: with one vector in play, overlap is an ordering question, not a spatial one |
 | Implemented and stable | 1 | `TR-gravity-010` — camera rotation, working in `main.gd` |
 
@@ -754,9 +781,9 @@ That is the gap the Required ADRs section closes.
 
 | ADR | Title | Covers |
 |---|---|---|
-| ADR-0007 | Player component contract and physics step order | `TR-gravity-004/005/006/007/013`, `TR-watering-002/014` |
+| ADR-0007 | Player component contract and physics step order | `TR-gravity-004/005/006/007/013`, `TR-watering-014` |
 | ADR-0008 | Oxygen drain and the shared death path | `TR-oxygen-001/002/003/004/006` |
-| ADR-0009 | Watering interaction model | `TR-watering-001/003/004/005/009/010/016` |
+| ADR-0009 | Watering interaction model | `TR-watering-001/002/003/004/005/009/010/016` |
 
 ### Can defer to implementation — Presentation
 
