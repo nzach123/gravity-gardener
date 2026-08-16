@@ -50,7 +50,7 @@
 # Source: docs/architecture/architecture-review-2026-08-15.md § Traceability Matrix
 
 version: 1
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 
 baseline:
   total: 52
@@ -61,8 +61,9 @@ baseline:
     props: 9
 
 coverage:
-  covered_by_accepted_adr: 28
-  gap_assigned_to_unwritten_adr: 22
+  covered_by_accepted_adr: 40
+  gap_assigned_to_unwritten_adr: 9
+  gap_unowned: 1
   parked_or_implemented: 2
   note: >
     All six Foundation ADRs became Accepted on 2026-08-15 (session 12). The
@@ -70,8 +71,25 @@ coverage:
     still Proposed when it ran. ADR-0007 (Player component contract and physics
     step order) became Accepted later the same day (session 17), closing
     TR-gravity-004/005/006/007/013 and TR-watering-014 — six requirements moving
-    gap → covered. TR-watering-002 was reassigned from ADR-0007 to ADR-0009 in the
-    same pass (see its entry's `corrected` note) and stays gap. 28 is current.
+    gap → covered. TR-watering-002 was reassigned from ADR-0007 to ADR-0009 in
+    the same pass (see its entry's `corrected` note). 28 was current through
+    2026-08-15.
+
+    2026-08-16 (session 19): ADR-0008 and ADR-0009 both became Accepted, each
+    after a second godot-specialist validation pass with no blocking issues.
+    ADR-0008 closes TR-oxygen-001/002/003/004/006 (5). ADR-0009 closes
+    TR-watering-001/003/004/005/009/010/016 (7) — 12 requirements moving gap →
+    covered, taking covered_by_accepted_adr from 28 to 40.
+
+    TR-watering-002 is the one exception: ADR-0009 is Accepted but its own GDD
+    Requirements Addressed table and Consequences state plainly that it does
+    NOT cover this requirement. `adr: ADR-0009` / `adr_status: not_written`
+    would misstate both facts (the ADR exists and is Accepted, yet doesn't own
+    the requirement), so its entry was corrected to `adr: null` /
+    `adr_status: unowned` and it moved into its own gap_unowned bucket, out of
+    gap_assigned_to_unwritten_adr (22 → 9, after also subtracting the 12 newly
+    covered). 40 + 9 + 1 + 2 = 52, verified against a full count of this
+    file's per-entry `status:` values, 2026-08-16.
 
 provenance_summary:
   verbatim: 7
@@ -232,16 +250,16 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: R1
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-watering-002
       requirement: "Carry scales max_speed only"
       gdd: watering-system.md
       gdd_anchor: R2
-      adr: ADR-0009
-      adr_status: not_written
+      adr: null
+      adr_status: unowned
       status: gap
       provenance: derived
       corrected: >
@@ -255,27 +273,65 @@ requirements:
         architecture.md's ADR table), it became wrong once ADR-0007's actual scope
         was drafted.
 
+        2026-08-16 — adr field changed ADR-0009 → null; adr_status changed
+        not_written → unowned. ADR-0009 is now written and Accepted, and its
+        GDD Requirements Addressed table, Consequences → Positive, and
+        Consequences → Negative all state plainly that this requirement is NOT
+        addressed. Leaving `adr: ADR-0009` / `adr_status: not_written` would
+        misstate both facts at once: the ADR exists and is Accepted, yet does
+        not own this requirement. Corrected in place, not superseded, per this
+        registry's own convention (see header CORRECTIONS section).
+      note: >
+        /architecture-review 2026-08-15-c, Finding 2: ADR-0009's Proposed draft
+        (2026-08-15) originally claimed this requirement closed in its GDD
+        Requirements Addressed table and Consequences section, but supplied no
+        Decision, Key Interface, or Migration Plan step wiring carrying_bucket
+        into PlayerMovementComponent.apply() — whose signature ADR-0007 froze
+        with no carry parameter, and which ADR-0009 states it inherits
+        unchanged. Corrected 2026-08-16: ADR-0009's GDD Requirements Addressed
+        table, Consequences → Positive, and Consequences → Negative now state
+        plainly that this requirement is NOT addressed and remains gap,
+        unowned. architecture.md:333 and the Core Layer table corrected to
+        match. ADR-0009 was Accepted 2026-08-16 without closing this gap — do
+        not flip this to covered without a written Decision section in some
+        ADR wiring carrying_bucket into PlayerMovementComponent.apply() — most
+        likely reopening ADR-0007's frozen D7.3 signature, or a new ADR.
+
     - id: TR-watering-003
       requirement: "Pour is time-based, held-input, and locks the player"
       gdd: watering-system.md
       gdd_anchor: R3
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       note: >
-        ADR-0009 must define pour abandonment as GESTURE-AGNOSTIC. A toggle
-        alternative to the hold is committed in
-        design/accessibility-requirements.md (Motor), so hold-release and
-        toggle-press must be the same event.
+        Covered for the hold-input/time-based/lock mechanic itself
+        (update_pour(), Decision §2–3). The GESTURE-AGNOSTIC sub-requirement —
+        a toggle alternative to the hold, committed in
+        design/accessibility-requirements.md (Motor), where hold-release and
+        toggle-press must fire the same event — is explicitly NOT addressed;
+        see note_2. accessibility-requirements.md T7 stays blocked on that
+        sub-requirement specifically, not on R3 as a whole.
+      note_2: >
+        /architecture-review 2026-08-15-c, Finding 4: ADR-0009's Proposed draft
+        did not mention accessibility-requirements.md, toggle mode, or
+        gesture-agnosticism anywhere, and reads Input.is_action_pressed("interact")
+        directly and inline at the Player._physics_process call site with no
+        abstraction a toggle handler could hook. Fixed 2026-08-16: ADR-0009
+        Decision §2 now explicitly flags this as an unaddressed follow-up
+        (call-site comment) rather than a silent gap; see ADR-0009 Consequences
+        → Negative. ADR-0009 was Accepted 2026-08-16 without closing this
+        sub-requirement — closing it needs a future decision for a toggle
+        handler driving Input.action_press()/action_release().
 
     - id: TR-watering-004
       requirement: "Early release zeroes progress and retains the bucket"
       gdd: watering-system.md
       gdd_anchor: R4
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       note: >
         AC3 is the test. The visible drain-back specified in hud.md E3 is the
@@ -286,8 +342,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: R5
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-watering-006
@@ -322,8 +378,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: "§5, AC12"
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-watering-010
@@ -331,8 +387,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: "§5"
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-watering-011
@@ -393,8 +449,8 @@ requirements:
       gdd: watering-system.md
       gdd_anchor: "§6"
       adr: ADR-0009
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: verbatim
       confirmed_by: >
         architecture.md:661 — "class_name Bucket extends Area2D
@@ -453,8 +509,8 @@ requirements:
       gdd: suit-oxygen.md
       gdd_anchor: R1
       adr: ADR-0008
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-oxygen-002
@@ -462,8 +518,8 @@ requirements:
       gdd: suit-oxygen.md
       gdd_anchor: "R2, AC1"
       adr: ADR-0008
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-oxygen-003
@@ -471,21 +527,23 @@ requirements:
       gdd: suit-oxygen.md
       gdd_anchor: "R3, AC2"
       adr: ADR-0008
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       note: >
         GDD revision flag: suit-oxygen.md §5 and R3 say oxygen death is
         "immediate", but ADR-0005 D5.2 defers it one physics frame by design.
-        Unresolved.
+        ADR-0008 Decision §1 (Accepted 2026-08-16) now states this narrowing
+        explicitly on the architecture side; suit-oxygen.md's own wording is
+        still unedited. See open_items below — GDD-level conflict unresolved.
 
     - id: TR-oxygen-004
       requirement: "Nothing refills the suit"
       gdd: suit-oxygen.md
       gdd_anchor: "R4, AC3"
       adr: ADR-0008
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
 
     - id: TR-oxygen-005
@@ -502,8 +560,8 @@ requirements:
       gdd: suit-oxygen.md
       gdd_anchor: "§5"
       adr: ADR-0008
-      adr_status: not_written
-      status: gap
+      adr_status: accepted
+      status: covered
       provenance: derived
       corrected:
         date: 2026-08-15
@@ -525,6 +583,14 @@ requirements:
         HUD's own Controls default to PROCESS_MODE_INHERIT too — unless ADR-0010
         needs something (e.g. a pause-menu transition) to keep animating while
         paused, in which case that exemption must be stated explicitly there.
+      note_2: >
+        /architecture-review 2026-08-15-c, Finding 3: RESOLVED 2026-08-16.
+        godot-specialist consult confirmed PROCESS_MODE_INHERIT resolving to
+        PROCESS_MODE_PAUSABLE (and halting _physics_process under
+        SceneTree.paused) is correct Godot 4.x behaviour. A "Pause and process
+        modes" section was added to modules/core.md and ADR-0008's Verification
+        Required field now cites it. Re-confirmed by a second godot-specialist
+        validation pass at Acceptance (2026-08-16), no blocking issues found.
 
     - id: TR-oxygen-007
       requirement: "Readout is always visible"
@@ -683,10 +749,11 @@ requirements:
 open_items:
   - id: TR-oxygen-006
     issue: >
-      Owner decided (session 18): ADR-0008, via SceneTree.paused. Still a gap
-      until ADR-0008 is actually written — this is a decision on record, not
-      a closed requirement.
-    severity: tracked_decision
+      RESOLVED 2026-08-16. Owner decided (session 18): ADR-0008, via
+      SceneTree.paused. ADR-0008 is now written and Accepted (2026-08-16) —
+      status: covered above. No pause menu exists in src/ yet to exercise
+      this against (ADR-0010, not yet written).
+    severity: resolved
 
   - id: TR-gravity-012
     issue: >
@@ -707,3 +774,15 @@ open_items:
       camera_rotation_enabled uncoupled, blocking the reduced-motion commitment
       in design/accessibility-requirements.md. No ADR owns the decouple.
     severity: blocks_accessibility_commitment
+
+  - id: TR-watering-001
+    issue: >
+      /architecture-review 2026-08-15-c, Finding 1: RESOLVED 2026-08-16.
+      ADR-0009's Bucket.on_picked_up() set monitoring = false synchronously
+      from inside _on_body_entered, which fires during
+      PhysicsServer2D::flush_queries(); Godot raises a runtime error on
+      Area2D monitoring mutation mid-flush. Fixed in the ADR text before
+      Acceptance: on_picked_up() now uses set_deferred("monitoring", false),
+      confirmed correct by a second godot-specialist validation pass at
+      Acceptance (2026-08-16). ADR-0009 Accepted 2026-08-16.
+    severity: resolved

@@ -50,6 +50,26 @@ Lower values run earlier. With no explicit value, nodes run in scene-tree order.
 > fails. Same shape as `resource_local_to_scene` below. Neither is a bug; both are
 > defaults that must be *stated* precisely because nothing complains when they change.
 
+## Pause and process modes
+
+| Property | Values | Effect |
+|---|---|---|
+| `Node.process_mode` | `PROCESS_MODE_INHERIT` (default), `PROCESS_MODE_PAUSABLE`, `PROCESS_MODE_WHEN_PAUSED`, `PROCESS_MODE_ALWAYS`, `PROCESS_MODE_DISABLED` | Governs whether `_process`/`_physics_process` run while `SceneTree.paused` is true |
+| `SceneTree.paused` | `bool` | Setting `true` stops `_process`/`_physics_process` from being called on every node whose *resolved* process mode is `PAUSABLE` (the default, via `INHERIT`) |
+
+**`PROCESS_MODE_INHERIT` resolves up the tree to the nearest ancestor with an
+explicit mode**, defaulting to `PROCESS_MODE_PAUSABLE` at the root if nothing
+in the chain overrides it. A node left at the default `INHERIT` therefore
+stops calling `_physics_process` the instant `SceneTree.paused` becomes
+`true` — no per-node check needed, no flag to read. This has been stable
+since pause modes were introduced and is unaffected by any 4.4–4.7.1 change.
+
+**The resolution is chain-wide, not per-node.** Any ancestor between a node
+and the tree root that sets a non-`INHERIT` mode changes what every
+`INHERIT` descendant resolves to, silently, with no compile error and no
+symptom until the tree is actually paused. Same hazard shape as
+`process_thread_group_split_in_frame_chain` above.
+
 ## The physics frame
 
 `Main::iteration()` runs, per physics substep:
@@ -137,6 +157,7 @@ recorded rather than rediscovered.
 | **ADR-0003** | headless level validation with no `SceneTree` (D3.1, D3.7) | `LevelValidation` absent |
 | **ADR-0006** | single-instance tuning resources (D6.9) | `src/resources/tuning/` absent |
 | **ADR-0001** | an autoload ordered ahead of scene nodes in another branch | `GravityAuthority` absent |
+| **ADR-0008** | pause halting `OxygenDrain` via `PROCESS_MODE_INHERIT` + `SceneTree.paused`, no injected pause-state object | `OxygenDrain` absent |
 
 The one Core behaviour already live in `src/` is the bottom-up `_ready()` order that
 existing components rely on implicitly.
@@ -147,6 +168,7 @@ existing components rely on implicitly.
 - https://docs.godotengine.org/en/stable/tutorials/scripting/idle_and_physics_processing.html
 - https://docs.godotengine.org/en/stable/classes/class_area2d.html
 - https://docs.godotengine.org/en/stable/classes/class_resource.html
+- https://docs.godotengine.org/en/stable/classes/class_scenetree.html
 - `main/main.cpp` — `Main::iteration()` loop body
 - `scene/main/scene_tree.cpp` — `_process_group()`, `default_process_group`
 - `scene/main/node.h`

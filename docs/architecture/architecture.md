@@ -7,7 +7,7 @@
 - Engine: Godot 4.7.1 (GL Compatibility, 2D)
 - GDDs Covered: `gravity.md`, `watering-system.md`, `suit-oxygen.md`, `physics-props.md`
 - Technical Requirements Baseline: 52 requirements (TR-gravity / TR-watering / TR-oxygen / TR-props)
-- ADRs Referenced: 7 of 12 exist, all Accepted (ADR-0001–0007) — 5 remain (ADR-0008–0012), see Required ADRs
+- ADRs Referenced: 9 of 12 exist, all Accepted (ADR-0001–0009) — 3 remain (ADR-0010–0012), see Required ADRs
 - Technical Director Sign-Off: 2026-08-13 — **APPROVED WITH CONDITIONS**
 - Lead Programmer Feasibility: SKIPPED — Lean review mode (`production/review-mode.txt`)
 
@@ -18,7 +18,9 @@
    decision today.~~
    **Resolved 2026-08-15 (session 12)**: all 6 Foundation ADRs Accepted. ADR-0007
    (Core tier) also Accepted (session 17) — 28 of 52 requirements now covered by
-   an accepted decision.
+   an accepted decision. ADR-0008 and ADR-0009 (Feature tier) also Accepted
+   (2026-08-16, session 19) — 40 of 52 requirements now covered. See
+   `docs/architecture/tr-registry.yaml` for authoritative current counts.
 2. ~~C1 — `GravityAuthority` prop registry has no lifecycle counterpart~~
    **Resolved 2026-08-13**: `unregister_prop()` added to the contract.
 3. ~~C2 — `nearest_acceptable_plant()` had no specified input~~
@@ -196,7 +198,7 @@ a plant, bucket, or the airlock" — become structurally impossible to violate.
 |---|---|---|---|---|
 | `Player` facade | Physics-step ordering, export forwarding | Proxy properties, `win_level()` | All components | `CharacterBody2D`, `move_and_slide()`, `is_on_floor/wall()`, `Input` |
 | `PlayerGravityComponent` | `jump_velocity` (set once) | `initialize()`, `jump_velocity`, `apply_gravity()` | — *(no signal — `Player` passes `gravity`/`ascent_mag`/`descent_mag` as parameters, ADR-0007 D7.1)* | `Node`, `Vector2` |
-| `PlayerMovementComponent` | `max_speed`, accel, friction | `apply()` | Basis dirs, carry multiplier | `Node` |
+| `PlayerMovementComponent` | `max_speed`, accel, friction | `apply()` | Basis dirs (no carry multiplier — TR-watering-002 gap, unowned) | `Node` |
 | `PlayerJumpComponent` | Coyote, buffer, `min_jump_velocity` | `update()`, `jumped`, `landed` | `jump_velocity`, `Input` | `Node`, `Input` |
 | `PlayerWallJumpComponent` | Wall-jump forces, cooldown | `try()`, `wall_jumped` | `get_wall_normal()` | `Node` |
 | `OxygenDrain` | Nothing — drives `OxygenState` | `depleted` fan-out | `OxygenState`, `OxygenTuning`, pause state | `Node`, `_process` |
@@ -323,14 +325,15 @@ GravityAuthority._physics_process(Δ)                 [-100]
 > would skip the sprite-rotation visuals `watering-system.md` AC9 requires mid-pour.
 > ADR-0007's own review caught and rejected exactly that shape in its draft (TD-ADR
 > finding 2). It also showed a carry-speed multiplier no component implements yet —
-> `TR-watering-002` stays `gap`, owned by ADR-0009. See ADR-0007 D7.3 for the
-> authoritative 8-step order.
+> `TR-watering-002` stays `gap`, unowned as of 2026-08-16 — ADR-0009's Proposed
+> draft explicitly declined to close it (see ADR-0009 Consequences → Negative).
+> See ADR-0007 D7.3 for the authoritative 8-step order.
 
 Player._physics_process(Δ)                           [0]
    ├─ read GravityAuthority.gravity/up_dir/right_dir, set up_direction  (D7.1)
    ├─ if watering: velocity = ZERO   ← does NOT return; visuals still run (AC9)
    ├─ else: apply_gravity() → wall jump → jump → movement (no carry multiplier
-   │        yet — TR-watering-002 stays gap, owned by ADR-0009) → move_and_slide()
+   │        yet — TR-watering-002 stays gap, unowned) → move_and_slide()
    └─ visual_component.update()   ← ALWAYS runs, watering or not          (D7.3)
         │
         ▼

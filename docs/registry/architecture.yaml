@@ -138,6 +138,23 @@ state_ownership:
       frame oxygen reaches zero. goal_unlocked and level_complete are DISTINCT:
       unlocking the airlock is not entering it (watering-system.md §5).
 
+  - state: oxygen_accessibility_drain_rate_multiplier
+    fields:
+      - drain_rate_multiplier
+    owner: OxygenAccessibility
+    owner_kind: autoload
+    adr: ADR-0008
+    status: proposed
+    interface: |
+      Read via OxygenAccessibility.drain_rate_multiplier. Written ONLY through
+      set_drain_rate_multiplier(value), which clamps to [0.5, 1.0].
+    note: >
+      In-memory only; resets to 1.0 on every launch. Disk persistence is
+      deferred to a future settings-screen ADR, which will call
+      set_drain_rate_multiplier() on load. Not a Tuning resource — D6.5's
+      read-only rule does not apply here because this is user data, not
+      design data (ADR-0006 D6.6).
+
 interfaces:
   - name: gravity_changed
     kind: signal
@@ -461,6 +478,84 @@ interfaces:
       likely failure mode: it compiles, it runs, and floor detection silently
       breaks only under rotated gravity.
 
+  - name: OxygenAccessibility.contract
+    kind: method_contract
+    signature: |
+      @export_range(0.5, 1.0, 0.01) var drain_rate_multiplier: float = 1.0
+      func set_drain_rate_multiplier(value: float) -> void
+    owner: OxygenAccessibility
+    adr: ADR-0008
+    status: proposed
+    guarantees:
+      - "drain_rate_multiplier is always in [0.5, 1.0] — set_drain_rate_multiplier() clamps"
+      - "read fresh every physics frame by OxygenDrain; never cached or snapshotted"
+    note: >
+      Composes with Tuning.OXYGEN.drain_rate by multiplication inside OxygenDrain
+      (ADR-0006 D6.6's composition question). OxygenState never depends on this
+      autoload — see oxygen_state_reads_accessibility_autoload.
+
+  - name: PlayerWateringComponent.contract
+    kind: method_contract
+    signature: |
+      var carrying_bucket: bool
+      var is_watering: bool
+      var water_progress: float
+      func register_candidate(plant: Plant) -> void
+      func unregister_candidate(plant: Plant) -> void
+      func pickup_bucket(bucket: Bucket) -> void
+      func update_pour(delta: float, interact_held: bool) -> void
+    owner: PlayerWateringComponent
+    adr: ADR-0009
+    status: proposed
+    preconditions:
+      - "update_pour() is called inline from Player._physics_process step 2 (ADR-0007), never independently scheduled"
+    guarantees:
+      - "is_watering, water_progress, and the locked target are written ONLY inside update_pour()"
+      - "carries no process_physics_priority of its own — see watering_component_gains_own_physics_process"
+    note: >
+      A Node child of Player, same shape as its sibling components (ADR-0007).
+      Its script must never override _process or _physics_process.
+
+  - name: Plant.watering_contract
+    kind: method_contract
+    signature: |
+      signal player_entered_range
+      signal player_exited_range
+      signal pour_completed          # fixed name, ADR-0002
+      func is_capped() -> bool
+      func receive_pour() -> void
+      @export var buckets_required: int
+      @export var water_duration: float
+    owner: Plant
+    adr: ADR-0009
+    status: proposed
+    guarantees:
+      - "receive_pour() is the only path that increments buckets_received"
+      - "is_capped() is checked by the caller (PlayerWateringComponent) at target selection — a capped plant is never locked as a target, so water_progress never accumulates against it"
+    note: >
+      Plant drives no per-frame accumulation of its own. Growth-visual playback
+      (speed_scale, play()) stays in _process (ADR-0005 D5.5's cosmetic carve-out).
+
+  - name: frame_ordering_contract.plant_removed
+    kind: lifecycle_contract
+    signature: "Plant carries no process_physics_priority assignment"
+    adr: ADR-0009
+    status: proposed
+    narrows:
+      entry: frame_ordering_contract
+      adr: ADR-0005
+      precondition: "signature listed 'Player (+ components inline), Plant' sharing priority 0"
+      scope: >
+        Plant's row in the ADR-0005 diagram existed only because plant.gd still
+        drove its own water_progress accumulation at the time ADR-0005 was
+        written. ADR-0009 moves pour-driving to PlayerWateringComponent
+        (watering_pour_driving_owner), which runs inline within Player's own
+        priority-0 callback. Plant has no per-frame rule-bearing work left, so
+        it needs no process_physics_priority value at all — not 0, not
+        anything else. The ADR-0005 entry is unmodified; this narrows which
+        node the "Plant" mention in its signature still applies to.
+      note: "See also plant_gains_process_physics_priority (forbidden_patterns)."
+
 api_decisions:
   - decision: prop_gravity_via_physics_space
     choice: "PhysicsServer2D.area_set_param on the default 2D space (AREA_PARAM_GRAVITY_VECTOR + AREA_PARAM_GRAVITY)"
@@ -738,6 +833,78 @@ api_decisions:
     consequence: >
       This is a stated resolution of an ADR-0001 internal inconsistency, not a
       supersession of ADR-0001's actual decision. See ADR-0007 D7.2's override note.
+
+  - decision: oxygen_drain_rate_accessibility_composition
+    choice: >
+      OxygenDrain pre-scales delta by OxygenAccessibility.drain_rate_multiplier
+      before calling OxygenState.drain(scaled_delta). OxygenState is unchanged
+      and still multiplies by tuning.drain_rate internally, so the two compose
+      by multiplication with no branch: effective rate = tuning.drain_rate *
+      drain_rate_multiplier.
+    rejected:
+      - "replace model — override fully replaces tuning.drain_rate instead of stacking"
+      - "OxygenState reading OxygenAccessibility directly"
+      - "designing full ConfigFile/user:// disk persistence now, with no settings UI to write it"
+    adr: ADR-0008
+    status: proposed
+    rationale: >
+      USER DECISION 2026-08-15. Stacking via delta pre-scaling keeps
+      OxygenState._init(capacity, tuning) and drain(delta) exactly as ADR-0002
+      froze them, keeps OxygenState a plain RefCounted with no autoload
+      dependency, and needs no "is an override active" branch inside a frame
+      contract ADR-0005 already defined as branch-free. Since
+      Tuning.OXYGEN.drain_rate is fixed at 1.0 (suit-oxygen.md §7 — "must not
+      be used as a difficulty dial"), this reaches the same numbers a replace
+      model would, without the branch.
+    consequence: >
+      drain() receives an accessibility-scaled delta, not a raw frame delta.
+      Any future extension of OxygenState.drain() that needs real elapsed
+      time (a play-time counter, a VFX timer) must not reuse this value —
+      flagged as a risk in ADR-0008.
+
+  - decision: watering_pour_driving_owner
+    choice: >
+      PlayerWateringComponent owns water_progress, the interact/target-plant
+      check, and completion/early-release logic, per watering-system.md §6's
+      Code table. Plant reports a completed pour and nothing more.
+    rejected:
+      - "keeping pour-driving on Plant, per ADR-0005's literal D5.5 text (written against the pre-refactor code, before the GDD's §6 Code table existed)"
+    adr: ADR-0009
+    status: proposed
+    rationale: >
+      USER DECISION 2026-08-15. The approved watering-system.md §6 Code table
+      already assigns pour-driving to PlayerWateringComponent by name;
+      ADR-0005's D5.5 text pre-dates that assignment and names plant.gd only
+      because that was still the code's shape at the time. Following D5.5's
+      literal text instead would contradict an already-approved GDD and
+      require reopening it — a design-document change, outside this ADR's
+      authority to make unilaterally.
+    consequence: >
+      ADR-0005's frame_ordering_contract gains a narrowing note
+      (frame_ordering_contract.plant_removed) rather than being silently
+      contradicted.
+
+  - decision: watering_target_candidate_registration
+    choice: >
+      LevelRoot wires each Plant's player_entered_range/player_exited_range
+      signals to PlayerWateringComponent.register_candidate()/
+      unregister_candidate(), maintaining an Array[Plant] the component scans
+      for the nearest uncapped candidate.
+    rejected:
+      - "PlayerWateringComponent polling get_overlapping_bodies() on every Plant's interact area, every physics frame, via a group lookup"
+      - "Bucket pickup mediated by LevelRoot the same way, with a picked_up signal"
+    adr: ADR-0009
+    status: proposed
+    rationale: >
+      Group-based per-frame discovery is the same hazard class ADR-0003
+      already rejected for LevelValidation (group_based_level_discovery) —
+      invisible bookkeeping that silently drops a plant an author forgot to
+      register. An explicit LevelRoot-wired connection, matching the existing
+      Plant.pour_completed wiring pattern, keeps it visible and testable.
+      Bucket pickup is a two-party interaction reaching only the Player node
+      Bucket already detected via body_entered — no shared state object is
+      involved, so LevelRoot mediation buys nothing there (unlike
+      pour_completed, which must reach LevelState).
 
 performance_budgets:
   - system: prop_gravity
@@ -1078,3 +1245,80 @@ forbidden_patterns:
       that doesn't hold a gravity flip open during a pour — an easy case to miss,
       since most pours happen in an already-settled room.
     remediation: "visual_component.update() must run unconditionally every physics frame, watering or not (ADR-0007 D7.3 step 8)."
+
+  - pattern: oxygen_state_reads_accessibility_autoload
+    description: "OxygenState, or any RefCounted state object, reading OxygenAccessibility or any other autoload directly instead of receiving a value from its Node caller"
+    adr: ADR-0008
+    status: proposed
+    reason: >
+      Breaks the coding standard's "public methods must be unit-testable...
+      dependency injection over singletons". OxygenState is constructible and
+      testable with only (capacity, tuning) per ADR-0002; an autoload
+      dependency would force a live singleton into every test, the same
+      hazard class the LevelValidation null-tree precedent (ADR-0003 E1/E2)
+      already treats as a risk.
+    remediation: "OxygenDrain (a Node) reads OxygenAccessibility.drain_rate_multiplier and pre-scales delta before calling OxygenState.drain() — see oxygen_drain_rate_accessibility_composition."
+
+  - pattern: oxygen_pause_state_object
+    description: "Injecting a PauseState object into OxygenDrain or OxygenState, or adding any explicit pause check inside their logic, instead of relying on SceneTree.paused + PROCESS_MODE_INHERIT"
+    adr: ADR-0008
+    status: proposed
+    reason: >
+      SceneTree.paused already stops _physics_process from being called at
+      all under the default PROCESS_MODE_INHERIT. An injected flag would
+      duplicate that engine guarantee for no benefit and add a state check to
+      a frame contract ADR-0005 defined as check-then-drain-then-arm with no
+      other branches. Already decided against in session 18.
+    note: >
+      Correctness here is chain-wide: LevelRoot and every ancestor between it
+      and the tree root must stay PROCESS_MODE_INHERIT (or explicit
+      PAUSABLE). Nothing enforces this structurally — see ADR-0008 Risks.
+
+  - pattern: plant_gains_process_physics_priority
+    description: "Assigning process_physics_priority to Plant, at any value"
+    adr: ADR-0009
+    status: proposed
+    reason: >
+      Plant has no per-frame rule-bearing work once pour-driving lives on
+      PlayerWateringComponent (watering_pour_driving_owner). A future author
+      "restoring" a priority-0 assignment "for consistency" with
+      GravityAuthority/Player/OxygenDrain would be reintroducing a slot for
+      logic that no longer exists on this node. Growth-visual playback
+      (speed_scale, play()) is cosmetic and belongs in _process, per ADR-0005
+      D5.5's own carve-out.
+    remediation: "Plant needs no process_physics_priority assignment at all. If a future feature genuinely needs one, it requires its own ADR, not a silent restoration of ADR-0005's original diagram."
+
+  - pattern: watering_component_gains_own_physics_process
+    description: "Adding a _physics_process (or _process) override to PlayerWateringComponent's script"
+    adr: ADR-0009
+    status: proposed
+    source: engine specialist review 2026-08-15
+    reason: >
+      PlayerWateringComponent is a Node child of Player, the same shape as
+      its sibling components, but its update_pour() is meant to run only via
+      Player's inline call at step 2. Godot auto-detects a _physics_process
+      override on any Node and schedules it independently the moment one
+      exists — no opt-in required. A future author copy-pasting boilerplate
+      from a sibling component would cause update_pour() to run twice per
+      physics frame: once via the phantom auto-call, once via Player's
+      existing inline call. No compile error, no crash — water_progress
+      silently accumulates twice as fast, halving the effective
+      water_duration. Same silent-failure shape as ADR-0005's
+      process_thread_group_split_in_frame_chain.
+    remediation: "PlayerWateringComponent's script must never define _process or _physics_process. update_pour() is called explicitly, only from Player._physics_process step 2."
+
+  - pattern: watering_component_subscribes_gravity_changed
+    description: "PlayerWateringComponent, Plant, or Bucket connecting to GravityAuthority.gravity_changed for any reason"
+    adr: ADR-0009
+    status: proposed
+    reason: >
+      watering-system.md §5 states the pour is unaffected by a gravity flip
+      and the lock holds through the transition. Interact-area and
+      pickup-area overlap are pure Area2D layer/mask detection, which does
+      not consult gravity direction — a flip does not move the player's
+      CollisionShape2D, so it cannot spuriously enter or exit an area. A
+      future author subscribing "to be safe" during a flip would be adding
+      the first coupling between watering and gravity broadcast for a
+      problem that does not exist, and risks interrupting a pour the GDD
+      explicitly requires to survive the transition (AC9).
+    remediation: "No watering-system code subscribes to gravity_changed. If a genuine interaction between gravity and watering is ever designed, it needs its own ADR stating what problem it solves."
