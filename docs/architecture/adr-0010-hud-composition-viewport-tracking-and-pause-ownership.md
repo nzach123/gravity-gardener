@@ -12,7 +12,7 @@ Accepted
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 |
+| **Engine** | Godot 4.7.1 |
 | **Domain** | UI |
 | **Knowledge Risk** | MEDIUM — the pinned 4.7.1 is post-LLM-cutoff, and this is the only UI-domain ADR in the project |
 | **References Consulted** | `docs/engine-reference/godot/modules/ui-control.md` · `docs/engine-reference/godot/modules/core.md` § *Pause and process modes* · `docs/engine-reference/godot/breaking-changes.md` § *Control / UI* · `docs/engine-reference/godot/deprecated-apis.md` |

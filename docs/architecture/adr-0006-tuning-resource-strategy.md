@@ -12,7 +12,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 (pinned 2026-08-13) |
+| **Engine** | Godot 4.7.1 (pinned 2026-08-13) |
 | **Domain** | Core / Scripting — the `Resource` system, `preload`, `@export_range` |
 | **Knowledge Risk** | **HIGH** at the project level. No `modules/core.md` reference exists — only `physics-2d.md` and `ui-control.md` — so this domain has no curated snapshot to check against |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `breaking-changes.md` · `deprecated-apis.md` · `current-best-practices.md` |

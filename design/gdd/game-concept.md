@@ -119,7 +119,11 @@ against a stated design intent. Revise before treating as binding.
    player state (`suit-oxygen.md`).
 4. **Cosmetic physics props** — loose objects that share the global gravity
    vector and never affect solvability, existing purely to make a flip read as
-   the room moving rather than a camera trick (`physics-props.md`).
+   the room moving rather than a camera trick (`physics-props.md`). At MVP
+   tier this is already satisfied without props — camera tween and continuous
+   player-sprite rotation alone carry the "room moving" proof (`art-bible.md`
+   §1.3); physics props add a second corroborating layer once built at
+   Vertical-Slice tier.
 
 ---
 
@@ -202,20 +206,33 @@ system behind them yet:
 The room decides which way is down; the player reads it and reacts. Gravity is
 never something the player character possesses independently — it is global,
 broadcast state that every gravity-affected body in the level shares at once.
+A flip must be legible from the room itself, not from a UI readout — the
+world moving is the proof, not a number changing on the HUD.
 
 *Design test*: if a proposed mechanic would let the player hold a personal
 gravity distinct from the room's, or would let a prop disagree with the
-player's gravity, this pillar rejects it (`gravity.md` R9).
+player's gravity, this pillar rejects it (`gravity.md` R9). If a proposed
+presentation would communicate a flip only through UI rather than through
+the room's own physics and camera behavior, this pillar rejects that too.
 
 ### Pillar 2: Oxygen never refills
 
 Every action — pouring, waiting, walking, a mistimed flip — spends the same
 non-renewable clock. There are no pickups, checkpoints, or safe states that
-restore it.
+restore it. The clock itself is not a difficulty dial the designer sets by
+hand — `oxygen_capacity` is derived from the level's own bucket-to-plant
+walked geometry, so the timer is always a direct readout of the route
+chosen, never an arbitrary number.
+
+The gardener spends their own finite air terraforming a room for whoever
+comes next — the plants never give air back, and that is the point, not an
+oversight to be patched with a pickup.
 
 *Design test*: if a proposed feature would let the player regain oxygen mid-level
 by any means other than restarting, this pillar rejects it (`suit-oxygen.md`
-R2/R4).
+R2/R4). If a proposed feature would let a designer set `oxygen_capacity` by
+hand rather than deriving it from the level's own route geometry, this
+pillar rejects that too.
 
 ### Pillar 3: Every bucket is a commitment
 
@@ -369,7 +386,11 @@ broken out and should not be treated as committed.*
 
 ## Next Steps
 
-- [ ] Get concept approval from creative-director
+> **Creative Director Review (CD-PILLARS)**: CONCERNS (revised) 2026-08-16 —
+> presentation clause added to Pillar 1, ludonarrative reading named and
+> route-geometry protection added to Pillar 2, per `/gate-check pre-production`.
+
+- [x] Get concept approval from creative-director
 - [ ] Resolve all ⚠ TBD sections above — particularly session structure,
       retention systems, and comparable titles — before this document is
       cited as authoritative outside of gating the art bible

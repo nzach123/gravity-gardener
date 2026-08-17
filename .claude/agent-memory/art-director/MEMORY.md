@@ -1,0 +1,1 @@
+- [Subagent AskUserQuestion unavailable](feedback_subagent_askuserquestion_unavailable.md) — when spawned as a Task subagent, present options as text with a stated recommendation instead of calling the tool.

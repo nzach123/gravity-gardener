@@ -46,18 +46,37 @@
 
 ## Forbidden Patterns
 
-<!-- Add patterns that should never appear in this project's codebase -->
-- [None configured yet — add as architectural decisions are made]
+<!-- Full list with rationale lives in docs/registry/architecture.yaml -->
+36 patterns are recorded, one per architectural decision, in
+`docs/registry/architecture.yaml` (`forbidden_patterns:`). See that file for
+the pattern name and rejection rationale — not duplicated here to avoid
+drift. Representative examples: `private_gravity_copy` (defeats gravity.md
+R9 — exactly one gravity vector may exist), `zone_targets_player_directly`
+(`Player.set_gravity()` is removed by ADR-0001), `runtime_collision_mask_mutation`,
+`tuning_resource_runtime_mutation`.
 
 ## Allowed Libraries / Addons
 
-<!-- Add approved third-party dependencies here -->
-- [None configured yet — add as dependencies are approved]
+- **gdUnit4** (`addons/gdUnit4/`) — the project's test framework (see Testing section above)
 
 ## Architecture Decisions Log
 
-<!-- Quick reference linking to full ADRs in docs/architecture/ -->
-- [No ADRs yet — use /architecture-decision to create one]
+<!-- Quick reference linking to full ADRs in docs/architecture/. All 12 are Accepted as of 2026-08-16. -->
+
+| ADR | Title | Status |
+|---|---|---|
+| ADR-0001 | Gravity Ownership and Global Broadcast | Accepted |
+| ADR-0002 | Level State Ownership and Injectable State Objects | Accepted |
+| ADR-0003 | Level load validation contract | Accepted |
+| ADR-0004 | Collision layer allocation | Accepted |
+| ADR-0005 | Frame ordering and the `level_complete` guard | Accepted |
+| ADR-0006 | Tuning resource strategy | Accepted |
+| ADR-0007 | Player component contract and physics step order | Accepted |
+| ADR-0008 | Oxygen Drain, Shared Death Path, and the Accessibility Drain-Rate Override | Accepted |
+| ADR-0009 | Watering Interaction Model | Accepted |
+| ADR-0010 | HUD Composition, Viewport Tracking, and Pause Ownership | Accepted |
+| ADR-0011 | Physics prop body, lifetime and speed cap | Accepted |
+| ADR-0012 | Spent Jug Throw and Lifetime | Accepted |
 
 ## Engine Specialists
 

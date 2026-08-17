@@ -12,7 +12,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 |
+| **Engine** | Godot 4.7.1 |
 | **Domain** | Physics (2D) / Core |
 | **Knowledge Risk** | **LOW** for this domain. `VERSION.md` rates the 4.7 project HIGH overall, but `modules/physics-2d.md` (verified 2026-08-13) states the 2D physics engine is unchanged 4.4 → 4.7 and instructs that 2D decisions be treated as settled. |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `docs/engine-reference/godot/modules/physics-2d.md` · `docs/engine-reference/godot/breaking-changes.md` · `docs/engine-reference/godot/deprecated-apis.md` |

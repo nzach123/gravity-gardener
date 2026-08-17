@@ -12,7 +12,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 |
+| **Engine** | Godot 4.7.1 |
 | **Domain** | Core (SceneTree / frame lifecycle), Physics-2D adjacent |
 | **Knowledge Risk** | **LOW for this ADR.** `VERSION.md` rates the project HIGH overall, but `modules/physics-2d.md` certifies 2D physics and its callback model unchanged 4.4 → 4.7, and node process ordering is 4.x-stable. The two APIs this ADR depends on were verified against the live 4.7 class reference on 2026-08-14 (see below). |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `docs/engine-reference/godot/modules/physics-2d.md`, `docs/engine-reference/godot/breaking-changes.md`, `docs/engine-reference/godot/deprecated-apis.md` |

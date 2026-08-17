@@ -22,7 +22,10 @@
 #   ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012
 
 version: 1
-last_updated: 2026-08-16 (session 23 — ADR-0010/0011/0012 Accepted)
+last_updated: 2026-08-16 (/architecture-review — corrected 13 entries still reading
+  status: proposed for ADR-0008/ADR-0009, both Accepted since session 19. Session 23
+  synced ADR-0010/0011/0012's new entries but missed this pair; flagged in active.md
+  and closed here.)
 
 state_ownership:
   - state: world_gravity_vector
@@ -145,7 +148,7 @@ state_ownership:
     owner: OxygenAccessibility
     owner_kind: autoload
     adr: ADR-0008
-    status: proposed
+    status: accepted
     interface: |
       Read via OxygenAccessibility.drain_rate_multiplier. Written ONLY through
       set_drain_rate_multiplier(value), which clamps to [0.5, 1.0].
@@ -486,7 +489,7 @@ interfaces:
       func set_drain_rate_multiplier(value: float) -> void
     owner: OxygenAccessibility
     adr: ADR-0008
-    status: proposed
+    status: accepted
     guarantees:
       - "drain_rate_multiplier is always in [0.5, 1.0] — set_drain_rate_multiplier() clamps"
       - "read fresh every physics frame by OxygenDrain; never cached or snapshotted"
@@ -507,7 +510,7 @@ interfaces:
       func update_pour(delta: float, interact_held: bool) -> void
     owner: PlayerWateringComponent
     adr: ADR-0009
-    status: proposed
+    status: accepted
     preconditions:
       - "update_pour() is called inline from Player._physics_process step 2 (ADR-0007), never independently scheduled"
     guarantees:
@@ -529,7 +532,7 @@ interfaces:
       @export var water_duration: float
     owner: Plant
     adr: ADR-0009
-    status: proposed
+    status: accepted
     guarantees:
       - "receive_pour() is the only path that increments buckets_received"
       - "is_capped() is checked by the caller (PlayerWateringComponent) at target selection — a capped plant is never locked as a target, so water_progress never accumulates against it"
@@ -541,7 +544,7 @@ interfaces:
     kind: lifecycle_contract
     signature: "Plant carries no process_physics_priority assignment"
     adr: ADR-0009
-    status: proposed
+    status: accepted
     narrows:
       entry: frame_ordering_contract
       adr: ADR-0005
@@ -1048,7 +1051,7 @@ api_decisions:
       - "OxygenState reading OxygenAccessibility directly"
       - "designing full ConfigFile/user:// disk persistence now, with no settings UI to write it"
     adr: ADR-0008
-    status: proposed
+    status: accepted
     rationale: >
       USER DECISION 2026-08-15. Stacking via delta pre-scaling keeps
       OxygenState._init(capacity, tuning) and drain(delta) exactly as ADR-0002
@@ -1072,7 +1075,7 @@ api_decisions:
     rejected:
       - "keeping pour-driving on Plant, per ADR-0005's literal D5.5 text (written against the pre-refactor code, before the GDD's §6 Code table existed)"
     adr: ADR-0009
-    status: proposed
+    status: accepted
     rationale: >
       USER DECISION 2026-08-15. The approved watering-system.md §6 Code table
       already assigns pour-driving to PlayerWateringComponent by name;
@@ -1096,7 +1099,7 @@ api_decisions:
       - "PlayerWateringComponent polling get_overlapping_bodies() on every Plant's interact area, every physics frame, via a group lookup"
       - "Bucket pickup mediated by LevelRoot the same way, with a picked_up signal"
     adr: ADR-0009
-    status: proposed
+    status: accepted
     rationale: >
       Group-based per-frame discovery is the same hazard class ADR-0003
       already rejected for LevelValidation (group_based_level_discovery) —
@@ -1451,7 +1454,7 @@ forbidden_patterns:
   - pattern: oxygen_state_reads_accessibility_autoload
     description: "OxygenState, or any RefCounted state object, reading OxygenAccessibility or any other autoload directly instead of receiving a value from its Node caller"
     adr: ADR-0008
-    status: proposed
+    status: accepted
     reason: >
       Breaks the coding standard's "public methods must be unit-testable...
       dependency injection over singletons". OxygenState is constructible and
@@ -1464,7 +1467,7 @@ forbidden_patterns:
   - pattern: oxygen_pause_state_object
     description: "Injecting a PauseState object into OxygenDrain or OxygenState, or adding any explicit pause check inside their logic, instead of relying on SceneTree.paused + PROCESS_MODE_INHERIT"
     adr: ADR-0008
-    status: proposed
+    status: accepted
     reason: >
       SceneTree.paused already stops _physics_process from being called at
       all under the default PROCESS_MODE_INHERIT. An injected flag would
@@ -1479,7 +1482,7 @@ forbidden_patterns:
   - pattern: plant_gains_process_physics_priority
     description: "Assigning process_physics_priority to Plant, at any value"
     adr: ADR-0009
-    status: proposed
+    status: accepted
     reason: >
       Plant has no per-frame rule-bearing work once pour-driving lives on
       PlayerWateringComponent (watering_pour_driving_owner). A future author
@@ -1493,7 +1496,7 @@ forbidden_patterns:
   - pattern: watering_component_gains_own_physics_process
     description: "Adding a _physics_process (or _process) override to PlayerWateringComponent's script"
     adr: ADR-0009
-    status: proposed
+    status: accepted
     source: engine specialist review 2026-08-15
     reason: >
       PlayerWateringComponent is a Node child of Player, the same shape as
@@ -1553,7 +1556,7 @@ forbidden_patterns:
   - pattern: watering_component_subscribes_gravity_changed
     description: "PlayerWateringComponent, Plant, or Bucket connecting to GravityAuthority.gravity_changed for any reason"
     adr: ADR-0009
-    status: proposed
+    status: accepted
     reason: >
       watering-system.md §5 states the pour is unaffected by a gravity flip
       and the lock holds through the transition. Interact-area and

@@ -746,30 +746,31 @@ and AC2 are enforced by layer allocation, not by conditional logic (props R2).
 
 ## ADR Audit
 
-*(Corrected 2026-08-15 — stale since session 12.)* `docs/architecture/` now holds
-7 ADRs (ADR-0001–0007), all **Accepted**. Engine compatibility, version recording,
+*(Corrected 2026-08-16 — stale since session 18/23.)* `docs/architecture/` now holds
+12 ADRs (ADR-0001–0012), all **Accepted**. Engine compatibility, version recording,
 GDD linkage and cross-ADR conflicts are audited by `/architecture-review`, most
-recently `docs/architecture/architecture-review-2026-08-15-b.md` (verdict:
-CONCERNS, 28/52 covered).
+recently this pass, 2026-08-16 (verdict: PASS, 49/52 covered — see Traceability
+coverage below).
 
 The binding decisions D1–D7 above were this document's original proposal, written
 before any ADR existed. They are now formally recorded in ADR-0001 through
-ADR-0007, which are authoritative wherever the two diverge — see Module Ownership
-and API Boundaries below for the corrections that follow from ADR-0007.
+ADR-0012, which are authoritative wherever the two diverge — see Module Ownership
+and API Boundaries below for the corrections that follow from ADR-0007 onward.
 
 ### Traceability coverage
 
-**28 of 52 requirements covered by an Accepted ADR. 22 gaps, 2 parked/implemented.**
-*(Corrected 2026-08-15 — was "0 of 52" when ADR-0001–0007 were all Proposed. See
-`docs/architecture/tr-registry.yaml` for authoritative current counts; regenerate
-via `/architecture-review`, do not hand-edit this table again.)*
+**49 of 52 requirements covered by an Accepted ADR. 1 gap (deliberately unowned),
+2 parked/implemented.**
+*(Corrected 2026-08-16 — was "28 of 52" when ADR-0008–0012 were still unwritten.
+See `docs/architecture/tr-registry.yaml` for authoritative current counts;
+regenerate via `/architecture-review`, do not hand-edit this table again.)*
 
 | Bucket | Count | Disposition |
 |---|---|---|
-| Covered by an Accepted ADR | 28 | ADR-0001–0007 |
-| Assigned to an unwritten ADR | 22 | ADR-0008–0012, see Required ADRs |
+| Covered by an Accepted ADR | 49 | ADR-0001–0012 |
+| Gap — unowned by design | 1 | `TR-watering-002` — carry scales `max_speed` only. ADR-0007 and ADR-0009 both explicitly decline it; closing it needs a new decision that reopens ADR-0007's frozen D7.3 signature |
 | Parked by GDD design | 1 | `TR-gravity-008` — `zone_priority`. `gravity.md` R8 parks it explicitly, and D1's global broadcast keeps it parked: with one vector in play, overlap is an ordering question, not a spatial one |
-| Implemented and stable | 1 | `TR-gravity-010` — camera rotation, working in `main.gd` |
+| Implemented and stable | 1 | `TR-gravity-010` — camera rotation, working in `main.gd`. Not fully free of concerns — see GDD Revision Flags in the latest `/architecture-review` report |
 
 ## Required ADRs
 

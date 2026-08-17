@@ -12,7 +12,7 @@ Accepted
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 |
+| **Engine** | Godot 4.7.1 |
 | **Domain** | Animation (tween-driven cosmetic motion) · Core (node lifetime, pause resolution) |
 | **Knowledge Risk** | **HIGH** — 4.7.1 is beyond the LLM training data (~4.3), and the reference library holds **no `modules/animation.md`**. Every tween claim below rests on the godot-specialist validation pass, not on a pinned local source. This is a weaker evidence base than ADR-0008 or ADR-0009 had. |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `modules/core.md` § Pause and process modes (`:53-71`), § The physics frame (`:73-100`), § Node lifecycle (`:102-126`) · `breaking-changes.md` (no tween or animation entry) · `deprecated-apis.md` (no tween or animation entry) |

@@ -18,7 +18,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 |
+| **Engine** | Godot 4.7.1 |
 | **Domain** | Core (state management, object lifetime, signals) |
 | **Knowledge Risk** | **LOW** |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `docs/engine-reference/godot/breaking-changes.md` · `docs/engine-reference/godot/deprecated-apis.md` |

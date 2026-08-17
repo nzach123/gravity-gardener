@@ -12,7 +12,7 @@ Accepted
 
 | Field | Value |
 |-------|-------|
-| **Engine** | Godot 4.7 |
+| **Engine** | Godot 4.7.1 |
 | **Domain** | Physics (2D) |
 | **Knowledge Risk** | **LOW.** The project pin carries HIGH risk overall, but `docs/engine-reference/godot/modules/physics-2d.md` states that `RigidBody2D`, `Area2D`, `CharacterBody2D` and `move_and_slide()` have no breaking change across 4.4 → 4.7, and instructs agents not to mark 2D physics decisions as unverified. Jolt is 3D only and is inert in this project. |
 | **References Consulted** | `docs/engine-reference/godot/modules/physics-2d.md`, `VERSION.md`, `breaking-changes.md`, `deprecated-apis.md`, `docs/engine-reference/godot/modules/core.md`, ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006, `design/gdd/physics-props.md`, `design/gdd/gravity.md`, `docs/registry/architecture.yaml` |
