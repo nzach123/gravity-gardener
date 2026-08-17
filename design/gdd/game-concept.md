@@ -373,8 +373,8 @@ into `src/`):
 
 | Tier | Content | Features | Timeline |
 | ---- | ---- | ---- | ---- |
-| **MVP** | 1 level | Gravity + watering + oxygen, no props | 30–45 focused days |
-| **Vertical Slice** | 1 level, polished | Core + props + HUD | +18–28 days on top of MVP |
+| **MVP** | 1 level | Gravity + watering + oxygen + minimal oxygen readout, no props | 30–45 focused days |
+| **Vertical Slice** | 1 level, polished | Core + props + full HUD build-out | +18–28 days on top of MVP |
 | **Alpha** | 8 levels (existing scene count), placeholder art | All four systems wired | ⚠ TBD |
 | **Full Vision** | 8 levels, polished | All features, accessibility tier fully implemented | ⚠ **1–3 months, solo — likely stale, see below** |
 

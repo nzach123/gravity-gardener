@@ -34,7 +34,7 @@ func test_kill_area_currently_does_not_kill_player_bug_0001() -> void:
 	player.player_died = false
 
 	# Act — let the physics broadphase run enough frames to detect overlap
-	runner.simulate_frames(10)
+	await runner.simulate_frames(10)
 
 	# Assert — KillArea2D's default layer/mask never matches the player today
 	assert_bool(player.player_died).is_false()
