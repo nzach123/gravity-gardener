@@ -114,3 +114,31 @@ several ⚠ TBD sections (session structure, retention systems, comparable
 titles) not yet confirmed by the user. `game-pillars.md` as a standalone
 document still does not exist — the three pillars currently live only inside
 `game-concept.md`.
+
+**Settings system** — the long-tracked gap first noted against `hud.md`'s
+declined-scope table and reconfirmed by the 2026-08-17 `/gate-check
+pre-production` re-run's Producer gate as "the largest hidden cost in the
+plan." `accessibility-requirements.md` specifies full input remapping, the
+two one-hand presets, and 1×/2× text scaling in detail, but no GDD or ADR
+owns *how* any of it is built, and no menu system exists in `src/` at all.
+Scoped (not authored) 2026-08-17, session 28:
+
+- **GDD**: `design/gdd/settings-system.md` (Presentation tier). In scope:
+  the settings screen itself; full remapping of the 5 existing actions
+  (`move_left`, `move_right`, `jump`, `interact`, `crouch`) with
+  duplicate-binding prevention and cross-restart persistence; the two
+  one-hand presets as pre-filled, further-editable remap sets; 1×/2× text
+  scaling. Out of scope for this GDD: the `drain_rate` difficulty slider,
+  the reduced-motion toggle (blocked on the unowned camera-rotation
+  decouple — `TR-gravity-010`, `accessibility-requirements.md` A7), audio
+  controls (no audio system exists), and screen-reader support.
+- **ADR** (next number: **ADR-0013**): decides runtime InputMap remapping
+  and capture, the persistence mechanism (likely a `ConfigFile` at
+  `user://`), where live settings state lives (a new autoload, parallel to
+  `GameManager`), how one-hand presets compose with remapping, and how
+  text-scale threads into `hud.md`'s rendering. This would be the project's
+  first Control-based menu and would set the pattern for any future menu.
+
+Full section-by-section authoring of both documents is deferred to a
+dedicated future session per `design/CLAUDE.md`'s incremental-authoring
+rule.

@@ -4,6 +4,23 @@
 
 Accepted
 
+## Implementation Scope Note (added 2026-08-17, session 27)
+
+This ADR's architecture is Accepted and remains the binding design for physics
+props. **Implementation is not scheduled at MVP tier.** `art-bible.md` §1.3
+formally defers physics-prop content to Vertical-Slice tier: MVP-tier's
+"the room moves, not a camera trick" proof (Pillar 1) is already satisfied by
+`main.gd`'s camera tween and `player_visual_component.gd`'s continuous sprite
+rotation alone, with physics props added later as a second, corroborating
+layer. `game-concept.md` Core Mechanics item 4 carries a matching footnote,
+added the same session.
+
+Nothing in this ADR's Decision or Migration Plan changes because of this —
+this note records *when* the work is scheduled, not *how* it should be built.
+It does not apply to **ADR-0012** (spent jug throw): that ADR governs
+`watering-system.md` R7, part of the core bucket-spend loop, and is not
+referenced by art-bible §1.3 or deferred by any document.
+
 ## Date
 
 2026-08-16 (Proposed) · 2026-08-16 (Accepted)

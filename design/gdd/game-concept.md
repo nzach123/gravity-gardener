@@ -373,14 +373,30 @@ into `src/`):
 
 | Tier | Content | Features | Timeline |
 | ---- | ---- | ---- | ---- |
-| **MVP** | 1 level | Gravity + watering + oxygen, no props | ⚠ TBD |
-| **Vertical Slice** | 1 level, polished | Core + props + HUD | ⚠ TBD |
+| **MVP** | 1 level | Gravity + watering + oxygen, no props | 30–45 focused days |
+| **Vertical Slice** | 1 level, polished | Core + props + HUD | +18–28 days on top of MVP |
 | **Alpha** | 8 levels (existing scene count), placeholder art | All four systems wired | ⚠ TBD |
-| **Full Vision** | 8 levels, polished | All features, accessibility tier fully implemented | 1–3 months, solo |
+| **Full Vision** | 8 levels, polished | All features, accessibility tier fully implemented | ⚠ **1–3 months, solo — likely stale, see below** |
 
-*Per-tier timelines are marked TBD — only the full-vision estimate (1–3
-months, solo) was confirmed by the user; intermediate tier timelines were not
-broken out and should not be treated as committed.*
+**MVP and Vertical Slice re-estimated 2026-08-17 (session 28)**, complexity-derived
+— `production/` has no sprint or milestone history to calibrate against, so
+treat the range width as real, not a formatting choice. At a ~7h focused-day,
+30–45 days is 6–9 weeks full-time solo, or 4–6 months at an evenings/weekends
+pace (~12h/week). The driver is not "wire the four GDDs into `src/`" — it is
+landing 9 of the 12 Accepted ADRs first, several atomic (e.g. ADR-0001's
+Changeset A and ADR-0007 have, in ADR-0001's own words, "no incremental
+path"), plus a minimal HUD (an oxygen readout is required by `suit-oxygen.md`
+R7's own edge-case table, not optional at MVP) and one fully re-authored
+level. Vertical Slice adds the full HUD build-out (`hud.md` alone is 1,061
+lines — longer than all four core system GDDs combined) plus ADR-0011 props
+and a polish pass.
+
+**Full Vision's "1–3 months, solo" figure predates all 12 ADRs** and is
+flagged, not corrected, here: MVP alone is now projected to consume roughly
+that entire budget, which suggests Full Vision needs its own re-estimate
+before being treated as committed — out of scope for this pass, which was
+asked for MVP and Vertical Slice only. Alpha remains TBD; it was not
+re-estimated this session either.
 
 ---
 
