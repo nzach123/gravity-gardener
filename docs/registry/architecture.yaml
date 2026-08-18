@@ -22,7 +22,13 @@
 #   ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012
 
 version: 1
-last_updated: 2026-08-16 (/architecture-review — corrected 13 entries still reading
+last_updated: >-
+  2026-08-18 (ADR-0013 — superseded GravityAuthority.apply_camera_relative_axis,
+  appended apply_screen_relative_axis and the
+  input_basis_gated_on_boolean_camera_flag forbidden pattern. Also quoted this field:
+  it previously contained an unquoted "status:" colon that made the whole registry
+  fail to parse as YAML.)
+  2026-08-16 (/architecture-review — corrected 13 entries still reading
   status: proposed for ADR-0008/ADR-0009, both Accepted since session 19. Session 23
   synced ADR-0010/0011/0012's new entries but missed this pair; flagged in active.md
   and closed here.)
@@ -455,7 +461,8 @@ interfaces:
       ) -> float
     owner: GravityAuthority
     adr: ADR-0007
-    status: accepted
+    status: superseded
+    superseded_by: ADR-0013
     guarantees:
       - "the sole implementation of camera-relative axis inversion — PlayerMovementComponent and PlayerVisualComponent both call it instead of carrying independent copies [gravity.md TR-gravity-013]"
     note: >
@@ -463,6 +470,29 @@ interfaces:
       has run. The one static method on an otherwise all-instance-method autoload
       script; colocated here because right_dir is its only external dependency and
       GravityAuthority already owns it (ADR-0007 D7.4).
+      Superseded on signature only — the one-shared-function stance is unchanged and
+      still holds TR-gravity-013 by construction. ADR-0013 replaces the
+      camera_rotation_enabled: bool parameter with camera_rotation: float, because a
+      boolean cannot describe a camera partway through its rotation tween.
+      ADR-0007 remains Accepted. See the replacement entry.
+
+  - name: GravityAuthority.apply_screen_relative_axis
+    kind: method_contract
+    signature: |
+      static func apply_screen_relative_axis(
+        input_axis: float, right_dir: Vector2, camera_rotation: float
+      ) -> float
+    owner: GravityAuthority
+    adr: ADR-0013
+    status: accepted
+    guarantees:
+      - "the sole implementation of screen-relative axis inversion — PlayerMovementComponent and PlayerVisualComponent both call it instead of carrying independent copies [gravity.md TR-gravity-013]"
+      - "correct at every camera rotation, including mid-tween — reduces to gravity.md §4's formula at camera_rotation = 0.0, and to the raw axis at the fully-turned angle"
+    note: >
+      Replaces apply_camera_relative_axis (ADR-0007 D7.4). Static for the same reason
+      and colocated here for the same reason. The float parameter is the camera's live
+      rotation, read once per frame by the Player facade (ADR-0013 D13.3) and stored in
+      no surviving field, which keeps it clear of private_gravity_copy.
 
   - name: Player.up_direction_sync
     kind: lifecycle_contract
@@ -1568,3 +1598,16 @@ forbidden_patterns:
       problem that does not exist, and risks interrupting a pour the GDD
       explicitly requires to survive the transition (AC9).
     remediation: "No watering-system code subscribes to gravity_changed. If a genuine interaction between gravity and watering is ever designed, it needs its own ADR stating what problem it solves."
+
+  - pattern: input_basis_gated_on_boolean_camera_flag
+    description: "Any boolean parameter or field deciding whether the movement input axis is corrected for camera rotation"
+    adr: ADR-0013
+    status: accepted
+    reason: >
+      A boolean cannot describe a camera partway through the 600 ms rotation tween
+      (main.gd:41). It is right at both endpoints and wrong for roughly 500 ms after
+      every flip in level_01 and level_07, because the gravity direction ease converges
+      in about 100 ms while the camera does not. The defect is visible only during the
+      sweep, which is why it survived review twice. This shape is what produced the
+      ADR-0007 D7.4 versus gravity.md R11 conflict.
+    remediation: "Pass the camera's live rotation as a float and rotate right_dir into camera space. See ADR-0013 D13.2."

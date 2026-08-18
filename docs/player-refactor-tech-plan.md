@@ -2,7 +2,16 @@
 
 **Date:** 2026-08-13
 **Author:** Godot Specialist
-**Status:** Approved — await implementation sign-off
+**Status:** Superseded by ADR-0007 and ADR-0013
+
+> **Superseded — 2026-08-18.** This plan predates the architecture layer. The
+> `Player` component contract, the physics step order, and the axis-inversion
+> function are now owned by **ADR-0007** (Accepted) and **ADR-0013** (Accepted).
+> Where this document and those ADRs disagree, the ADRs govern. In particular,
+> `camera_rotation_enabled` no longer exists: ADR-0013 D13.4 deletes it, and
+> `apply_screen_relative_axis(input_axis, right_dir, camera_rotation)` replaces
+> `apply_camera_relative_axis(...)`. Kept for the reasoning behind the
+> facade/component split, not as an implementation target.
 
 ---
 

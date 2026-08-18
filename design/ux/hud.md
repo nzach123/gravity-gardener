@@ -540,7 +540,7 @@ Content, grouped:
 
 | Group | Values |
 |---|---|
-| Gravity | Gravity vector and direction label, multiplier, `up_dir` / `right_dir`, active `GravityZone`, **`camera_moving` and `camera_rotation_enabled`** |
+| Gravity | Gravity vector and direction label, multiplier, `up_dir` / `right_dir`, active `GravityZone`, **`camera_moving` and the live `camera_rotation`** |
 | Player | Velocity, `is_on_floor`, `is_on_wall`, coyote and jump-buffer timers, wall-jump state |
 | Watering | `carrying_bucket`, resolved target plant, `water_progress` / `water_duration`, per-plant `buckets_received` / `buckets_required` |
 | Oxygen | `remaining`, `capacity`, `fraction`, active threshold band, `drain_rate` |
@@ -868,6 +868,14 @@ A reduced-motion option therefore requires **decoupling three concerns first**: 
 follow, camera rotation, and input-basis inversion. That is an architecture change, not a
 UX one.
 
+**Update 2026-08-18.** One of the three is closed. ADR-0013 D13.4 deletes
+`camera_rotation_enabled`, and D13.2 derives the input basis from the camera's live
+rotation instead of any flag, so no setting can invert the controls against the view.
+ADR-0013 D13.5 specifies the remaining follow/rotate split and deliberately does not
+apply it — that changes live camera behaviour in `level_01` and `level_07` and needs a
+human playtest first. `accessibility-requirements.md` A7 ("no owning ADR") is closed;
+T8 stays blocked until the split lands.
+
 ### Finding 2 — E1 displays real time, not raw `oxygen_remaining`
 
 `suit-oxygen.md` §7 designates `drain_rate` (range 0.5–1.0) an **accessibility hook
@@ -1071,7 +1079,7 @@ Paused state section respectively.
 
 | # | Conflict |
 |---|---|
-| Q10 | **`camera_moving` and `camera_rotation_enabled` are uncoupled** (`main.gd:8–9`). Blocks any reduced-motion option (Accessibility Finding 1) and lets a level invert the player's controls against a view that never turned. Architecture, not UX. **Narrowed 2026-08-17:** `gravity.md` R11 fixes the input basis as screen-relative unconditionally, which removes the input-inversion leg — a level can no longer invert the player's controls. What remains of Q10 is the two-way camera-follow / camera-rotation coupling. ⚠ R11 also contradicts ADR-0007 D7.4, which still gates the mapping on `camera_rotation_enabled`; that conflict is open |
+| Q10 | **`camera_moving` and `camera_rotation_enabled` are uncoupled** (`main.gd:8–9`). Blocks any reduced-motion option (Accessibility Finding 1) and lets a level invert the player's controls against a view that never turned. Architecture, not UX. **Narrowed 2026-08-17:** `gravity.md` R11 fixes the input basis as screen-relative unconditionally, which removes the input-inversion leg. **Resolved in part 2026-08-18:** the R11 / ADR-0007 D7.4 conflict is **closed** by ADR-0013 — D13.2 reads the camera's live rotation, D13.4 deletes `camera_rotation_enabled`. What remains of Q10 is the two-way camera-follow / camera-rotation coupling, now owned by ADR-0013 D13.5, specified but not applied pending a playtest |
 | Q11 | **`drain_rate` composition.** E1 displays `oxygen_remaining / drain_rate`. ADR-0006 **D6.6** assigned the accessibility override to **ADR-0008** — that ADR must know the HUD reads the composed value, not the resource value |
 | Q12 | **Asset pack palette compliance unverified.** `src/assets/Simple-Platformer-Asset-Pack/` ships its own `5 GUI/Palette.png`. If it is not NES-palette, adopting the constraint means re-paletting existing art or scoping the rule to new work only |
 | Q13 | **`suit-oxygen.md` §2 vs §4.** §2 wants thirty-seconds-out awareness; §4's caution threshold fires at 24 s for a 48 s level, i.e. *after* that mark. This spec resolves it by making the bar permanent, but the GDD's own numbers remain in tension |

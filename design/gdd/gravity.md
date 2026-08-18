@@ -5,6 +5,7 @@ date: 2026-08-13
 amended: 2026-08-13 — R9 (gravity as world state) and R10 (carry affects speed only) added
 amended: 2026-08-14 — §5/§6/§7 synced to ADR-0001 (GravityAuthority ownership). No rule changed; §5 init-order hazard deliberately retained per ADR-0001 part 7
 amended: 2026-08-17 — R11 (screen-relative input basis) added, per the vertical-slice playtest finding (prototypes/gravity-gardener-vertical-slice/REPORT.md, Observations)
+amended: 2026-08-18 — §4 input-basis formula generalised to any camera rotation per ADR-0013. R11's rule is unchanged; the prior formula was its camera_rotation = 0 special case
 verified-by: nzach123
 ---
 
@@ -111,9 +112,9 @@ whether the level rotates the camera.
 *Sources:* the vertical-slice tester rejected the mirrored mapping in play
 (`prototypes/gravity-gardener-vertical-slice/REPORT.md` §Observations).
 `accessibility-requirements.md` (Motion reduction, T8) already requires that disabling
-camera rotation must not leave the input basis inverted. ADR-0007 D7.4 already
-specifies this mapping in code, but gates it on `camera_rotation_enabled`; this rule
-removes that condition. *Superseded:* no prior rule stated an input basis at all — the
+camera rotation must not leave the input basis inverted. ADR-0013 D13.2 implements
+this rule at every camera rotation. ADR-0007 D7.4's `camera_rotation_enabled` gate is
+superseded. *Superseded:* no prior rule stated an input basis at all — the
 vertical slice therefore applied the raw input axis against `right_dir` and produced
 the mirrored mapping the tester rejected.
 
@@ -154,11 +155,14 @@ Direction easing:
 angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
 ```
 
-Input basis (R11), recomputed every frame from the eased `right_dir`:
+Input basis (R11), recomputed every frame from the eased `right_dir` and the
+camera's live rotation:
 
 ```
-screen_sign = sign(right_dir · (1, 0))      if right_dir · (1, 0) ≠ 0
-            = −sign(right_dir.y)            otherwise   (gravity is horizontal)
+rd_screen   = right_dir rotated by −camera_rotation
+
+screen_sign = sign(rd_screen.x)             if rd_screen.x ≠ 0
+            = −sign(rd_screen.y)            otherwise   (walk axis is vertical on screen)
 
 input_axis  = (move_right − move_left) · screen_sign
 ```
@@ -169,6 +173,11 @@ input_axis  = (move_right − move_left) · screen_sign
 | up | (0, 1) | (−1, 0) | −1 | screen right |
 | right | (−1, 0) | (0, −1) | +1 | screen up |
 | left | (1, 0) | (0, 1) | −1 | screen up |
+
+The table above is the `camera_rotation = 0` case — a camera that does not turn with
+gravity. Under a camera rotated to match gravity, `rd_screen` is always `(1, 0)` and
+`screen_sign` is always `+1`, so the raw axis is already screen-relative. One formula
+covers both, and every point between (ADR-0013 D13.2).
 
 **Current values** (`h`=200, `d_peak`=128, `d_land`=80, `s`=350):
 `t_up`=0.3657 s, `t_down`=0.2286 s, `g_ascent`=2990.72, `g_descent`=7656.25,
@@ -189,9 +198,9 @@ input_axis  = (move_right − move_left) · screen_sign
 | Overlapping zones | Last entered wins (see R8) |
 | Player leaves all zones | Gravity persists (see R2) |
 | Gravity flips mid-jump | Velocity is preserved in world space, so upward motion becomes downward relative to the new frame. Intended: the swap should feel like being *caught* by the new floor |
-| Mid-transition input | `screen_sign` is recomputed every frame from the eased `right_dir`, so the on-screen walk direction is continuous. Across a 180° ease it sweeps to vertical and back to the same screen side. It never crosses to the opposite half of the screen (R11) |
+| Mid-transition input | `screen_sign` is recomputed every frame from the eased `right_dir`, so the on-screen walk direction is continuous. Across a 180° ease it sweeps to vertical and back to the same screen side. It never crosses to the opposite half of the screen (R11). This now holds under a rotating camera too — the screen walk vector's x-component is `|rd_screen.x| ≥ 0` by construction (ADR-0013 D13.2) |
 | Gravity exactly horizontal | `right_dir · (1, 0)` is zero. The tie-break sends `move_right` up-screen for both left and right gravity, so one key keeps one screen meaning (R11) |
-| Camera rotation disabled on a level | The input mapping does not change — R11 does not read the camera flag. ⚠ ADR-0007 D7.4 currently returns the raw axis in this case, which contradicts R11 |
+| Camera rotation disabled on a level | The input mapping stays screen-relative. `camera_rotation` is simply 0, and the formula reduces to the §4 table. ADR-0013 D13.2 |
 | Gravity magnitude easing | Only direction eases; magnitude snaps. Every consumer reads `gravity.normalized()`. The dead `move_toward` magnitude easing is removed by ADR-0001 when the ease moves to `GravityAuthority` |
 | Prop and player in different zones | No conflict — R9 means one global vector. The most recently entered zone governs everything |
 | Player carrying a bucket | Speed reduced; gravity, jump velocity and jump height all unchanged (R10) |
@@ -200,7 +209,7 @@ input_axis  = (move_right − move_left) · screen_sign
 
 - **PlayerMovementComponent** — consumes `right_dir` and `screen_sign` (R11); owns `max_speed`, an input to every gravity formula
 - **PlayerJumpComponent** — receives `jump_velocity`; owns coyote/buffer/min-velocity
-- **PlayerVisualComponent** — rotates sprite to gravity; must mirror movement's `screen_sign` exactly (R11). ADR-0007 D7.4 makes this hold by construction — one shared function, two callers
+- **PlayerVisualComponent** — rotates sprite to gravity; must mirror movement's `screen_sign` exactly (R11). ADR-0013 D13.2 makes this hold by construction — one shared function, `apply_screen_relative_axis`, two callers (the stance originates in ADR-0007 D7.4 and is unchanged)
 - **GravityAuthority** *(autoload)* — owns the gravity vector, the ease, and the
   ascent/descent ratio; sole writer. Emits `gravity_changed` to every consumer
   (ADR-0001)
@@ -257,4 +266,5 @@ input_axis  = (move_right − move_left) · screen_sign
       angles 0° and 180°, and toward the top of the screen at 90° and 270° (R11)
 - [ ] AC14 — During any gravity ease, the dot product of the on-screen walk direction
       with screen-right never becomes negative (R11)
-- [ ] AC15 — AC13 holds with `camera_rotation_enabled` set to both `true` and `false`
+- [ ] AC15 — AC13 holds at `camera_rotation` = 0, at the fully-turned camera angle,
+      and at ten evenly spaced points between (R11; ADR-0013 V1/V4)

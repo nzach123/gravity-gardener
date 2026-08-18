@@ -76,7 +76,6 @@ entities:
     wall_jump_h_force: 450.0
     wall_jump_v_force: 800.0
     wall_jump_cooldown: 0.15
-    camera_rotation_enabled: true
     player_died: false
     groups:
       - player

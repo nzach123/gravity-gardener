@@ -514,8 +514,8 @@ func register_prop(prop: RigidBody2D) -> void
 func unregister_prop(prop: RigidBody2D) -> void
 func ascent_magnitude() -> float
 func descent_magnitude() -> float
-static func apply_camera_relative_axis(input_axis: float, right_dir: Vector2, camera_rotation_enabled: bool) -> float
-    # static (ADR-0007 D7.4) — colocated here since right_dir is already owned by GravityAuthority
+static func apply_screen_relative_axis(input_axis: float, right_dir: Vector2, camera_rotation: float) -> float
+    # static (ADR-0013 D13.2, supersedes ADR-0007 D7.4) — colocated here since right_dir is already owned by GravityAuthority
 ```
 
 `unregister_prop()` is not optional. `physics-props.md` R7 frees props that leave

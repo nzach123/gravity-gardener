@@ -231,10 +231,10 @@ watering, oxygen), physics, collision*
   `process_physics_priority = 0` slot**: 1) up_direction sync, 2) watering
   lockout gate, 3) gravity, 4) wall jump, 5) jump, 6) movement, 7)
   `move_and_slide()`, 8) visuals (runs UNCONDITIONALLY, watering or not). — source: ADR-0007 (D7.3)
-- **Camera-relative axis inversion exists in exactly one place**:
-  `GravityAuthority.apply_camera_relative_axis()` (static). Both
+- **Screen-relative axis inversion exists in exactly one place**:
+  `GravityAuthority.apply_screen_relative_axis()` (static). Both
   `PlayerMovementComponent` and `PlayerVisualComponent` call it — never
-  independent copies. — source: ADR-0007 (D7.4)
+  independent copies. — source: ADR-0013 (D13.2), stance originates in ADR-0007 (D7.4)
 - **`OxygenDrain` is a child of `LevelRoot`, `process_physics_priority = +100`,
   running: freeze-if-complete → armed-restart → `drain()` → arm-on-depletion.** — source: ADR-0008 (§1)
 - **Pause halts drain via `SceneTree.paused` + the default
@@ -302,13 +302,16 @@ watering, oxygen), physics, collision*
   and cost a live debugging session. — source: `level-flow.md` §4, vertical-slice
   `REPORT.md` 2026-08-17
 - **Movement input is screen-relative at every gravity angle.** Pass the raw axis
-  through the one shared sign function before applying it to `right_dir`, so
-  `move_right` always moves the player toward the right of the screen — and
-  toward the top of the screen under horizontal gravity. This holds
-  **unconditionally**; it is not gated on `camera_rotation_enabled`. — source:
-  `gravity.md` R11. ⚠ **Conflicts with ADR-0007 D7.4**, which still returns the
-  raw axis when `camera_rotation_enabled` is false. R11 is the design stance;
-  D7.4 needs a ruling
+  through the one shared function, `GravityAuthority.apply_screen_relative_axis`,
+  before applying it to `right_dir`, so `move_right` always moves the player toward
+  the right of the screen — and toward the top of the screen under horizontal
+  gravity. This holds **unconditionally**. Pass the camera's live rotation as a
+  float, never a boolean flag. **Never gate this on a boolean**: a boolean is right
+  at both endpoints and wrong for roughly 500 ms after every flip, while the 600 ms
+  camera tween is still running and the gravity ease has already settled.
+  **Precondition:** `Camera2D.ignore_rotation` must stay `false` (`main.gd:13`), or
+  the camera node's rotation stops describing the screen. — source: `gravity.md` R11,
+  ADR-0013 D13.2 and D13.4
 
 ### Forbidden Approaches
 

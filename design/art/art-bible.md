@@ -1,7 +1,7 @@
 # Art Bible: Gravity Gardener
 
 *Created: 2026-08-16*
-*Status: Draft — partial (Sections 1–4 and 8 authored; Sections 5–7 and 9 remain)*
+*Status: Complete — all 9 sections authored (2026-08-18)*
 
 > **Session note (2026-08-16)**: Section 8 (Asset Standards) authored first, before
 > a Visual Identity Statement existed — its standards are grounded directly in
@@ -23,6 +23,23 @@
 > form). AD-ART-BIBLE sign-off (Phase 5) was skipped — lean review mode
 > (`production/review-mode.txt`); the skill's own rule treats it as
 > non-blocking outside `full` mode.
+
+> **Session note (2026-08-18)**: Sections 5, 6, 7 and 9 authored this session,
+> closing the art-bible half of `/gate-check pre-production`'s FAIL. Section 5
+> folds the template's **Animation Standards**; sections 6.7 and 7 fold its
+> **VFX Standards** — neither earned a top-level section, because every VFX and
+> animation question already had an owner in §§2–4, `hud.md`, or
+> `watering-system.md`. Section 8 was also re-checked against §§1–4 for the first
+> time (it was authored before they existed): §§8.3 and 8.5 are confirmed and
+> strengthened, §§8.1/8.2/8.4/8.6/8.7/8.9/8.10 are unaffected, and **§8.8's shader
+> example was corrected** — it named a "gravity-flip screen effect" that §2.5
+> forbids by name. Ten items are flagged ⚠ unset with named owners rather than
+> invented; §6.3's gravity-zone fill colour and §6.4's room-boundary treatment are
+> the two that block asset work. §5.3 also surfaced a code question for
+> `godot-gdscript-specialist`: sprite rotation eases at `16.0 * delta` on top of
+> `gravity.md` R3's own 32-rate ease, so one rotation may be double-smoothed.
+> AD-ART-BIBLE sign-off remains skipped — lean review mode
+> (`production/review-mode.txt`).
 
 ---
 
@@ -250,19 +267,399 @@ Every gameplay-critical color assignment above is reinforcing a signal Section 3
 
 ## 5. Character Design Direction
 
-[To be designed]
+Section 3.1 fixed the *why* of the gardener's shape (silhouette-first, blocky, carry as a
+satellite mass) and Section 4.1 fixed which hexes render it. This section is the character
+spec sheet those decisions produce: scale, proportion, how the sprite behaves under the
+game's one continuous transform (gravity rotation), what states it must render, and where
+squash-and-stretch sits today.
+
+### 5.1 Scale and Silhouette Readability
+
+The gardener renders at **64×64 on-screen from a 32×32 source** — one grid-step above every
+other asset category, a deliberate exception fixed in §8.3 specifically so gravity-flip pose
+states have "enough silhouette room to stay legible per Pillar 1." This section inherits that
+exception rather than re-deciding it: the extra resolution exists to serve §3.1's
+silhouette-first mandate, not for its own sake. Every pose must still pass §3.1's test at that
+size — identifiable as a flat black silhouette before any internal colour or shading is read.
+
+The player's outline uses **Void Black** (`#000000`/`#010101`, §4.1) at a fixed weight,
+matching the black-outline convention `debugger.gd` and `hud.md`'s E1–E4 elements already use
+for the same reason: an outline is what keeps a small silhouette legible against the Station
+Cool ambient backdrop (§2.1) at any of the three oxygen-critical desaturation steps (§4.3),
+including the near-monochrome step 3 band where most of the screen's colour has already
+drained out.
+
+### 5.2 Proportions
+
+**Direction, not a grid.** §3.1 already commits to "chunky NES-proportioned limbs" over a
+softer, rounded silhouette, specifically to keep the character register consistent with §2's
+anti-coziness mood — worn and functional, not cute. This section holds that line: thick limb
+masses, a low ratio of fine internal detail to outline mass, no rounded or plush silhouette
+treatment anywhere on the body.
+
+> ⚠ **Unset.** The precise proportion grid (head-to-body ratio, limb width as a fraction of
+> torso width, exact pixel counts per limb) is deliberately not invented here — a number
+> picked without a reference sprite sheet in hand would be constructed rationale, which this
+> document avoids. **Owner: whoever executes the 32×32 master sheet** (currently
+> `src/assets/GG-MainPlayer_Master_SpriteSheet_v1.png`), working from §3.1's qualitative
+> direction and this section's silhouette test, with sign-off against §3.1 before the sheet
+> is treated as final.
+
+### 5.3 Rotation Behaviour Under Gravity Flips
+
+Per `gravity.md` R1/R3, gravity direction eases toward its target via `lerp_angle`, and per
+§1.3, continuous player-sprite rotation is one of exactly two mechanisms carrying Pillar 1's
+flip-legibility proof at MVP (the other is the camera tween). `player_visual_component.gd`'s
+`update()` implements this today: `sprite.rotation` tracks
+`gravity.normalized().angle() - (PI * 0.5)`, itself eased via a second `lerp_angle` at a
+`16.0 * delta` rate.
+
+**The character must read correctly at every angle along that sweep, not just at the four
+cardinal rests.** This is §3.1's hard requirement restated for the rotation system
+specifically: because the sprite is genuinely mid-rotation for the tween's full duration, a
+pose that only reads upright is a bug the instant a flip begins, not just at 90°/180°
+intervals. The carry satellite-shape solution (§3.1) exists precisely because it survives this
+continuous sweep where a pose-only carry cue would not.
+
+> ⚠ **Flagged inconsistency — a code question, not an art-direction one.** `gravity.md` R3
+> eases the gravity vector at a 32 rad/s-scaled rate. `player_visual_component.gd:41` then
+> eases `sprite.rotation` toward that already-eased target at a separate `16.0 * delta` rate,
+> so the sprite may be double-smoothing one rotation through two independent lerps at two
+> different rates. Whether that is an intentional secondary softening (visually distinct from
+> the physics-relevant `up_dir`) or an unintended duplicate adding latency to the "decisive
+> but trackable" feel `gravity.md` §2 targets is undetermined. **Owner:
+> godot-gdscript-specialist**, to confirm which rate is authoritative for the *visual*
+> rotation before this section's silhouette-at-any-angle requirement is tested against a build.
+
+### 5.4 Animation State Coverage
+
+| State | Status today | Direction |
+|---|---|---|
+| Idle | Implemented (`Idle`) | Holds current form |
+| Walk/Run | Implemented (`Run`) | Holds current form |
+| Jump | Implemented (`Jump`) | Gathered/rising limb mass per §3.1's jump-vs-fall distinction — the pose answers "airborne, which phase," not "which way is down" |
+| Fall | Implemented (`Falling`, selected by `velocity.dot(-up_dir) > 0`) | Extended/falling limb mass, same rationale |
+| Land | **Not a distinct animation.** `_on_landed()` only arms `land_squash_timer` for the (currently disabled, §5.5) squash pose | A short, cheap landing read is still owed even with squash-stretch off — at minimum a 1–2 frame settle on the existing Idle/Run pose, so a landing is not visually identical to never having left the floor. ⚠ **Unset**: no frame budget or timing authored. **Owner: pixel artist executing the sheet**, once §5.2's proportion grid exists to draw against |
+| Carry | **Not implemented.** `_on_watering_started`/`_on_watering_stopped` are empty stubs | Per §3.1 the bucket is a satellite shape attached to the existing pose, not a new limb-pose animation. Carry is therefore an overlay riding the Idle/Run/Jump/Fall poses, not a fifth clip. Authoring it as a duplicate pose set would double the sheet for no legibility gain the satellite shape does not already provide |
+| Pour | **Not implemented.** Same empty stubs as Carry | Per §3.1, "Pour deepens the carry silhouette rather than replacing it" — bucket reoriented, arm extended toward the plant, whole pose locked (matches `watering-system.md` R3's movement lock). Carry's silhouette with a distinct held frame, not a new limb set |
+| Death | **Not implemented.** No death handler exists on the component at all | ⚠ **Genuinely open.** `hud.md` E6 places the death sequence at Z3, full-viewport, described only as "visual and audio effects" — it does not say whether the player sprite changes pose, freezes, or is occluded. Recommended: the sprite holds its last pose and the full-viewport E6 effect carries the beat — cheapest to build and consistent with §2.3's instinct against a lingering ambiguous frame. **This is a recommendation, not a decision** — E6's ownership sits with `hud.md`/ADR-0010, so it needs ux-designer and UI-programmer agreement |
+
+### 5.5 Squash-and-Stretch Stance
+
+`player_visual_component.gd` ships a full squash-and-stretch system (`scale_jump`,
+`scale_land`, `scale_run`, lerped at `squash_stretch_speed`) gated behind
+`squash_stretch_enabled: bool = false` — **off by default in the current code.**
+
+This section takes no position on whether it should turn on. Squash-and-stretch is a
+classic-animation weight cue, and §3.1 already chose to carry weight and state through
+*silhouette mass* (the carry satellite shape) rather than through squash-driven deformation.
+The two are not in conflict, but enabling squash would add a *second* weight-communication
+channel to a system §3.1 built to work without one.
+
+**Recommended: leave it disabled for now**, consistent with §2's anti-spectacle register. The
+`scale_land` value in particular (`Vector2(2.6, 1.4)`) is an aggressive squash that risks
+reading as bouncy in a game whose mood target is watchful calculation, not physical comedy. If
+it is ever enabled it should be revisited against §2.1–2.4 first, not switched on because the
+export already exists.
+
+> ⚠ **Unset.** Squash-and-stretch has not been evaluated against the escalating
+> oxygen-critical states (§2.4) — whether a landing squash should compress differently as the
+> room's palette recedes toward monochrome is open if the system is ever turned on. Not
+> assigned; flagged only, because the system is off.
+
+### 5.6 Facing and Flip Behaviour
+
+`sprite.flip_h` is driven by the same screen-relative axis the movement component uses —
+`GravityAuthority.apply_screen_relative_axis(input_axis, right_dir, camera_rotation)`
+(ADR-0013 D13.2). One shared function, two callers, so facing cannot diverge from travel
+direction at any gravity angle or any camera rotation (`TR-gravity-013`).
+
+No art-direction decision is needed beyond confirming what that mechanism means for the
+character: **facing is a screen-space read.** It matches `gravity.md` R11's contract that a
+movement key always moves the player the same direction on screen, so the character's flip
+state never requires the player to reason about the current gravity angle. This is the same
+category of screen-relative-only information as §3.1's stance that jump and fall poses answer
+"airborne, which phase" rather than "which way is down."
 
 ---
 
 ## 6. Environment Design Language
 
-[To be designed]
+§§3.2–3.4 fixed environment shape language: rectilinear safe terrain, a reserved hazard shape
+family, a quiet gravity-zone rectangle with a confirmatory chevron, and hero/supporting shape
+hierarchy. This section extends that into material, rendering, and the multi-room readability
+problem the MVP scope now requires (`game-concept.md` MVP Definition: "several chambers
+connected by gravity-zone traversal").
+
+### 6.1 Tile and Terrain Material Language
+
+Safe terrain renders in **Structural Grey** (`#797979`, highlight `#A2A2A2`, §4.1) over the
+**Station Cool** (`#305182`) ambient wash — flat palette bands, no gradients, per §2.1. §3.2
+already fixed the shape grammar (orthogonal, 16×16 grid-snapped, low edge-frequency); this
+section confirms that grammar survives contact with rendering: no per-tile lighting variation,
+no ambient-occlusion fake, no bevel or emboss on tile edges. Anything that adds false depth or
+light direction to a category that is supposed to recede (§3.4's "supporting shapes…
+deliberately quiet") implies a light source the flat-band lighting model does not have, and
+reads as a mood contradiction the moment a player notices it matches nothing else on screen.
+
+> ⚠ **Unset.** Whether structural surfaces (walls, floors meant to be stood on) and
+> background-depth surfaces (far walls, non-traversable dressing) get any rendering
+> differentiation beyond §6.5's depth cueing is undecided. Flagged rather than invented: a
+> wrong answer here — a texture-detail difference, say — risks reintroducing the visually busy
+> baseline §3.2 warns against. **Owner: technical-artist**, once a tileset exists to test
+> against.
+
+### 6.2 Hazard Legibility in the Environment
+
+§3.2 and `hazards.md` R4 both already require that a hazard be identifiable by contour alone,
+in greyscale, before colour confirms it: sharp, irregular, high-edge-frequency triangulation,
+reserved nowhere else in safe geometry, paired with **Hazard Crimson** (`#B21030`, §4.1) used
+for nothing else.
+
+This section adds the rendering consequence of `hazards.md` R5: a hazard must mount and read
+correctly on floor, ceiling, or either wall — R5 flags that the current code does not satisfy
+this, since `spike_hazard.gd` is hard-coded horizontal-only. The hazard shape family therefore
+cannot be authored as a single orientation-locked sprite. It must render legibly at 0°, 90°,
+180° and 270° (`hazards.md` AC6) without the triangulated silhouette collapsing into ambiguity
+at any of them: a spike run mounted on a side wall must still read as sharp and irregular from
+a horizontal approach, not only from below.
+
+**Kill areas get no shape treatment at all**, by design. `hazards.md` R2 makes them invisible
+volumes outside playable space, and R8 restricts them to bounding the space rather than being a
+designed challenge. Giving a kill area a visible silhouette would misrepresent it as a readable
+hazard when its entire job is to be unreachable on the intended route.
+
+### 6.3 Gravity Zone Visual Treatment
+
+Already specified in §3.3 and implemented in `gravity_zone.gd`: a plain, undecorated rectangle
+(`ColorRect`) matched to the trigger volume, plus a bold, unmistakably-tipped chevron
+(`ArrowSprite2D`) that is confirmatory rather than primary. The camera tween and player-sprite
+rotation (§1.3) carry the proof that gravity *changed*; the chevron tells the player, before
+commitment, which way it *will* change.
+
+This section adds one rendering constraint: the zone rectangle's fill must stay in the
+palette's low-saturation register — Structural Grey, or a low-alpha Station Cool wash — so it
+never competes with Signal Cyan buckets or Growth Green plants for the hero-shape attention
+§3.4 reserves for those.
+
+> ⚠ **Unset.** The zone rectangle's exact fill colour and alpha have never been decided.
+> `gravity_zone.gd`'s `ColorRect` exists in code with no colour recorded anywhere in this
+> document. **Owner: art-director (follow-up pass) or technical-artist**, once a level with an
+> instanced zone exists to preview against. Inventing a hex now, with nothing to check contrast
+> or legibility against, would be the unfounded-value problem this document avoids.
+
+### 6.4 Room-to-Room Readability (Multi-Room MVP)
+
+**Two camera modes exist across the eight shipped levels, and both must be supported.**
+`level_01` and `level_07` run follow-plus-rotate: the camera tracks the player and tweens to
+match the gravity basis, so screen-up always equals gravity-up. `level_02` through `06` and
+`08` run static: the camera neither follows nor rotates, so screen-up is fixed world-up and the
+player sprite visibly rotates instead. This changes what room-to-room readability *means* per
+level.
+
+- **In follow-plus-rotate rooms** the player never sees the room itself rotate — their camera
+  turns with it. Legibility here is almost entirely a terrain-grammar problem (§6.1): the
+  player must tell "this chamber's floor" from "the chamber I just left" from the tile language
+  alone, because the camera will not announce a room transition the way gravity does.
+- **In static-camera rooms** the player sprite rotating against a fixed frame is itself a
+  strong "your state changed" cue — but only if the room's geometry stays legible through that
+  rotation. A room that clusters its important surfaces on one side, assuming the player always
+  approaches from below, reads badly the moment gravity flips that side to the ceiling.
+
+**Level-authoring implication, not an asset spec:** rooms in static-camera levels should be
+checked for legibility at every orientation they can be entered under, not only their default
+one. This is the same family of discipline as `hazards.md` R5's mount-at-any-angle requirement.
+
+Beyond camera mode, multi-room readability needs a way to tell "this is a different chamber"
+from "this is more of the same chamber" at a glance, independent of gravity state. §6.1's flat,
+undifferentiated tile grammar is deliberately quiet *within* a room, which means it currently
+offers **no signal for a room boundary at all.**
+
+> ⚠ **Unset — and this is a real gap, not an oversight.** As a starting point for decision
+> rather than a fixed answer: a consistent doorway or threshold silhouette, distinct from both
+> the airlock's contour-break aperture (§3.4) and from ordinary wall geometry, marking chamber
+> transitions — so a player can tell "I am leaving this puzzle" from "I am still inside it"
+> without relying on memory of the room's layout. **Owner: art-director, with whoever authors
+> the multi-room MVP level**, since a threshold treatment only earns its shape once there is a
+> real room boundary to test it against.
+
+### 6.5 Background vs. Foreground Separation
+
+No parallax or background-depth system is wired into any level scene today.
+`src/assets/Simple-Platformer-Asset-Pack/`'s background PNGs exist as unused placeholder files,
+not instanced content, and §8.7's texture budget reserves headroom for background and parallax
+layers without any layer count or behaviour having been decided.
+
+This section sets the principle, not the numbers. Background layers should read as **more
+receded** than midground terrain along the axis §4.2 already uses for depletion: lower
+contrast, cooler and greyer, closer to Structural Grey or Void Black than anything in the
+traversable layer. Depth then reads through the same "saturated equals present, grey and dark
+equals recede" grammar the player is already learning from oxygen depletion and spent buckets,
+instead of introducing a second, unrelated depth language. Blur in particular is ruled out — a
+flat nearest-filter pixel pipeline should not use it (§8.5).
+
+> ⚠ **Unset.** Layer count, parallax scroll ratio, and whether background art is authored
+> per-room or shared across rooms are all open. These are technical-artist decisions gated on
+> the draw-call budget (§8.9's TileMapLayer-first policy) and the 500-call ceiling in
+> `technical-preferences.md`. This section fixes only that whatever depth cueing is chosen must
+> stay inside the existing depletion grammar rather than invent a new visual language for "far
+> away."
+
+### 6.6 Pre-Commitment Gravity Telegraphing
+
+The chevron (§6.3) is the primary telegraph, legible before the player enters a zone, per
+§3.3's "before they commit to entering" framing.
+
+This section adds one reinforcing layer available only to the environment: **the terrain beyond
+a zone should already be authored with the same safe-terrain grammar (§6.1) that reads as
+"floor" everywhere else.** A player who enters a zone without registering the chevron then gets
+passive confirmation the instant the room stops rotating — the surface they land on already
+looks like ground they have learned to trust, not like an ambiguous or unfinished wall. This is
+not a new asset category. It is a constraint on how zone-adjacent chambers get dressed, and it
+requires only that §6.1's grammar be applied on *both* sides of every zone, including the side
+that starts out oriented as a wall or ceiling.
+
+**No additional VFX on the zone itself.** An animated glow, pulse, or particle emitter would
+compete with the clean-silhouette-at-rest baseline §2.1 and §3.2 both require, and would read
+as a second, decorative proof of the flip sitting alongside the camera and sprite rotation
+§1.3 already established as sufficient.
+
+### 6.7 Environmental VFX
+
+Folded from the template's standalone VFX Standards section. Three items, all decided
+elsewhere, gathered here as a single environmental-VFX reference rather than re-litigated.
+
+- **Oxygen-critical Light2D pulse.** §2.4 flags a slow pulse at the 10% threshold as a
+  *candidate enhancement*, explicitly not a dependency: "the palette shift alone must carry the
+  full mood on its own." Cost against the GL Compatibility budget is owed to technical-artist.
+- **Gravity-flip transition.** §2.5 **forbids** any competing VFX layer — flash, particle
+  burst, screen shake — during the 0.6 s flip. A hard rule, not an open question.
+- **Physics-prop tumble.** Deferred past MVP per §1.3. When built at Vertical-Slice tier,
+  `physics-props.md` R3/R4 already govern the physical behaviour and §3.4 already fixes prop
+  shape priority as subordinate to route-relevant hero shapes. No new decision owed.
 
 ---
 
 ## 7. UI/HUD Visual Direction
 
-[To be designed]
+This section governs how the HUD *looks* — type, iconography, framing, and the
+diegetic-versus-abstract line. It does not decide placement, timing, trigger conditions, or
+element cardinality. Those belong to `design/ux/hud.md`, and this section cites rather than
+restates them. Where the two documents could appear to overlap, **`hud.md` is authoritative on
+behaviour and this section is authoritative on appearance.**
+
+### 7.1 Typography
+
+The HUD carries very little text: E1's numerals (shown only at `oxygen_fraction <= 0.50`),
+E2's single player-facing string plus the interact-key glyph, and E5/E8's
+`buckets_consumed / buckets_total` tally. `hud.md` confirms E2's label is "the only
+player-facing string in the game." This is a numerals-and-one-label problem, not a body-text
+problem, and the type direction should reflect that scale.
+
+**Recommended: a fixed-width, pixel-grid bitmap font**, sized to the 8/16/24 px UI canvas tiers
+§8.3 already sets, rather than a proportional or hand-drawn display face. A monospace numeral
+set keeps E1's threshold numerals and E5/E8's tally from re-flowing or kerning unevenly as
+digit counts change (`buckets_total` varies per level), which matters more here than expressive
+letterforms do given how little text exists. This matches §3.6's "restrained echo" — thin,
+rectilinear, quiet — rather than a display face competing with world hero shapes.
+
+Text size floors are **not re-decided here.** `accessibility-requirements.md` fixes ≥12 design
+px for E1 numerals and E2's label, ≥15 design px for future menu text, both cited in `hud.md`.
+Any typeface chosen must hit those floors at 1× and clear them cleanly at 2×, since the nearest
+filter forbids any factor between.
+
+### 7.2 Iconography Style
+
+The only icon the HUD currently needs is E2's interact-key glyph (**E**).
+
+**Recommended: a keycap motif built from §3.6's own vocabulary** — a thin rectilinear outline
+stroke around the glyph, no rounded corners, no drop shadow or bevel — rather than either bare
+text or a realistic beveled-keyboard skeuomorph. A bare glyph risks being missed at a glance. A
+realistic keycap would be the one place the HUD borrows a soft, dimensional shape language
+nothing else in the game uses. The thin-outline rectangle keeps the keycap legible as a control
+hint while staying inside the stroke-weight budget §3.6 sets for every other HUD shape.
+
+E4's capped-state marker is **not** a new icon. §3.5 already resolves
+`accessibility-requirements.md` A4 by reusing the plant's own capped-stage bloom/pod silhouette
+rather than inventing a bolted-on glyph. No icon design work is owed for E4.
+
+Future icons — a settings iconset, once one exists — should extend this same
+thin-rectilinear-outline family rather than introduce a second icon language.
+
+### 7.3 Framing and Plate Treatment
+
+`hud.md` already commits the mechanism: E1–E4 require a black outline or backing plate,
+matching `debugger.gd`'s precedent (black `font_outline_color`, outline size 4), specifically
+because the outline must be black rather than white — white drops the critical band to ~3.9:1
+and fails AA, against ~5.4:1 on black. This section owns the visual character of that plate,
+not its contrast math.
+
+**Recommended: solid Void Black (`#000000`/`#010101`) backing at full or near-full opacity**
+wherever gameplay-critical text renders, not a translucent panel. `hud.md`'s Z1 occlusion rule
+already ruled out fading the backing plate for a directly analogous reason — "the plate is what
+H22's contrast figures rest on, so reducing it trades a legibility problem for a legibility
+problem" — and that reasoning applies identically to E2's label and E5/E8's tally, both of which
+render over arbitrary terrain the same way E1 does. A translucent plate reintroduces exactly the
+worst-case-background variability the "worst-case, not average" rule was written to eliminate.
+
+**Plate geometry stays minimal:** a thin rectangle sized to its content, no corner ornaments, no
+multi-layer frame, per §3.6's mandate that HUD shapes stay quieter than any world hero shape.
+Rounded corners, drop shadows or gradient fills would violate §2.1's no-gradients rule and risk
+the plate becoming a hero-weight shape competing with buckets and plants.
+
+### 7.4 Diegetic vs. Abstract Stance
+
+`hud.md`'s HUD Philosophy commits the *behaviour* — minimal, adaptive, diegetic, information in
+the world rather than in a frame drawn around it. This section carries that stance into the
+appearance of the one element that cannot be proximity-hidden. **E1, the always-visible oxygen
+gauge, is the HUD's single largest art-direction opportunity**, because R7 forces it to exist
+permanently and Principle 1 still asks that a permanent readout not feel like UI bolted onto
+the world.
+
+**Recommended: an analog-gauge motif** rather than a flat progress bar — a segmented or lightly
+beveled bar treatment, consistent with the tick-mark content `hud.md` already requires at 0.50,
+0.25 and 0.10 for colourblind safety. A gauge-like rendering reinforces `game-concept.md`'s
+core fantasy — the last gardener aboard a derelict station, reading their own suit — over a
+generic HUD-bar read, at effectively no cost beyond how the existing tick marks and fill are
+drawn. This is direction for how to *render* content `hud.md` has already fully specified, not
+a new content decision.
+
+E2's prompt panel and E5/E8's tally stay in the flat, unornamented plate family (§7.3) rather
+than adopting the gauge motif. They are momentary, world-attached confirmations, not the
+player's one permanent readout, and giving them the same instrument treatment would dilute what
+makes E1's motif mean anything.
+
+**Future menus** should extend the same diegetic instinct — rectilinear panels, the same
+monospace technical type family (§7.1), no rounded dialog boxes. §2.7 already commits to tone
+continuity: the station's own status screen, not a separate warm menu aesthetic.
+
+> ⚠ **Unset.** Full menu visual layout is undecided. No menu system exists in `src/` today, and
+> `interaction-patterns.md` records that no button, focus, slider, toggle or key-capture pattern
+> exists anywhere in the project. **Owner: ux-designer**, once a settings-screen UX spec exists
+> for this section to art-direct against.
+
+### 7.5 Legibility Against Arbitrary Terrain
+
+`accessibility-requirements.md`'s E1 band contrast table and `hud.md`'s Accessibility section
+already establish the numeric targets — ≥4.5:1 against the worst-case background, all four E1
+bands clearing AA on black. This section does not restate or re-derive them.
+
+What it owns is that the *method* is a visual-direction fact: black outline (never white, §7.3)
+plus a solid backing plate is the entire mechanism, and **no additional treatment should be
+layered on top** in an attempt to improve legibility further. A glow, halo or secondary colour
+fringe would cost more to render against §8.8's shader budget and would blur the black
+outline's crisp edge, which is what is doing the actual contrast work.
+
+### 7.6 Element-Specific Visual Notes
+
+| Element | Visual note | Layout/behaviour owner |
+|---|---|---|
+| E1 oxygen gauge | Analog-gauge motif (§7.4); solid black plate; monospace numerals appear only at or below 0.50 | `hud.md` Layout Zones (Z1), HUD Elements |
+| E2 prompt / E3 pour fill | Thin-outline keycap glyph (§7.2) plus flat plate (§7.3). E3's fill drains back to zero on early release — a content fact `hud.md` owns, rendered as a simple fill-level change, with no separate failure colour or shake | `hud.md` HUD Elements |
+| E4 pour refusal | No new visual — reuses §3.5's capped-plant bloom/pod silhouette | `hud.md` HUD Elements; §3.5 here |
+| E5 / E8 tally | Flat plate family (§7.3), same monospace numerals as E1. Identical content, so identical rendering — no visual distinction between the pushed (E5) and pulled (E8) presentations beyond the trigger and duration differences `hud.md` specifies | `hud.md` HUD Elements |
+| E6 death / E9 completion | Full-viewport, no text, both. §5.4 recommends the player sprite hold its last pose under E6 rather than receiving a dedicated death animation. `hud.md` requires the two be distinguishable in a single frame; this section adds only that if they share a hold-and-fade structure, they must still diverge in at least one immediately-readable property — colour direction, for instance, E6 cooling further against E9 briefly holding steady — so a win is never misread as a death for even one frame | `hud.md` HUD Elements, `level-flow.md` |
+| E7 dev overlay | **Out of scope for this section.** `hud.md` states the dev overlay "has no player-facing contract — no accessibility tier, no localization, no art direction — and it is permitted to be dense and ugly." This document defers rather than contradicts | `hud.md` HUD Elements |
 
 ---
 
@@ -354,7 +751,7 @@ Per-category atlas ceilings within the 250 MB texture cap (worst case ~120–140
 
 Godot 2D has no 3D-style material-slot array — a `CanvasItem` carries one `material` or inherits its parent's. What actually matters:
 
-1. **Distinct active shader count** — each unique `ShaderMaterial` visible in a frame breaks Godot's same-texture/same-material 2D batching. Proposed cap: ~8–10 distinct custom shaders visible at once (gravity-flip screen effect, water/plant highlight, UI transition, etc.) — a proposal, not yet confirmed against an actual VFX list.
+1. **Distinct active shader count** — each unique `ShaderMaterial` visible in a frame breaks Godot's same-texture/same-material 2D batching. Proposed cap: ~8–10 distinct custom shaders visible at once (oxygen-critical `Light2D` pulse candidate — §2.4, water/plant highlight, UI transition, etc. **Not** a gravity-flip screen effect: §2.5 forbids any competing VFX layer during the flip) — a proposal, not yet confirmed against an actual VFX list.
 2. **Shader complexity per material** — GL Compatibility is Godot's lean renderer; keep shaders simple (minimal samples, no per-pixel loops/heavy branching). Flag separately if dynamic `Light2D` nodes get used — Compatibility costs more per additional 2D light than Forward+.
 
 ### 8.9 Importer & Draw Call Notes
@@ -379,8 +776,32 @@ Clarification: `technical-preferences.md` lists "Physics: Jolt Physics," but ADR
 
 ## 9. Reference Direction
 
-[To be designed]
+The palette source (`docs/Pallete/nes-aesprite-1x.png`) already anchors colour as a
+project-wide constraint (§4.1). This section names the touchstones that inform everything else
+— shape, mood, mechanic presentation — and is explicit about what each one is *not* lending the
+project, since an unstated boundary on a reference is how style drift happens.
+
+| Reference | Medium | What we take | What we explicitly do not take |
+|---|---|---|---|
+| **NES-era 8-bit platformer silhouette design** (as a class — Mega Man, Metroid; not a single title) | Games, mid-1980s hardware generation | The whole shape vocabulary in §3: blocky, low-internal-detail character silhouettes that read at small on-screen scale; flat, orthogonal, engineered-not-grown architecture (§3.2); hard palette-band shading with no gradients (§2.1). `gravity.md` §2 already names this target directly — "Jump feel targets the Super Mario Bros. (NES) curve" | The actual hardware constraint — per-sprite three-colour limits, tile-attribute colour clashing. We use a curated 56-entry palette on modern hardware. Nothing here is reproduced *because* the NES could only do it; it is reproduced because the resulting grammar serves Pillar 1's silhouette-first legibility need |
+| **VVVVVV** (Terry Cavanagh, 2010) | Game | The only reference already recorded in `game-concept.md`'s Inspiration and References — flagged there as TBD and not user-validated, a caveat this section inherits rather than overrides. Structural precedent: gravity flip as the core traversal verb, minimal geometry, bold flat colour with no gradients | VVVVVV's flip is an **instant, un-eased snap** — no camera tween, no sprite rotation. This project's flip is deliberately eased over 0.6 s (`gravity.md` R3, §2.5), partly a feel choice and partly because `accessibility-requirements.md` elevates reduced motion specifically because viewport rotation is a vestibular trigger, a concern an instant cut does not carry the same way. We also do not take VVVVVV's single-screen, non-scrolling room structure — this game's MVP is multi-room with camera follow in some levels (§6.4) |
+| **Metroid / Super Metroid** (Nintendo, 1986/1994) | Games | Mood and atmosphere only, not shape: a solitary explorer on a hostile abandoned structure; functional rather than decorative environment art; sparse deliberate colour supporting isolation over spectacle. Matches §2's watchful, cold, functional mood target and the derelict-station premise | Metroid's combat-and-ability-gated progression — enemies, weapon upgrades, sequence-breaking backtracking. `game-concept.md`'s Anti-Pillars explicitly rule out a combat game, and this project has no ability gating. We also do not take its heavily-shadowed dynamic lighting; §2.1 commits to flat palette bands with no dynamic light |
+
+**Deliberately positioned against**, for contrast rather than as borrowed reference:
+
+- **High-colour-count painterly pixel art** (the Owlboy / Dead Cells register). Ruled out
+  structurally by the fixed 56-entry palette and flat-band shading, not as a matter of taste.
+- **Retro-nostalgia signalling** — CRT scanline shaders, chromatic aberration, forced low
+  resolution beyond the actual asset grid. Nothing in §§2–4 asks the game to *look* like it is
+  running on period hardware, only for its shape and colour grammar to descend from that
+  period's design constraints. The NES influence is a design-language source, not a filter.
+
+> ⚠ **Not user-validated.** None of the three rows above has been confirmed as a marketing or
+> positioning claim. `game-concept.md`'s own Inspiration and References section carries the same
+> flag on its single entry, for the same reason: no comparable-titles list has been confirmed by
+> the user. Treat this table as reference direction for internal art decisions, not as
+> external-facing pitch material, until reviewed.
 
 ---
 
-> **Art Director Sign-Off (AD-ART-BIBLE)**: Skipped — Lean review mode (`production/review-mode.txt`), not a PHASE-GATE outside `full` mode. Sections 1–4 and 8 are authored as of 2026-08-17; Sections 5–7 and 9 still need drafting before a full sign-off would be meaningful.
+> **Art Director Sign-Off (AD-ART-BIBLE)**: Skipped — Lean review mode (`production/review-mode.txt`), not a PHASE-GATE outside `full` mode. **All nine sections are authored as of 2026-08-18.** Ten items remain flagged ⚠ unset with named owners; none blocks the pre-production gate, but §6.3 (gravity-zone fill colour) and §6.4 (room-boundary treatment) block asset production and should be closed before `/asset-spec` runs.

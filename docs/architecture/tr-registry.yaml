@@ -214,10 +214,14 @@ requirements:
       confirmed_by: >
         architecture.md:738 — "TR-gravity-010 — camera rotation, working in main.gd"
       note: >
-        Working in main.gd today. NOT free of concerns: main.gd:8-9 leaves
-        camera_moving and camera_rotation_enabled uncoupled, which blocks the
-        reduced-motion commitment in design/accessibility-requirements.md. See
-        hud.md Q10.
+        Working in main.gd today. NOT free of concerns. The input-basis leg is
+        CLOSED by ADR-0013 D13.2/D13.4 — camera_rotation_enabled is deleted and the
+        mapping reads the camera's live rotation, so no flag can invert the controls
+        again. The camera-follow versus camera-rotation split is SPECIFIED BUT NOT
+        APPLIED (ADR-0013 D13.5, following the ADR-0011 D11.6 precedent); owner is
+        technical-director, gated on a human playtest of level_01 and level_07.
+        The reduced-motion commitment in design/accessibility-requirements.md T8
+        stays blocked until that split lands. See hud.md Q10.
 
     - id: TR-gravity-011
       requirement: "direction_ease_rate exported, not hardcoded 32.0"
@@ -249,10 +253,15 @@ requirements:
       requirement: "Visual component mirrors movement axis inversion at any angle"
       gdd: gravity.md
       gdd_anchor: "§6, AC8, AC10"
-      adr: ADR-0007
+      adr: ADR-0013
       adr_status: accepted
       status: covered
       provenance: derived
+      note: >
+        Reassigned from ADR-0007 to ADR-0013 on 2026-08-18. ADR-0013 D13.2 replaces
+        D7.4's method with apply_screen_relative_axis. The guarantee is unchanged and
+        still holds by construction — one shared function, two callers. ADR-0007
+        remains Accepted; only the method contract was superseded.
 
   # --------------------------------------------------------------- watering --
   watering:
@@ -792,9 +801,12 @@ open_items:
 
   - id: TR-gravity-010
     issue: >
-      Implemented but entangled. main.gd:8-9 leaves camera_moving and
-      camera_rotation_enabled uncoupled, blocking the reduced-motion commitment
-      in design/accessibility-requirements.md. No ADR owns the decouple.
+      Partially closed 2026-08-18. ADR-0013 now OWNS the decouple, which closes
+      accessibility-requirements.md A7 ("no owning ADR"). D13.2/D13.4 close the
+      input-basis leg permanently. D13.5 specifies the camera_moving split into
+      camera_follow_enabled and camera_rotates_with_gravity but does not apply it —
+      applying it changes live camera behaviour in level_01 and level_07 and needs a
+      human playtest first. T8 is not runnable until then.
     severity: blocks_accessibility_commitment
 
   - id: TR-watering-001
