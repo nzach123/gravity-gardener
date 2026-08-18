@@ -9,6 +9,9 @@
 # Input schema (PostToolUse for Write/Edit):
 # { "tool_name": "Write", "tool_input": { "file_path": "assets/data/foo.json", "content": "..." } }
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 INPUT=$(cat)
 
 # Parse file path -- use jq if available, fall back to grep

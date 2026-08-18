@@ -2,6 +2,9 @@
 # Claude Code Stop hook: Log session summary when Claude finishes
 # Records what was worked on for audit trail and sprint tracking
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SESSION_LOG_DIR="production/session-logs"
 

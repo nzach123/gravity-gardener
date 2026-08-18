@@ -10,6 +10,9 @@
 # returns null on every invocation, so the fallback "unknown" is always used
 # and the audit trail captures nothing useful.
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 INPUT=$(cat)
 
 # Parse agent name -- use jq if available, fall back to grep

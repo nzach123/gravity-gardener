@@ -4,6 +4,9 @@
 #
 # Input schema (SessionStart): No stdin input
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 echo "=== Claude Code Game Studios — Session Context ==="
 
 # Current branch

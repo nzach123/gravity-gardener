@@ -6,6 +6,9 @@
 # Input schema (PreToolUse for Bash):
 # { "tool_name": "Bash", "tool_input": { "command": "git push origin main" } }
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 INPUT=$(cat)
 
 # Parse command -- use jq if available, fall back to grep

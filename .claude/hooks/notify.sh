@@ -2,6 +2,9 @@
 # Notification hook — fires when Claude Code sends a notification
 # Shows a Windows toast via PowerShell
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 # Read notification JSON from stdin
 INPUT=$(cat)
 

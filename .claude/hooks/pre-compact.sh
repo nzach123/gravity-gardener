@@ -3,6 +3,9 @@
 # This output appears in the conversation right before compaction, ensuring
 # critical state survives the summarization process.
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 echo "=== SESSION STATE BEFORE COMPACTION ==="
 echo "Timestamp: $(date)"
 

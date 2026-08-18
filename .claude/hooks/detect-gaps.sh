@@ -4,6 +4,9 @@
 # Purpose: Detect missing documentation when code/prototypes exist
 # Cross-platform: Windows Git Bash compatible (uses grep -E, not -P)
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 # Exit on error for debugging (but don't fail the session)
 set +e
 

@@ -2,6 +2,9 @@
 # post-compact.sh — fires after conversation compaction
 # Reminds Claude to restore session state from the file-backed checkpoint.
 
+# Run from the project root regardless of the caller's working directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 0
+
 ACTIVE="production/session-state/active.md"
 
 echo "=== Context Restored After Compaction ==="
