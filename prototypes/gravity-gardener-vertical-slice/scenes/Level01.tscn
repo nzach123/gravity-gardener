@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://bp2c3q0jm14ld"]
+
+[ext_resource type="Script" uid="uid://dfbg44i73mrlf" path="res://scripts/level_root.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/GravityZone.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/Bucket.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/Plant.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/Goal.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="7"]
+[ext_resource type="Script" uid="uid://ca227h6stsgx8" path="res://scripts/oxygen_drain.gd" id="8"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_horiz"]
+size = Vector2(1152, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vert"]
+size = Vector2(40, 700)
+
+[node name="Level01" type="Node2D" unique_id=2063743625]
+script = ExtResource("1")
+oxygen_capacity = 90.0
+player_path = NodePath("Player")
+goal_path = NodePath("Goal")
+hud_path = NodePath("HUD")
+oxygen_drain_path = NodePath("OxygenDrain")
+
+[node name="Floor" type="StaticBody2D" parent="." unique_id=1668845184]
+position = Vector2(576, 680)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor" unique_id=879321242]
+shape = SubResource("RectangleShape2D_horiz")
+
+[node name="Ceiling" type="StaticBody2D" parent="." unique_id=605295594]
+position = Vector2(576, 20)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ceiling" unique_id=1648474541]
+shape = SubResource("RectangleShape2D_horiz")
+
+[node name="LeftWall" type="StaticBody2D" parent="." unique_id=1715865716]
+position = Vector2(20, 350)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall" unique_id=986810679]
+shape = SubResource("RectangleShape2D_vert")
+
+[node name="RightWall" type="StaticBody2D" parent="." unique_id=1923707926]
+position = Vector2(1132, 350)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall" unique_id=1494073099]
+shape = SubResource("RectangleShape2D_vert")
+
+[node name="GravityZoneDown" parent="." unique_id=732587530 instance=ExtResource("2")]
+position = Vector2(150, 350)
+
+[node name="GravityZoneUp" parent="." unique_id=2037737838 instance=ExtResource("2")]
+position = Vector2(950, 350)
+zone_gravity_direction = Vector2(0, -1)
+
+[node name="BucketA" parent="." unique_id=1528511508 instance=ExtResource("3")]
+position = Vector2(350, 636)
+
+[node name="BucketB" parent="." unique_id=6924186 instance=ExtResource("3")]
+position = Vector2(550, 636)
+
+[node name="Plant" parent="." unique_id=702530496 instance=ExtResource("4")]
+position = Vector2(950, 70)
+buckets_required = 2
+water_duration = 2.0
+
+[node name="Goal" parent="." unique_id=125664312 instance=ExtResource("5")]
+position = Vector2(250, 628)
+
+[node name="Player" parent="." unique_id=76376982 instance=ExtResource("6")]
+position = Vector2(450, 636)
+
+[node name="HUD" parent="." unique_id=301933783 instance=ExtResource("7")]
+
+[node name="OxygenDrain" type="Node" parent="." unique_id=1678512425]
+script = ExtResource("8")
