@@ -72,7 +72,9 @@ carries between levels — each level is a fresh tank.
 **R6 — The budget is derived, not guessed.** `oxygen_capacity` is authored from
 `watering-system.md` §4's `O_level`, using walked path lengths rather than straight
 lines. A level's timer is a consequence of its bucket layout, not an independent
-dial. Changing where a bucket sits changes the level's oxygen budget.
+dial. Changing where a bucket sits changes the level's oxygen budget — and so does
+moving the exit, since `O_level` budgets the run from the final plant to the airlock
+as well as the bucket deliveries (`d_exit`, added 2026-08-17).
 
 **R7 — The readout is always visible**, with escalating feedback at fixed
 thresholds (§4). The player must never be surprised by the tank running out.
@@ -140,6 +142,7 @@ not be used as a difficulty dial.
 | `main.gd` / level root | Constructs and injects `OxygenState`; wires oxygen death into the existing `restart_level` path |
 | `spike_hazard`, kill area | Share that restart path — oxygen death must be indistinguishable |
 | HUD *(new scene)* | Renders the readout and threshold feedback (R7) |
+| `level-flow.md` | **Reciprocal.** Owns the death sequence that R3 requires be cause-agnostic, and the `level_complete` latch that §5's airlock-beats-zero-oxygen priority depends on. This document owns *what kills*; `level-flow.md` owns what a death and a completion then do |
 
 ## 7. Tuning Knobs
 

@@ -4,6 +4,7 @@ source: src/scripts/components/player_gravity_component.gd, src/scripts/gravity_
 date: 2026-08-13
 amended: 2026-08-13 — R9 (gravity as world state) and R10 (carry affects speed only) added
 amended: 2026-08-14 — §5/§6/§7 synced to ADR-0001 (GravityAuthority ownership). No rule changed; §5 init-order hazard deliberately retained per ADR-0001 part 7
+amended: 2026-08-17 — R11 (screen-relative input basis) added, per the vertical-slice playtest finding (prototypes/gravity-gardener-vertical-slice/REPORT.md, Observations)
 verified-by: nzach123
 ---
 
@@ -98,6 +99,24 @@ jump buffer are untouched, so R5 holds unconditionally. See R2 of
 crossable from the zone multiplier alone. A carry-based jump penalty would add a
 second independent lever and destroy that guarantee.
 
+**R11 — The input basis is screen-relative, not gravity-relative.** A movement key
+always moves the player the same direction on screen, at every gravity angle.
+`move_right` sends the player toward the right of the screen; `move_left` toward the
+left. Physics, jump math, and sprite rotation stay in the gravity basis (R1) — only
+the mapping from key to axis is screen-anchored. The walk axis stays perpendicular to
+gravity, so under horizontal gravity the player walks vertically on screen; §4 fixes
+which key goes which way. This rule holds unconditionally. It does not depend on
+whether the level rotates the camera.
+
+*Sources:* the vertical-slice tester rejected the mirrored mapping in play
+(`prototypes/gravity-gardener-vertical-slice/REPORT.md` §Observations).
+`accessibility-requirements.md` (Motion reduction, T8) already requires that disabling
+camera rotation must not leave the input basis inverted. ADR-0007 D7.4 already
+specifies this mapping in code, but gates it on `camera_rotation_enabled`; this rule
+removes that condition. *Superseded:* no prior rule stated an input basis at all — the
+vertical slice therefore applied the raw input axis against `right_dir` and produced
+the mirrored mapping the tester rejected.
+
 ## 4. Formulas
 
 Derived once at startup, where `h` = `jump_height`, `d_peak` =
@@ -135,6 +154,22 @@ Direction easing:
 angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
 ```
 
+Input basis (R11), recomputed every frame from the eased `right_dir`:
+
+```
+screen_sign = sign(right_dir · (1, 0))      if right_dir · (1, 0) ≠ 0
+            = −sign(right_dir.y)            otherwise   (gravity is horizontal)
+
+input_axis  = (move_right − move_left) · screen_sign
+```
+
+| Gravity | `up_dir` | `right_dir` (walk axis) | `screen_sign` | `move_right` moves |
+|---|---|---|---|---|
+| down | (0, −1) | (1, 0) | +1 | screen right |
+| up | (0, 1) | (−1, 0) | −1 | screen right |
+| right | (−1, 0) | (0, −1) | +1 | screen up |
+| left | (1, 0) | (0, 1) | −1 | screen up |
+
 **Current values** (`h`=200, `d_peak`=128, `d_land`=80, `s`=350):
 `t_up`=0.3657 s, `t_down`=0.2286 s, `g_ascent`=2990.72, `g_descent`=7656.25,
 `v_jump`=1093.75, `ratio`=0.390625 (1:2.56).
@@ -154,16 +189,18 @@ angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
 | Overlapping zones | Last entered wins (see R8) |
 | Player leaves all zones | Gravity persists (see R2) |
 | Gravity flips mid-jump | Velocity is preserved in world space, so upward motion becomes downward relative to the new frame. Intended: the swap should feel like being *caught* by the new floor |
-| Mid-transition input | `up_dir`/`right_dir` follow the easing direction, so controls rotate continuously rather than snapping |
+| Mid-transition input | `screen_sign` is recomputed every frame from the eased `right_dir`, so the on-screen walk direction is continuous. Across a 180° ease it sweeps to vertical and back to the same screen side. It never crosses to the opposite half of the screen (R11) |
+| Gravity exactly horizontal | `right_dir · (1, 0)` is zero. The tie-break sends `move_right` up-screen for both left and right gravity, so one key keeps one screen meaning (R11) |
+| Camera rotation disabled on a level | The input mapping does not change — R11 does not read the camera flag. ⚠ ADR-0007 D7.4 currently returns the raw axis in this case, which contradicts R11 |
 | Gravity magnitude easing | Only direction eases; magnitude snaps. Every consumer reads `gravity.normalized()`. The dead `move_toward` magnitude easing is removed by ADR-0001 when the ease moves to `GravityAuthority` |
 | Prop and player in different zones | No conflict — R9 means one global vector. The most recently entered zone governs everything |
 | Player carrying a bucket | Speed reduced; gravity, jump velocity and jump height all unchanged (R10) |
 
 ## 6. Dependencies
 
-- **PlayerMovementComponent** — consumes `right_dir`; owns `max_speed`, an input to every gravity formula
+- **PlayerMovementComponent** — consumes `right_dir` and `screen_sign` (R11); owns `max_speed`, an input to every gravity formula
 - **PlayerJumpComponent** — receives `jump_velocity`; owns coyote/buffer/min-velocity
-- **PlayerVisualComponent** — rotates sprite to gravity; must mirror movement's axis inversion exactly
+- **PlayerVisualComponent** — rotates sprite to gravity; must mirror movement's `screen_sign` exactly (R11). ADR-0007 D7.4 makes this hold by construction — one shared function, two callers
 - **GravityAuthority** *(autoload)* — owns the gravity vector, the ease, and the
   ascent/descent ratio; sole writer. Emits `gravity_changed` to every consumer
   (ADR-0001)
@@ -176,6 +213,10 @@ angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
   `carry_speed_multiplier`; must not affect jump velocity (R5/R10)
 - **Physics Props** (`physics-props.md`) — consumes the global gravity vector; all
   rigid props adopt zone changes (R9)
+- **Hazards** (`hazards.md`) — **reciprocal, by contrast to props.** Hazards never
+  move with gravity (its R6); they are level geometry. But a flip changes which
+  surface the player falls toward, so it changes which hazards are reachable. That
+  interaction is the design, not a side effect
 - **Level design** — reachability depends on per-room strength once R5 lands
 
 ## 7. Tuning Knobs
@@ -212,3 +253,8 @@ angle = lerp_angle(angle(g), angle(g_target), clamp(32 · Δt, 0, 1))
       multiplier *(reciprocal of `watering-system.md` AC1; one test satisfies both)*
 - [ ] AC12 — All rigid props adopt a new gravity vector on the same frame the
       player does
+- [ ] AC13 — `move_right` moves the player toward the right of the screen at gravity
+      angles 0° and 180°, and toward the top of the screen at 90° and 270° (R11)
+- [ ] AC14 — During any gravity ease, the dot product of the on-screen walk direction
+      with screen-right never becomes negative (R11)
+- [ ] AC15 — AC13 holds with `camera_rotation_enabled` set to both `true` and `false`

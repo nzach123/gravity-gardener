@@ -15,16 +15,22 @@ changes, per `design/CLAUDE.md`.
 | Watering | [`watering-system.md`](watering-system.md) | Core | Complete draft | `gravity.md`, `suit-oxygen.md`, `physics-props.md` |
 | Suit Oxygen | [`suit-oxygen.md`](suit-oxygen.md) | Core | Complete draft | `watering-system.md` |
 | Physics Props | [`physics-props.md`](physics-props.md) | Presentation | Complete draft | `gravity.md` |
+| Level Flow | [`level-flow.md`](level-flow.md) | Core | Authored 2026-08-17, pending `/design-review` | `watering-system.md`, `suit-oxygen.md`, `hud.md`, `hazards.md` |
+| Hazards | [`hazards.md`](hazards.md) | Core | Authored 2026-08-17, pending `/design-review` | `level-flow.md`, `gravity.md`, `watering-system.md`, `art-bible.md` |
 
 ### Dependency graph
 
 ```
 gravity.md  (Foundation)
    ├── watering-system.md  ←──────┐  (Core)
-   │        │                     │
+   │        │            ╲        │
+   │        │             ╲       │
    │        └──→ suit-oxygen.md ──┘  (Core, mutual)
+   │              ╲       ╱
+   │               ▼     ▼
+   │            level-flow.md         (Core)
    │
-   └── physics-props.md            (Presentation)
+   └── physics-props.md               (Presentation)
 ```
 
 `watering-system.md` and `suit-oxygen.md` are **mutually dependent by design**:
@@ -33,6 +39,10 @@ oxygen's drain is what gives watering's pour lock a cost.
 
 `physics-props.md` is a **pure consumer** — it reads the gravity vector and affects
 nothing. No other document owes it a reciprocal entry.
+
+`level-flow.md` is a **pure downstream consumer of both Core systems**: watering
+supplies `goal_unlocked`, oxygen supplies one of three death causes, and level-flow
+owns what each outcome then does. Both owe it a reciprocal entry, and both carry one.
 
 ---
 
@@ -72,13 +82,13 @@ the GDDs ahead of the ADR**.
 | `gravity.md` | §3 / §7 | Levels gain `default_gravity_direction` / `_multiplier`; gravity now survives scene reload and must be reset | ADR-0001 (D6) |
 | `physics-props.md` | §3 R3 | Props receive gravity via default-space physics, not by subscribing individually | ADR-0001 (D3) |
 
-### New requirement with no GDD home
+### New requirement with no GDD home — closed 2026-08-17
 
 `level_complete` — the flag that lets `watering-system.md` AC13 (pour + zero
 oxygen → death) and `suit-oxygen.md` AC8 (airlock + zero oxygen → completion)
-coexist. Without it the two criteria directly contradict each other. Currently
-specified only in the architecture document; needs an owner in one of the two
-GDDs.
+coexist — **now has an owner: `level-flow.md` R2.** It was previously specified
+only in the architecture document. The same document also took ownership of the
+death sequence, which `hud.md` Q6 had recorded as orphaned for the same reason.
 
 ## Implemented but undocumented
 
@@ -89,8 +99,8 @@ each one needs a document.
 |---|---|---|
 | Wall jump | `player_wall_jump_component.gd` | Traversal mechanic, undocumented |
 | Moving platforms | `moving_platform.gd` | Level element, undocumented |
-| Spike hazards | `spike_hazard.gd` | Shares the restart path with oxygen death |
-| Level flow / progression | `main.gd`, `goal.gd` | 8 levels, `change_scene_to_packed` chain |
+| Spike hazards | `spike_hazard.gd` | **Now documented** — see `hazards.md`. That GDD records three defects the code must fix: the misleading `inc_hazard_dmg` signal name (R1), the horizontal-only mounting constraint (R5), and BUG-0001's inert kill-area masks (R9) |
+| Level flow / progression | `main.gd`, `goal.gd` | **Now documented** — see `level-flow.md`. What remains undocumented is only the multi-level arc: what follows the final level is ⚠ TBD (`level-flow.md` R10) |
 | Start menu | `start_menu.gd` | No pause menu exists — required by `suit-oxygen.md` §5 |
 
 ---

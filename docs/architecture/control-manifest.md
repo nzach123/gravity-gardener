@@ -14,6 +14,11 @@ This manifest is a programmer's quick-reference extracted from all Accepted ADRs
 technical preferences, and engine reference docs. For the reasoning behind each
 rule, see the referenced ADR.
 
+Two Core Layer rules are sourced from GDDs and a playtest finding rather than an
+ADR, and cite their source accordingly. They are deliberately **not** registered in
+`docs/registry/architecture.yaml` — every entry there carries an owning ADR, and
+neither of these has one.
+
 > **Scheduling note (ADR-0011):** ADR-0011's architecture is Accepted and binding,
 > but `art-bible.md` §1.3 defers physics-prop *content* to Vertical-Slice tier —
 > MVP's "the room moves" proof is already satisfied by camera tween + sprite
@@ -287,6 +292,23 @@ watering, oxygen), physics, collision*
   SYNCHRONOUSLY** (in addition to the per-frame ease-gate write), not only
   while easing — otherwise a `reload_current_scene()` inherits the previous
   level's stale space gravity. — source: ADR-0011 (D11.5)
+- **Zone-entry triggers evaluate their condition every frame, never on the signal
+  edge.** Track overlap as continuous state — `body_entered` sets it,
+  `body_exited` clears it — and test the trigger condition in
+  `_physics_process`. A trigger gated on the raw `body_entered` edge silently
+  never fires when the body is already inside the area at the moment the
+  condition becomes true. **This is a silent-failure trap: the broken and working
+  cases look identical to the player.** It shipped in the vertical slice's goal
+  and cost a live debugging session. — source: `level-flow.md` §4, vertical-slice
+  `REPORT.md` 2026-08-17
+- **Movement input is screen-relative at every gravity angle.** Pass the raw axis
+  through the one shared sign function before applying it to `right_dir`, so
+  `move_right` always moves the player toward the right of the screen — and
+  toward the top of the screen under horizontal gravity. This holds
+  **unconditionally**; it is not gated on `camera_rotation_enabled`. — source:
+  `gravity.md` R11. ⚠ **Conflicts with ADR-0007 D7.4**, which still returns the
+  raw axis when `camera_rotation_enabled` is false. R11 is the design stance;
+  D7.4 needs a ruling
 
 ### Forbidden Approaches
 
@@ -329,6 +351,12 @@ watering, oxygen), physics, collision*
   `GravityAuthority.gravity_changed`.** — source: ADR-0009 (`watering_component_subscribes_gravity_changed`)
 - **Never spawn, pool, respawn, or persist any `PropBody` at runtime** — props
   are authored scene children only. — source: ADR-0011 (`runtime_prop_instantiation`)
+- **Never gate a win, unlock, or trigger condition on a raw `body_entered` /
+  `body_exited` signal edge** when that condition can change while the body is
+  already inside the area. Track overlap as state and re-evaluate per frame. — source: `level-flow.md` §4 / vertical-slice `REPORT.md`
+- **Never apply the raw input axis directly to `right_dir`.** Under inverted
+  gravity this mirrors the controls against the screen, which `gravity.md` R11
+  forbids. — source: `gravity.md` R11
 
 ---
 

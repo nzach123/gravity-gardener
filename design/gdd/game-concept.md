@@ -361,7 +361,11 @@ into `src/`):
    (`watering-system.md`)
 3. Non-refilling, geometry-derived oxygen countdown (`suit-oxygen.md`)
 4. At least one level authored to the bucket/oxygen invariants in
-   `systems-index.md`
+   `systems-index.md`, laid out as **several chambers connected by gravity-zone
+   traversal** rather than a single room
+5. Core-loop legibility: the E2 interact prompt and E3 pour fill (`hud.md`), and
+   the gravity-zone `ColorRect` and direction chevron (`art-bible.md` §3.2)
+6. At least one failure mode besides oxygen depletion — hazards (`hazards.md`)
 
 **Explicitly NOT in MVP**:
 - Physics props (`physics-props.md` is Presentation-tier by its own
@@ -373,10 +377,31 @@ into `src/`):
 
 | Tier | Content | Features | Timeline |
 | ---- | ---- | ---- | ---- |
-| **MVP** | 1 level | Gravity + watering + oxygen + minimal oxygen readout, no props | 30–45 focused days |
-| **Vertical Slice** | 1 level, polished | Core + props + full HUD build-out | +18–28 days on top of MVP |
+| **MVP** | **1 level, multi-room** | Gravity + watering + oxygen + **hazards** + **core-loop HUD (E1 oxygen readout, E2 interact prompt, E3 pour fill)** + **gravity-zone visual treatment** (`art-bible.md` §3.2), no props | 30–45 focused days, **plus the re-tiered legibility work and the hazard/multi-room additions — not yet re-estimated** |
+| **Vertical Slice** | 1 level, polished | Core + props + **remaining** HUD build-out (E4 refusal, E5 tally, E8 on-demand tally, E7 dev overlay) | +18–28 days on top of MVP, **less the E2/E3 work now in MVP — not yet re-estimated** |
 | **Alpha** | 8 levels (existing scene count), placeholder art | All four systems wired | ⚠ TBD |
 | **Full Vision** | 8 levels, polished | All features, accessibility tier fully implemented | ⚠ **1–3 months, solo — likely stale, see below** |
+
+**Multi-room and hazards added to MVP 2026-08-17.** *Source:* the vertical slice's
+tester stated the core fantasy was not landing — "needs more agency and danger",
+specifically "ways to navigate and get lost" and "hazards that can kill, harm the
+player" (`prototypes/gravity-gardener-vertical-slice/REPORT.md` §Observations).
+Neither is new design. Hazards are already named in this document's own Anti-Pillars,
+art-directed in `art-bible.md`, and implemented in `src/scripts/spike_hazard.gd`; they
+were simply never instanced in the slice and never given a GDD. Single-room was a
+scope-tier artifact, not a design position. **This does not decide whether a session
+is one level or several** — that remains open under Open Questions.
+
+**Legibility re-tiered 2026-08-17.** E2, E3 and the gravity-zone treatment moved
+from Vertical Slice into MVP. *Source:* the vertical slice was built to the MVP row
+exactly as written, and its playtest found their absence blocked the player's
+understanding of a fully working loop and made a real bug indistinguishable from
+correct behaviour (`prototypes/gravity-gardener-vertical-slice/REPORT.md`,
+§Scope adjustments). None of the three needed new design — all three were already
+specified in `hud.md` and `art-bible.md`, and simply sat in the wrong tier.
+**Neither timeline figure has been re-derived for the move.** Both are flagged
+rather than adjusted, because this document's own estimates are complexity-derived
+with no sprint history to calibrate against.
 
 **MVP and Vertical Slice re-estimated 2026-08-17 (session 28)**, complexity-derived
 — `production/` has no sprint or milestone history to calibrate against, so

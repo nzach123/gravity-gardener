@@ -169,7 +169,8 @@ argument (see E5) and this addition does not reopen it.
 Death is presented as **a brief hold on the frame of death — visual and audio effects,
 game systems paused — followed by the existing restart.**
 
-This is **not specified in any GDD.** `suit-oxygen.md` R3 and §6 require only that oxygen
+**Owned by `design/gdd/level-flow.md` as of 2026-08-17** (R6, R7 and §7). It was
+previously specified only here, in no GDD. `suit-oxygen.md` R3 and §6 require only that oxygen
 death route through `main.gd`'s `restart_level` and be indistinguishable from spike and
 kill-area death. This spec adds presentation on top of that path.
 
@@ -183,8 +184,8 @@ Two constraints it inherits:
    on the same frame. A death hold triggered before that guard resolves would present a
    death the player did not suffer.
 
-This needs a GDD owner, exactly as `level_complete` does (`systems-index.md` §"New
-requirement with no GDD home"). Logged in Open Questions.
+Both this sequence and `level_complete` now have that owner: `design/gdd/level-flow.md`.
+See Open Questions § Resolved, Q6.
 
 ---
 
@@ -373,6 +374,7 @@ invented twice. **Use the pattern name in code and in review comments.**
 | E8 on-demand tally | **P6** — On-Demand Readout | Data Display |
 | E7 diagnostic overlay | **P7** — Paged Diagnostic Overlay | Developer tooling |
 | E6 death sequence | *No pattern.* Full-viewport and used once | — |
+| E9 level-complete sequence | *No pattern.* Full-viewport and used once | — |
 
 P1, P2 and P3 are the three this spec's Q5 named as uncatalogued. P4 and P5 were in use
 and unnamed. P6 is new and is what E8 implements.
@@ -505,6 +507,25 @@ working diegetic channel into UI for no gain.
   layer 2, `1 & 2 == 0`), so no death sequence can play there. Anyone testing E6 against a
   kill plane in those two levels will see nothing and conclude E6 is at fault.
 
+### E9 — Level-complete sequence
+
+| Field | Value |
+|---|---|
+| Zone / category | Z3 · **Contextual** |
+| Content | Visual and audio effects. **No text.** Does not announce the airlock unlock and does not restate the tally (`level-flow.md` R5) |
+| Trigger | `level_complete` latches (`level-flow.md` R2) |
+| Duration | `complete_hold_duration` — ⚠ **unset**, 0.6 s proposed — hold with game systems paused, then the level transition |
+| Constraints | Must be distinguishable from E6 in a single frame — a player must never read a win as a death. Cannot fire while a death sequence is playing (`level-flow.md` R9) |
+
+- The 0.6 s proposal is a **starting value, not a derived one**, matching the
+  gravity-flip camera tween the player is already calibrated to. It needs the same
+  playtest E6's 0.35 s needs.
+- **This element exists because of a measured failure.** In the vertical slice the only
+  observable win state was the oxygen counter silently ceasing to fall, which made a
+  working completion and a broken one identical to the player, and masked a real bug
+  (`prototypes/gravity-gardener-vertical-slice/REPORT.md` §Observations).
+- **No pattern**, for the same reason as E6: full-viewport and used once per level.
+
 ### E7 — Developer diagnostic overlay
 
 | Field | Value |
@@ -624,6 +645,7 @@ This is the load-bearing argument for E1 being Must Show, beyond R7's bare wordi
 | E4 refusal | The Z2 slot resolves to a capped plant in range **and** E5 is not showing | On exit, or when E5 fires |
 | E5 tally | `buckets_consumed` advances | After 1.2 s, or immediately when a pour target resolves |
 | E6 death | Any death, after the `level_complete` guard clears | After ~0.35 s, into restart |
+| E9 complete | `level_complete` latches (`level-flow.md` R2) | After `complete_hold_duration`, into the level transition |
 | E8 tally *(On Demand)* | The progress-query key is pressed | The key is released. No timer |
 
 ### Paused state
@@ -641,6 +663,7 @@ one lands. It does not design the menu.
 | E3 | **Freezes at its current fill.** See below |
 | E5 | Its 1.2 s timer holds and resumes |
 | E6 | Unreachable — the death sequence already pauses game systems itself |
+| E9 | Unreachable — the completion sequence already pauses game systems itself |
 | E7 | Continues updating. It is a developer tool, and a frozen readout is less useful than a live one |
 
 **On E3 specifically.** Pause is not an input release, so the R4 / AC3 drain-back does
@@ -987,6 +1010,7 @@ them — a second copy of a threshold is a divergence waiting to happen.
 | H25 | The Collision group flags every `Area2D` whose mask ANDed with the player's layer is zero. With BUG-0001 open, it flags `KillArea2D` in `level_05` and `level_06` | E7 Collision group | Logic — BLOCKING |
 | H26 | F3 cycles Off → Gravity → Player → Watering → Oxygen → Level flow → Validation → Collision → Off, one group at a time | Debug overlay paging | UI — ADVISORY |
 | H27 | E7 never occludes E1–E6, verified with the player positioned over Z4's screen region | Layering | UI — ADVISORY |
+| H30 | E9 and E6 are distinguishable from any single frame of either sequence, so a win never reads as a death | E9 constraints | Visual — ADVISORY |
 
 ### Answer to Q8
 
@@ -1028,7 +1052,6 @@ Paused state section respectively.
 
 | # | Question |
 |---|---|
-| Q6 | **The death sequence has no GDD home.** Specified only here, exactly as `level_complete` is specified only in the architecture document (`systems-index.md` §"New requirement with no GDD home"). It needs an owner in `suit-oxygen.md` or elsewhere |
 | Q16 | **Where the HUD's tuning knobs live is undecided.** ADR-0006 D6.1 fixed the tuning set at three resources, none of them a HUD resource. Either a fourth `HudTuning` (needs an ADR-0006 amendment plus registry entries) or `@export` on the HUD scene nodes. **Assigned to the Presentation-tier ADR** — see Tuning Knobs § *Placement is not decided here* |
 
 ### Resolved since the 2026-08-15 review
@@ -1038,6 +1061,7 @@ Paused state section respectively.
 | Q7 | HUD behaviour while paused | **Closed.** Dynamic Behaviors § *Paused state* — the HUD freezes, nothing hides or dims, and E3 suspends rather than draining. H14 is written against it |
 | Q8 | Whether advisory-only HUD criteria were acceptable | **Closed.** The Acceptance Criteria section now carries 19 BLOCKING criteria |
 | Q9 | `watering-system.md` §6 carry indicator vs. this spec's diegetic treatment | **Closed 2026-08-15 by `/propagate-design-change watering-system.md`.** Ratified, not reversed: §6's HUD row now states there is no carry indicator, and `systems-index.md:102` matches. 0 of the 5 ADRs referencing that GDD were affected — ADR-0002's `HUD ← LevelState` binding survives, because the HUD still reads `carrying_bucket` as an E2 precondition and owns the level tally |
+| Q6 | The death sequence has no GDD home | **Closed 2026-08-17.** `design/gdd/level-flow.md` exists and owns the death sequence (R6, R7), `level_complete` (R2), restart (R8), and the new completion sequence E9 presents. This closes the same gap `systems-index.md` recorded as "New requirement with no GDD home." No constraint in this spec changed — the sequence it specified is now sourced rather than orphaned |
 | Q1 | No accessibility tier | **Closed 2026-08-16.** `design/accessibility-requirements.md` exists and sets the tier at **Standard**, with reduced motion and one-hand mode elevated above it. This spec's WCAG-AA assumption matches that baseline, so no contrast target or colour-independence rule changed. The Accessibility section now cites the tier instead of denying it |
 | Q3 | No game concept or pillars | **Closed 2026-08-16.** `design/gdd/game-concept.md` exists (reverse-documented). Its pillars, hook, audience and scope are user-confirmed; session structure, retention and comparable titles are marked ⚠ TBD. The minimal / adaptive / diegetic stance was chosen before it existed and has **not** been re-checked against it — worth one pass, but nothing here is known to conflict |
 | Q5 | No interaction pattern library | **Closed 2026-08-16.** `design/ux/interaction-patterns.md` exists and catalogues **P1–P7**. It named the three patterns this spec invented, plus two that were in use and unnamed (P4, P5) and one new one (P6). Every element now carries its pattern name — see HUD Elements § *Pattern mapping* |
@@ -1047,7 +1071,7 @@ Paused state section respectively.
 
 | # | Conflict |
 |---|---|
-| Q10 | **`camera_moving` and `camera_rotation_enabled` are uncoupled** (`main.gd:8–9`). Blocks any reduced-motion option (Accessibility Finding 1) and lets a level invert the player's controls against a view that never turned. Architecture, not UX |
+| Q10 | **`camera_moving` and `camera_rotation_enabled` are uncoupled** (`main.gd:8–9`). Blocks any reduced-motion option (Accessibility Finding 1) and lets a level invert the player's controls against a view that never turned. Architecture, not UX. **Narrowed 2026-08-17:** `gravity.md` R11 fixes the input basis as screen-relative unconditionally, which removes the input-inversion leg — a level can no longer invert the player's controls. What remains of Q10 is the two-way camera-follow / camera-rotation coupling. ⚠ R11 also contradicts ADR-0007 D7.4, which still gates the mapping on `camera_rotation_enabled`; that conflict is open |
 | Q11 | **`drain_rate` composition.** E1 displays `oxygen_remaining / drain_rate`. ADR-0006 **D6.6** assigned the accessibility override to **ADR-0008** — that ADR must know the HUD reads the composed value, not the resource value |
 | Q12 | **Asset pack palette compliance unverified.** `src/assets/Simple-Platformer-Asset-Pack/` ships its own `5 GUI/Palette.png`. If it is not NES-palette, adopting the constraint means re-paletting existing art or scoping the rule to new work only |
 | Q13 | **`suit-oxygen.md` §2 vs §4.** §2 wants thirty-seconds-out awareness; §4's caution threshold fires at 24 s for a 48 s level, i.e. *after* that mark. This spec resolves it by making the bar permanent, but the GDD's own numbers remain in tension |

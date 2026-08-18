@@ -5,6 +5,8 @@ depends-on: gravity.md
 date: 2026-08-13
 amended: 2026-08-14 — §5/§6 synced to ADR-0002 (LevelState owned by the level root; reset defect resolved structurally). No rule changed
 amended: 2026-08-15 — §6 HUD row: carry indicator resolved diegetically per design/ux/hud.md (Q9). No rule changed
+amended: 2026-08-17 — §4 O_level gains a d_exit term. The formula stopped the clock at the final pour and omitted the mandatory run to the exit, under-budgeting every level by its own exit distance. Found by deriving the vertical slice level's budget (prototypes/gravity-gardener-vertical-slice/REPORT.md). Formula changed; no rule changed
+amended: 2026-08-17 — §6 gains a reciprocal level-flow.md row
 ---
 
 # Watering System — Design
@@ -147,6 +149,7 @@ feedback. The load-time check must log an error rather than fail quietly.
 | `d_f` | fetch distance | Path length from plant to the next bucket |
 | `d_r` | return distance | Path length from that bucket back to the plant |
 | `N` | `buckets_total` | Buckets in the level (== Σ `buckets_required`, R8) |
+| `d_exit` | exit distance | Path length from the final plant to the level exit — the airlock, instanced in code as the `Goal` node. Walked at full speed: the last bucket is already spent |
 
 **Pour progress** — accumulates only while the interact input is held (R3), resets
 to zero on release (R4):
@@ -174,8 +177,15 @@ t_bucket = d_f/s  +  d_r/(s·k)  +  w
 
 ```
 t_level = Σ (d_f,i/s + d_r,i/(s·k) + w)     for i = 1..N
-O_level = t_level · (1 + margin)             margin ≈ 0.4
+O_level = (t_level + d_exit/s) · (1 + margin)      margin ≈ 0.4
 ```
+
+> **The clock does not stop at the final pour.** The player still has to cross the
+> level to the exit, and oxygen drains for the whole run (`suit-oxygen.md` R2).
+> `d_exit` is what keeps the budget honest for that leg. Before this term was added
+> the formula under-budgeted every level by its own exit distance — 18% on the
+> vertical slice level, and the shortfall grows with level size while `margin`
+> stays a fixed ratio.
 
 **Growth fraction** — drives the plant's visual stage (R5):
 
@@ -186,7 +196,7 @@ growth_fraction = buckets_received / buckets_required
 ### Worked example
 
 One plant, `buckets_required = 3`, each bucket 800 px away, `s = 350`, `k = 0.6`,
-`w = 5.0`:
+`w = 5.0`, exit 600 px from the plant:
 
 ```
 fetch leg   = 800 / 350        = 2.29 s
@@ -194,7 +204,8 @@ return leg  = 800 / (350·0.6)  = 3.81 s     ← 1.67× the fetch leg
 pour        =                    5.00 s
 t_bucket    =                   11.10 s
 t_level     = 11.10 × 3       = 33.29 s
-O_level     = 33.29 × 1.4     = 46.6 s  →  author as 45–50 s
+exit run    = 600 / 350        = 1.71 s
+O_level     = (33.29 + 1.71) × 1.4 = 49.0 s  →  author as 48–52 s
 ```
 
 ### Sensitivity of `k`
@@ -218,7 +229,7 @@ ever taxes the return leg:
 | `buckets_required` | 1 – 4 | Above 4 becomes repetition rather than escalation |
 | `margin` | 0.3 – 0.6 | Below 0.3 punishes any routing mistake; above 0.6 the timer stops mattering |
 
-> **`d_f` and `d_r` are path lengths, not straight lines.** Under rotating gravity
+> **`d_f`, `d_r` and `d_exit` are path lengths, not straight lines.** Under rotating gravity
 > the traversable route can be far longer than the euclidean distance between two
 > points. These must be measured by walking the route, never measured off the level
 > in a straight line.
@@ -259,6 +270,8 @@ ever taxes the return leg:
 | `gravity.md` | R2 is bounded by gravity.md's R5 (fixed jump velocity) — carrying must never touch jump. Carry speed scales `max_speed`, which feeds *every* gravity derivation, so `k` changes nothing about jump height by design |
 | `suit-oxygen.md` | Pouring costs oxygen with no offset. §4's `O_level` formula derives the level timer from watering geometry, so oxygen budgets are downstream of bucket placement |
 | `physics-props.md` | Explicitly **excludes** buckets and spent jugs. Buckets are static (§5); jugs are tween-driven with no body (R7) |
+| `level-flow.md` | **Reciprocal.** R6's `goal_unlocked` is the precondition in level-flow's completion predicate. This document owns *when* the airlock unlocks; `level-flow.md` owns what happens when the player then enters it |
+| `hazards.md` | **Reciprocal.** A hazard that forces a detour lengthens the walked route, so `d_f`, `d_r` and `d_exit` must be measured around hazards. Placing one re-derives the level's `O_level` exactly as moving a bucket does |
 
 ### Code
 

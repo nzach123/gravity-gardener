@@ -133,9 +133,12 @@ vertical loop at this quality bar.
 - The gravity flip mechanic itself (the sprite rotating to match, `up_direction`/
   `right_dir` recomputing cleanly) worked exactly as designed, but the *control
   consequence* of that design (mirrored input) was explicitly disliked.
-- The 5-second pour has **zero real-time feedback** — no progress bar, no partial
+- The pour has **zero real-time feedback** — no progress bar, no partial
   color change — only a payoff at the exact moment of completion (plant color jump +
   bucket throw). This reads as "nothing happening" for the full duration of every pour.
+  **Corrected 2026-08-17:** this originally read "the 5-second pour." `Level01.tscn`
+  authors `water_duration = 2.0`, overriding the 5.0 default, so the tester held for
+  2 s, not 5 s. The missing-feedback finding stands; its stated severity was overstated.
 - **Correction to a Phase 4 (pre-human-playtest) finding**: the agent's own earlier
   MCP-driven exploration never completed a full loop before oxygen ran out, and that
   was reported as "oxygen_capacity=90 is too tight." The human's actual playthrough
@@ -144,6 +147,25 @@ vertical loop at this quality bar.
   agent's own slow, stall-heavy exploration pace, not representative of real human
   pacing. Whether it's tight for a genuinely new player without route knowledge is
   still an open question that would benefit from more tester data.
+- **Second correction, 2026-08-17 — the budget is too generous, not too tight, and
+  the question above was framed backwards.** `oxygen_capacity = 90` was never derived;
+  `active.md` records it as an "unvalidated guess," which `suit-oxygen.md` R6 and
+  Pillar 2 both forbid. Deriving it from `Level01.tscn`'s actual geometry
+  (`s`=350, `k`=0.6, `w`=2.0, `margin`=0.4, walked routes through both gravity zones)
+  gives `t_level` = 18.91 s, `d_exit`/`s` = 4.19 s, and **`O_level` ≈ 32 s**. The one
+  human run independently corroborates this: it finished with 65/90 at `drain_rate`
+  1.0, so 25 s elapsed, and 25 × 1.4 ≈ 35 s. Both methods agree that 90 is roughly
+  **2.6× the derived value**. The "72% remaining" reading was the symptom, not the
+  reassurance it was taken for.
+- **This derivation also exposed a formula gap, since fixed.** `O_level` summed the
+  bucket deliveries and stopped the clock at the final pour, omitting the mandatory
+  run to the exit — 18% of `t_level` on this level, and growing with level size.
+  `watering-system.md` §4 gained a `d_exit` term on 2026-08-17.
+- **What no analysis here can settle:** `t_level` is the floor for a player who
+  already knows the route. `margin` = 0.4 is the entire allowance for a first-timer's
+  mistakes, and whether it absorbs them is untested. This needs a cold human tester.
+  An agent-driven run cannot answer it — the last one produced a materially wrong
+  finding on this exact question, which is the correction immediately above.
 
 ---
 
@@ -178,8 +200,14 @@ single-room, single-failure-mode level.
 - Add level-complete feedback (a win screen or transition) — the current
   "oxygen silently stops draining" is not sufficient signal, and it actively
   obscured the real bug found this session.
-- Re-derive `oxygen_capacity` from a clean, non-debugging human speedrun of the
-  route, now that we have one real data point (65/90 remaining) rather than a guess.
+- ~~Re-derive `oxygen_capacity` from a clean, non-debugging human speedrun of the
+  route~~ — **done 2026-08-17, and it inverted the finding.** `O_level` derives to
+  ≈32 s against the authored 90; see the second correction in Metrics. Production
+  levels must author `oxygen_capacity` from `O_level` (`suit-oxygen.md` R6), never
+  from a speedrun time directly — a speedrun-tuned number is a hand-set number, which
+  Pillar 2 rejects. The speedrun's role is to validate `margin`, not to set capacity.
+  **Still open:** whether `margin` = 0.4 is enough for a player who does not know the
+  route. Needs a cold human tester.
 - Address the tester's core-fantasy gap directly: more navigational complexity than
   a single room, and at least one failure mode beyond oxygen depletion.
 
