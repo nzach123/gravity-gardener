@@ -662,8 +662,8 @@ one lands. It does not design the menu.
 | E2 / E4 | Hold as-is |
 | E3 | **Freezes at its current fill.** See below |
 | E5 | Its 1.2 s timer holds and resumes |
-| E6 | Unreachable — the death sequence already pauses game systems itself |
-| E9 | Unreachable — the completion sequence already pauses game systems itself |
+| E6 | **Runs. `PROCESS_MODE_ALWAYS`** (ADR-0014 D14.3). *Corrected 2026-08-18 — this row read "Unreachable — the death sequence already pauses game systems itself," which was circular:* that pause **is** `SceneTree.paused` (D14.1), so E6 was not excluded from the paused state, it was caught by it. Left `PAUSABLE`, E6 would freeze at its first frame and the player would see a still image for the whole 0.35 s hold |
+| E9 | **Runs. `PROCESS_MODE_ALWAYS`** (ADR-0014 D14.3). Same correction, same reason. E9 exists because the vertical slice had no observable win state; freezing it at frame one would have reproduced that failure in a new form |
 | E7 | Continues updating. It is a developer tool, and a frozen readout is less useful than a live one |
 
 **On E3 specifically.** Pause is not an input release, so the R4 / AC3 drain-back does

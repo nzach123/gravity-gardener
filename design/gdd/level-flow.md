@@ -127,7 +127,7 @@ latch and the next level's first frame; a death occupies `0.35 s` before restart
 | Player enters the airlock while `goal_unlocked` is `false` | Nothing happens, and nothing is displayed. The airlock's own locked appearance is the message (`hud.md` #11, Hidden-diegetic). No refusal prompt — E4 exists for capped plants, not for the airlock |
 | Player leaves the airlock before the final pour, then returns | Normal. `player_overlaps_airlock` clears and re-sets; the predicate re-evaluates on every frame either way |
 | Restart requested while the completion sequence is playing | Refused by the guard (R9) |
-| Pause pressed during either sequence | Ignored for the duration of the sequence. ⚠ **New stance** — both sequences already pause game systems, so a second pause layer has nothing to halt, but pause routing is owned by ADR-0010 and this needs its agreement |
+| Pause pressed during either sequence | **Ignored for the duration of the sequence.** Agreed and made structural by **ADR-0014 D14.4**: `LevelRoot` sets a pause lock on `PauseController` at the instant it sets `_transition_pending`, and `toggle_pause()` no-ops while locked. *This document's original reasoning was inverted and is corrected by that ADR* — the exposure is not that a second pause layer has nothing to halt, but that `PauseController` runs at `PROCESS_MODE_ALWAYS` and is therefore one of the few things still processing, so an unguarded press would **un**-halt a game the sequence had already stopped, with a transition pending |
 | The next level's scene fails to load | Out of scope here — level load validity is owned by ADR-0003's `LevelValidation.validate()` at load |
 | Final level completed | ⚠ **TBD** (R10). Not decided |
 | `level_complete` latches while the player is mid-pour | The pour is abandoned unresolved. The level is over; the bucket's fate does not matter. No conflict with `watering-system.md` §5, which orders pour-then-death, because that ordering only governs the death path |
@@ -146,7 +146,8 @@ latch and the next level's first frame; a death occupies `0.35 s` before restart
 | `hazards.md` | **Reciprocal.** Owns two of the three death causes — spikes and kill areas. It owns what kills; this document owns what a death then does. R6 requires hazard death be indistinguishable from oxygen death |
 | ADR-0005 | Owns frame ordering, priority values, and `_transition_pending`. This document states *what*, that ADR states *how* |
 | ADR-0003 | Owns load-time level validity, including the next level's scene |
-| ADR-0010 | Owns pause routing. The §5 pause-during-sequence stance needs its agreement |
+| ADR-0010 | Owns pause routing and `SceneTree.paused`. The §5 pause-during-sequence stance **has its agreement**, delivered by ADR-0014 without editing ADR-0010 |
+| ADR-0014 | Rules that R4/R6's "game systems paused" **is** `SceneTree.paused`, written only through `PauseController`; exempts the sequence driver and `hud.md` E6/E9 to `PROCESS_MODE_ALWAYS` so the hold advances and both elements actually play; and owns the §5 pause lock |
 
 ## 7. Tuning Knobs
 

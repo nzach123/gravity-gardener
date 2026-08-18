@@ -19,10 +19,19 @@
 #
 # Created: 2026-08-14 by ADR-0001
 # Contributors: ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006, ADR-0007,
-#   ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012
+#   ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012, ADR-0013, ADR-0014
+#   (ADR-0013 was omitted from this line when it landed on 2026-08-18 and is added
+#   here with ADR-0014 — a transcription omission corrected in place, per the
+#   EXCEPTION rule above, not a stance change.)
 
 version: 1
 last_updated: >-
+  2026-08-18 (ADR-0014 — appended PauseController.pause_lock and
+  terminal_sequence_process_mode_exemptions, plus the
+  non_pausecontroller_writes_scenetree_paused and
+  implicit_process_always_on_sequence_timer forbidden patterns. Closes open item 3,
+  the level-flow.md §5 versus ADR-0010 pause conflict. ADR-0010 is extended, not
+  edited.)
   2026-08-18 (ADR-0013 — superseded GravityAuthority.apply_camera_relative_axis,
   appended apply_screen_relative_axis and the
   input_basis_gated_on_boolean_camera_flag forbidden pattern. Also quoted this field:
@@ -1141,6 +1150,45 @@ api_decisions:
       involved, so LevelRoot mediation buys nothing there (unlike
       pour_completed, which must reach LevelState).
 
+  - name: PauseController.pause_lock
+    kind: lifecycle_contract
+    signature: |
+      func set_pause_locked(value: bool) -> void
+      func toggle_pause() -> void      # no-ops while the lock is set
+      func set_paused(value: bool) -> void   # NOT guarded by the lock
+    owner: PauseController
+    adr: ADR-0014
+    status: accepted
+    guarantees:
+      - "player-initiated pause is refused for the whole of a terminal sequence, making level-flow.md §5's 'ignored for the duration' structural rather than advisory"
+      - "set once by LevelRoot at the instant it sets ADR-0005 D5.4's _transition_pending, and never cleared — the lock dies with the level instance, mirroring level-flow.md R2's write-once latch and R8's total reset"
+      - "no reverse dependency: PauseController never reads LevelRoot state, so ADR-0002's injection contract carries nothing new"
+    note: >
+      toggle_pause() is guarded and set_paused() deliberately is not. The lock exists
+      to refuse player input, not to refuse LevelRoot, which must still be able to
+      call set_paused(true) immediately after locking. Guarding both would deadlock
+      the sequence at the moment it began.
+
+  - name: terminal_sequence_process_mode_exemptions
+    kind: lifecycle_contract
+    signature: "PROCESS_MODE_ALWAYS on exactly three leaf nodes: the LevelRoot sequence driver, hud.md E6, hud.md E9. Every other node keeps PROCESS_MODE_INHERIT."
+    owner: LevelRoot, HUD
+    adr: ADR-0014
+    status: accepted
+    guarantees:
+      - "the sequence hold advances and the transition fires while the tree the sequence itself paused is paused"
+      - "E6 and E9 play through their hold instead of freezing at their first frame — they are the elements the sequences exist to display"
+      - "E1-E5 and E8 stay INHERIT and freeze holding their last values, preserving hud.md § Paused state unchanged"
+      - "ADR-0008's structural drain-halt is untouched: OxygenDrain keeps INHERIT and is granted no exemption"
+    note: >
+      Set on leaf nodes ONLY. PROCESS_MODE_INHERIT resolves chain-wide, so ALWAYS on
+      the HUD root or the Z3 layer would keep the entire player-facing HUD live
+      through every pause and break hud.md H14, with no error and no symptom until
+      someone paused. This is the identical constraint ADR-0010 D10.6 imposed on E7's
+      exemption, applied identically. Corrects hud.md's § Paused state rows for E6
+      and E9, which read "Unreachable — the sequence already pauses game systems
+      itself" — circular, since that pause is this pause (ADR-0014 D14.5).
+
 performance_budgets:
   - system: prop_gravity
     budget: "0 per-frame script cost in steady state; <=40-prop wake pass only while the vector is easing (~6-7 frames per change at 60 FPS)"
@@ -1611,3 +1659,33 @@ forbidden_patterns:
       sweep, which is why it survived review twice. This shape is what produced the
       ADR-0007 D7.4 versus gravity.md R11 conflict.
     remediation: "Pass the camera's live rotation as a float and rotate right_dir into camera space. See ADR-0013 D13.2."
+
+  - pattern: non_pausecontroller_writes_scenetree_paused
+    description: "Any node other than PauseController assigning get_tree().paused"
+    adr: ADR-0014
+    status: accepted
+    reason: >
+      ADR-0008 and ADR-0010 spent two decisions settling who owns the pause flag,
+      and ADR-0008's structural guarantee — that OxygenDrain halts with no
+      pause-check code anywhere — rests on there being exactly one writer. A second
+      writer makes the drain stoppable two ways, only one of which is structural,
+      and the weaker path would be the one running during the completion and death
+      sequences. LevelRoot begins a terminal sequence through
+      PauseController.set_paused(true), the method ADR-0010 D10.6 already declares.
+    remediation: "Call PauseController.set_paused(value). See ADR-0014 D14.2."
+
+  - pattern: implicit_process_always_on_sequence_timer
+    description: "A SceneTree.create_timer() call in the terminal-sequence path that omits the process_always argument"
+    adr: ADR-0014
+    status: accepted
+    reason: >
+      process_always defaults to true, so a timer created at the default keeps
+      counting while SceneTree.paused is true. In the terminal-sequence path that
+      default silently decides whether the failure mode is a hard lock or an
+      invisible one: with the timer running and E6/E9 frozen at their first frame,
+      the hold elapses unseen and the transition fires exactly on schedule, so the
+      player sees a still frame and then a cut. It looks nearly correct and would
+      ship. The default is also under active proposal to change
+      (godot-proposals#9924), so code relying on it has pause behaviour that
+      inverts on an engine upgrade, in the one path where the failure is invisible.
+    remediation: "Prefer a Timer node child of the ALWAYS sequence driver, whose behaviour is visible in the scene tree. If create_timer() is used, pass process_always explicitly. See ADR-0014 D14.3."

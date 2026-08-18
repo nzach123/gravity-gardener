@@ -47,7 +47,7 @@
 ## Forbidden Patterns
 
 <!-- Full list with rationale lives in docs/registry/architecture.yaml -->
-37 patterns are recorded, one per architectural decision, in
+39 patterns are recorded, one per architectural decision, in
 `docs/registry/architecture.yaml` (`forbidden_patterns:`). See that file for
 the pattern name and rejection rationale — not duplicated here to avoid
 drift. Representative examples: `private_gravity_copy` (defeats gravity.md
@@ -78,6 +78,7 @@ R9 — exactly one gravity vector may exist), `zone_targets_player_directly`
 | ADR-0011 | Physics prop body, lifetime and speed cap | Accepted |
 | ADR-0012 | Spent Jug Throw and Lifetime | Accepted |
 | ADR-0013 | Screen-relative input basis | Accepted |
+| ADR-0014 | Pause gating and process modes during terminal sequences | Accepted |
 
 ## Engine Specialists
 
