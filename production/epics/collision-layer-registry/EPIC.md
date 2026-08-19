@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/physics-props.md
 > **Architecture Module**: `CollisionLayerRegistry` (`collision_layers.gd`)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories collision-layer-registry`
+> **Stories**: 5 stories
 
 ## Overview
 
@@ -62,6 +62,16 @@ This epic is complete when:
 - All Logic and Integration stories have passing test files in `tests/`
 - All Visual/Feel and UI stories have evidence docs with sign-off in `production/qa/evidence/`
 
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | Create the CollisionLayers registry and correct project.godot naming | Logic | Ready | ADR-0004 |
+| 002 | Fix BUG-0001 — dead kill-plane masks on levels 05 and 06 | Integration | Ready | ADR-0004 |
+| 003 | Remove vestigial PlayerArea2D and dead moving-platform mask | Logic | Ready | ADR-0004 |
+| 004 | Collision layer invariant test suite | Logic | Ready | ADR-0004 |
+| 005 | CI grep enforcing the D4.6 runtime-mutation ban | Logic | Ready | ADR-0004 |
+
 ## Next Step
 
-Run `/create-stories collision-layer-registry` to break this epic into implementable stories.
+Run `/story-readiness production/epics/collision-layer-registry/story-001-create-collision-layers-registry.md` to begin implementation.

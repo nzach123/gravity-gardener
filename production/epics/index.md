@@ -9,7 +9,7 @@ Control Manifest Version: 2026-08-17
 | [Gravity Authority](gravity-authority/EPIC.md) | Foundation | Gravity | `gravity.md` | Not yet created | Ready |
 | [Level State Ownership](level-state/EPIC.md) | Foundation | Watering / Suit Oxygen | `watering-system.md`, `suit-oxygen.md` | Not yet created | Ready |
 | [Level Load Validation](level-validation/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | Not yet created | Ready |
-| [Collision Layer Registry](collision-layer-registry/EPIC.md) | Foundation | Physics Props | `physics-props.md` | Not yet created | Ready |
+| [Collision Layer Registry](collision-layer-registry/EPIC.md) | Foundation | Physics Props | `physics-props.md` | 5 stories | Ready |
 | [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | Not yet created | Ready |
 | [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | Not yet created | Ready |
 | [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | Not yet created | Ready |
@@ -75,7 +75,7 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 |---|---|---|
 | ADR-0006 T4 — `@export_range` does not clamp a hand-edited `.tres`; verified from documentation only, never executed | `tuning-resources` | **OPEN** — execute against the 4.7.1 binary |
 | ADR-0001 Verification 2 — a default-space gravity write in `_physics_process` reaches every `RigidBody2D` in the same step | `gravity-authority` | **OPEN** — confirm at implementation |
-| ADR-0004 F8 — the registry guarantees authored state only, not runtime mutation | `collision-layer-registry` | **OPEN** — decide on the CI grep step |
+| ADR-0004 F8 — the registry guarantees authored state only, not runtime mutation | `collision-layer-registry` | **Decided** — story 005 adds a CI grep step |
 | ADR-0008 — the `LevelRoot`-ancestor `process_mode` invariant has no automated check | `oxygen-drain` | **OPEN** — scene test owed once a pause menu exists |
 | `level-flow.md` R10 — what follows the final level | `level-outcomes` | **BLOCKED** — design decision owed |
 | `complete_hold_duration` ⚠ unset (0.6 s proposed, 0.2–1.5 s range) | `level-outcomes` | **OPEN** — needs a human playtest, not an agent one |
