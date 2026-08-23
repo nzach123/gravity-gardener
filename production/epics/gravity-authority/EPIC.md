@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/gravity.md
 > **Architecture Module**: `GravityAuthority` (autoload)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories gravity-authority`
+> **Stories**: 7 stories — see the Stories table below
 
 ## Overview
 
@@ -58,6 +58,34 @@ out of scope — the `3d/physics_engine` setting is inert in a 2D game.
 | **TR-gravity-008 (zone_priority) has no ADR.** | **Parked, by design** | gravity.md R8 parks it and ADR-0001's single global vector keeps it parked — with one vector in play, overlap is an ordering question, not a spatial one. **No story.** Revisit only on a design change (architecture.md QQ-07). |
 | **TR-gravity-010 (camera rotation) has no ADR.** Working in `main.gd` today. The input-basis leg is closed by ADR-0013 D13.2/D13.4. The camera-follow versus camera-rotation split is specified but **not applied** (ADR-0013 D13.5). | **Blocked** | Any story touching the camera split is marked Blocked. Owner is technical-director; the gate is a human playtest of `level_01` and `level_07`. `accessibility-requirements.md` T8 (reduced motion) stays blocked until that split lands. See hud.md Q10. |
 | **`AREA_PARAM_GRAVITY` / `AREA_PARAM_GRAVITY_VECTOR` enum spellings.** | **RESOLVED** 2026-08-14 | Spellings confirmed (`= 1` / `= 2`). Failure mode was a compile error, not silent misbehaviour. No story work owed. |
+
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | Create the GravityAuthority scene autoload and its guards | Logic | Ready | ADR-0001 |
+| 002 | Direction easing in `_physics_process` with an exported ease rate | Logic | Ready | ADR-0001 |
+| 003 | Make PlayerGravityComponent a consumer; remove `Player.set_gravity` | Integration | Ready | ADR-0001, ADR-0007 |
+| 004 | Zones report to the authority; clear the Area2D gravity override | Integration | Ready | ADR-0001 |
+| 005 | Level default gravity exports and `reset_to` on level load | Integration | Ready | ADR-0001, ADR-0002, ADR-0003 |
+| 006 | Default-space gravity write, rewritten every eased frame | Integration | Ready | ADR-0001, ADR-0006 |
+| 007 | Prop registry and the force-wake pass | Logic | Ready | ADR-0001, ADR-0011 |
+
+Stories 001-004 are ADR-0001's atomic Changeset A and land together — there is no
+incremental path (ADR-0001 Migration Plan). Stories 006 and 007 have no observable
+effect until the first `RigidBody2D` exists and may land with the props epic.
+
+**No story exists for TR-gravity-008** (`zone_priority`) — parked by `gravity.md` R8.
+**No story exists for the TR-gravity-010 camera-follow / camera-rotation split** —
+Blocked on a human playtest of `level_01` and `level_07`, owner technical-director
+(ADR-0013 D13.5). Story 004 rewires the camera signal only.
+
+### Cross-epic prerequisites
+
+| Story | Needs | From |
+|---|---|---|
+| 005 | `LevelRoot` | level-state epic (ADR-0002) |
+| 006 | `Tuning.PROP` / `prop_gravity_scale` | tuning-resources epic (ADR-0006) |
 
 ## Definition of Done
 

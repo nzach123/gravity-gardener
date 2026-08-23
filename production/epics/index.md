@@ -1,16 +1,16 @@
 # Epics Index
 
-Last Updated: 2026-08-18
+Last Updated: 2026-08-23
 Engine: Godot 4.7.1
 Control Manifest Version: 2026-08-17
 
 | Epic | Layer | System | GDD | Stories | Status |
 |------|-------|--------|-----|---------|--------|
-| [Gravity Authority](gravity-authority/EPIC.md) | Foundation | Gravity | `gravity.md` | Not yet created | Ready |
+| [Gravity Authority](gravity-authority/EPIC.md) | Foundation | Gravity | `gravity.md` | 7 stories | Ready |
 | [Level State Ownership](level-state/EPIC.md) | Foundation | Watering / Suit Oxygen | `watering-system.md`, `suit-oxygen.md` | Not yet created | Ready |
-| [Level Load Validation](level-validation/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | Not yet created | Ready |
+| [Level Load Validation](level-validation/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
 | [Collision Layer Registry](collision-layer-registry/EPIC.md) | Foundation | Physics Props | `physics-props.md` | 5 stories | Ready |
-| [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | Not yet created | Ready |
+| [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
 | [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | Not yet created | Ready |
 | [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | Not yet created | Ready |
 | [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | Not yet created | Ready |
@@ -76,6 +76,9 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 | ADR-0006 T4 — `@export_range` does not clamp a hand-edited `.tres`; verified from documentation only, never executed | `tuning-resources` | **OPEN** — execute against the 4.7.1 binary |
 | ADR-0001 Verification 2 — a default-space gravity write in `_physics_process` reaches every `RigidBody2D` in the same step | `gravity-authority` | **OPEN** — confirm at implementation |
 | ADR-0004 F8 — the registry guarantees authored state only, not runtime mutation | `collision-layer-registry` | **Decided** — story 005 adds a CI grep step |
+| ADR-0003 D3.3's printed `V-WIRING` table is stale — `hud` still reads "not required" and `level_bounds` is absent, though ADR-0010 and ADR-0011 are both Accepted | `level-validation` | **Doc lag** — D3.3's own admission rule resolves it; story 004 implements four rows, a doc-only ADR amendment is owed |
+| `V-WIRING` has no TR-ID, and neither does `V-BOUNDS` | `level-validation` | **Traceability gap** — extend `tr-registry.yaml` or record the exception; do not back-fill during implementation |
+| Reading an `Area2D` extent headlessly, on a node instantiated but never added to a tree, is unverified — not covered by ADR-0003 E1–E3 | `level-validation` | **OPEN** — verify against the 4.7.1 binary in story 006 |
 | ADR-0008 — the `LevelRoot`-ancestor `process_mode` invariant has no automated check | `oxygen-drain` | **OPEN** — scene test owed once a pause menu exists |
 | `level-flow.md` R10 — what follows the final level | `level-outcomes` | **BLOCKED** — design decision owed |
 | `complete_hold_duration` ⚠ unset (0.6 s proposed, 0.2–1.5 s range) | `level-outcomes` | **OPEN** — needs a human playtest, not an agent one |

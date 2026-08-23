@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/watering-system.md §7 · design/gdd/suit-oxygen.md §7 · design/gdd/physics-props.md §7
 > **Architecture Module**: `WateringTuning` · `OxygenTuning` · `PropTuning` · `Tuning` accessor
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories tuning-resources`
+> **Stories**: 6 — see the table below
 
 ## Overview
 
@@ -51,6 +51,28 @@ against. No post-cutoff API is used, and facts T1–T3 were verified at the
 | **gdUnit4 treats GDScript warnings as errors at test discovery** — one warning fails the entire suite. | Known | All four new scripts must be warning-clean, including the unused-`class_name` and shadowing checks. Same caveat that applied to `collision_layers.gd`. |
 | **This epic unblocks `V-PROP-BUDGET` in the `level-validation` epic.** | Cross-epic dependency | Migration Plan step 6 of ADR-0006 closes `V-PROP-BUDGET` and removes the "BLOCKED on ADR-0006" note from the ADR-0003 registry entry and Ordering Note. Step 8 of ADR-0003 is the same action. Do it once. |
 | **No consumer work is owed by this epic.** | Scope boundary | ADR-0008 / ADR-0009 / ADR-0011 / ADR-0012 adopt `Tuning.*` as they land. Do not pull consumer code into this epic. |
+
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | [T4 spike — does `@export_range` clamp a hand-edited `.tres`?](story-001-t4-export-range-clamp-spike.md) | Integration | Ready | ADR-0006 |
+| 002 | [Create the three tuning `Resource` scripts](story-002-create-tuning-resource-scripts.md) | Config/Data | Ready | ADR-0006 |
+| 003 | [Author the three tuning `.tres` files at GDD defaults](story-003-author-tuning-tres-files.md) | Config/Data | Ready | ADR-0006 |
+| 004 | [Create the `Tuning` const accessor](story-004-create-tuning-accessor.md) | Logic | Ready | ADR-0006 |
+| 005 | [Headless gdUnit4 validation suite — V1–V4 and V9](story-005-tuning-validation-suite.md) | Logic | Ready | ADR-0006 |
+| 006 | [CI greps for V6, V7 and V8](story-006-ci-greps-for-tuning-bans.md) | Logic | Ready | ADR-0006 |
+
+Build order is 001 → 002 → 003 → 004 → 005 → 006. Each story's
+`Depends on:` field states what must be DONE before it starts.
+
+### Not a story in this epic
+
+**Closing `V-PROP-BUDGET` and removing the "BLOCKED on ADR-0006" note** appears in
+this epic's Definition of Done, but it is **owned by the `level-validation` epic**
+(sprint task **LV-2**). ADR-0006 Migration Plan step 6 and ADR-0003 Migration Plan
+step 8 are the same action, and `sprint-1.md` requires it to be done once, not twice.
+No story is created here for it.
 
 ## Definition of Done
 

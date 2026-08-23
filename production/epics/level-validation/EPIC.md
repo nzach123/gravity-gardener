@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/watering-system.md · design/gdd/suit-oxygen.md · design/gdd/physics-props.md
 > **Architecture Module**: `LevelValidation` (`RefCounted`, static)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories level-validation`
+> **Stories**: 6 stories — see the table below
 
 ## Overview
 
@@ -47,6 +47,54 @@ reference on 2026-08-14.
 | **The 4.7 verification method carries a recorded caveat.** No literal `4.7` git tag is fetchable, so E1–E3 were checked against 4.3-stable source plus the live class reference. | Accepted, recorded openly in ADR-0003 | Core-domain behaviour records no breaking change across 4.4 → 4.7. Treat E1–E3 as settled and **do not re-search them**. If an E-claim fails in practice, that is a finding against the ADR, not a story-level workaround. |
 | **`assert()` compiles out in release exports; `push_error()` does not.** A violation reported only by `assert()` would vanish from the shipped build. | Known, verified 2026-08-14 | Report every violation with `push_error()`. Use `assert()` only as an extra debug-build stop, never as the only reporting path. |
 | **Debug-only gating could hide a real authoring error from QA.** | Design constraint | Follow the stated reporting policy of ADR-0003 exactly. Do not add extra `OS.is_debug_build()` gating to the six rules. |
+
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | [Validation scaffold — type-scan discovery and `count_buckets()`](story-001-validation-scaffold-and-discovery.md) | Logic | Ready | ADR-0003 |
+| 002 | [`V-BUCKET-SUM` and `V-PLANT-MIN`](story-002-bucket-sum-and-plant-min-rules.md) | Logic | Ready | ADR-0003, ADR-0009 |
+| 003 | [`V-OXY-CAP` and `V-GRAV-EXPORT`](story-003-oxygen-capacity-and-gravity-export-rules.md) | Logic | Ready | ADR-0003, ADR-0001, ADR-0002 |
+| 004 | [`V-WIRING` over a required-consumer table](story-004-wiring-rule-required-consumer-table.md) | Logic | Ready | ADR-0003, ADR-0002, ADR-0010, ADR-0011 |
+| 005 | [Wire `validate()` into `LevelRoot._ready()` at step (a)](story-005-wire-validation-into-level-root-ready.md) | Integration | **Blocked** — `level-state` epic | ADR-0003, ADR-0002 |
+| 006 | [`V-PROP-BUDGET` and `V-BOUNDS`](story-006-prop-budget-and-bounds-rules.md) | Logic | **Blocked** — `tuning-resources` epic + `PropBody` | ADR-0003, ADR-0011, ADR-0006 |
+
+Take 001 first; 002 and 003 are independent of each other and may follow in either
+order; 004 needs all three. Both blocks are scheduling, not design — every governing
+ADR is Accepted.
+
+## Corrections to this epic, found at story creation (2026-08-23)
+
+The epic text above predates ADR-0010 and ADR-0011 reaching **Accepted**. Two
+statements in it are now stale. The stories follow the corrected position; this note
+records why they diverge from the prose above.
+
+**1. The rule set is seven rules, not six.** ADR-0011 D11.7 adds `V-BOUNDS`
+(`level_bounds` resolves, and every `PropBody` starts inside its extent). The control
+manifest v2026-08-17 already records this — *"Six validation rules (extended to seven
+by ADR-0011)"*. `V-BOUNDS` is implemented in story 006 alongside `V-PROP-BUDGET`,
+because both need `class_name PropBody`.
+
+**2. The `V-WIRING` required-consumer set has doubled, from two rows to four.**
+ADR-0003 D3.3 states that a consumer is required when its owning ADR is Accepted:
+
+| Export | Owning ADR | Required per D3.3's rule | ADR-0003's printed table |
+|---|---|---|---|
+| `player` | ADR-0002 | Yes | Yes |
+| `goal` | ADR-0002 | Yes | Yes |
+| `hud` | ADR-0010 (Accepted) | **Yes** | says *"No — admitted when ADR-0010 is Accepted"* |
+| `level_bounds` | ADR-0011 (Accepted) | **Yes** | absent |
+
+ADR-0010 D10.9 and ADR-0011 D11.7 both state the promotion explicitly, and ADR-0011's
+Related Decisions section already records that ADR-0003 owes the `level_bounds` row.
+This is doc lag inside ADR-0003's printed prose, not a conflict between decisions —
+D3.3's own admission rule resolves it. **Story 004 implements four rows.** A doc-only
+amendment to ADR-0003 D3.3 is owed and is flagged at `/story-done`; no ADR is reopened
+by these stories.
+
+This raises the level migration epic's cost: all 8 levels must now author and wire a
+HUD *and* a `LevelBounds` `Area2D`. ADR-0010 §Consequences already names those two as
+that epic's largest cost.
 
 ## Definition of Done
 

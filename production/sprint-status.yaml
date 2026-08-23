@@ -19,14 +19,14 @@ goal: "Land the Foundation layer's data and validation base — collision regist
 start: "2026-08-18"
 end: "2026-08-31"
 generated: "2026-08-18"
-updated: "2026-08-18"
+updated: "2026-08-23"
 
 stories:
   - id: "CLR-1"
     name: "Create the CollisionLayers registry and correct project.godot naming"
     file: "production/epics/collision-layer-registry/story-001-create-collision-layers-registry.md"
     priority: must-have
-    status: in-progress
+    status: review
     owner: "godot-gdscript-specialist"
     estimate_days: 0.25
     blocker: ""
@@ -86,20 +86,20 @@ stories:
     name: "Create stories for the tuning-resources epic"
     file: "production/epics/tuning-resources/EPIC.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "producer"
     estimate_days: 0.25
     blocker: ""
-    completed: ""
+    completed: "2026-08-23"
 
   - id: "TUN-1"
     name: "T4 spike — does @export_range clamp a hand-edited .tres?"
-    file: "production/epics/tuning-resources/EPIC.md"
+    file: "production/epics/tuning-resources/story-001-t4-export-range-clamp-spike.md"
     priority: must-have
-    status: backlog
+    status: ready-for-dev
     owner: "godot-specialist"
     estimate_days: 0.5
-    blocker: "Depends on TUN-0"
+    blocker: ""
     completed: ""
 
   - id: "TUN-2"
@@ -116,11 +116,11 @@ stories:
     name: "Create stories for the level-validation epic"
     file: "production/epics/level-validation/EPIC.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "producer"
     estimate_days: 0.25
     blocker: ""
-    completed: ""
+    completed: "2026-08-23"
 
   - id: "LV-1"
     name: "Implement 5 of 6 LevelValidation rules and their tests"
@@ -129,7 +129,7 @@ stories:
     status: backlog
     owner: "gameplay-programmer"
     estimate_days: 1.25
-    blocker: "Depends on LV-0 and TUN-2"
+    blocker: "Depends on TUN-2"
     completed: ""
 
   - id: "LV-2"
@@ -146,11 +146,11 @@ stories:
     name: "Create stories for the gravity-authority epic"
     file: "production/epics/gravity-authority/EPIC.md"
     priority: should-have
-    status: backlog
+    status: done
     owner: "producer"
     estimate_days: 0.25
     blocker: ""
-    completed: ""
+    completed: "2026-08-23"
 
   - id: "GA-1"
     name: "Implement GravityAuthority autoload, broadcast, prop registry and force-wake"
@@ -159,7 +159,7 @@ stories:
     status: backlog
     owner: "gameplay-programmer"
     estimate_days: 1.75
-    blocker: "Depends on GA-0 and ARCH-1"
+    blocker: "Depends on ARCH-1"
     completed: ""
 
   - id: "LS-0"
