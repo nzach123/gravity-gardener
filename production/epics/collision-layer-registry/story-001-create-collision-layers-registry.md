@@ -1,12 +1,12 @@
 # Story 001: Create the CollisionLayers registry and correct project.godot naming
 
 > **Epic**: Collision Layer Registry
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1-2 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-18
+> **Last Updated**: 2026-08-23
 
 ## Context
 
@@ -52,19 +52,19 @@ physics queries, or per-frame logic are added or altered.
 *Scoped to ADR-0004 Migration Plan steps 1–2. Full isolation verification is
 story 004's job — this story only creates the registry itself.*
 
-- [ ] `src/scripts/collision_layers.gd` exists, `extends RefCounted`, carries
+- [x] `src/scripts/collision_layers.gd` exists, `extends RefCounted`, carries
       `class_name CollisionLayers`, and matches the *Key Interfaces* block in
       ADR-0004 verbatim: `WORLD`, `PLAYER`, `PROP`, `ALLOCATED`,
       `PLAYER_MASK`, `PROP_MASK`, `DETECTOR_MASK`, `DETECTOR_LAYER`. Bit 3 is
       *not* declared as a constant — only a comment marks it retired.
-- [ ] The script and its class-level doc comment are **warning-clean** under
+- [x] The script and its class-level doc comment are **warning-clean** under
       gdUnit4's warnings-as-errors discovery (no unused `class_name`, no
       shadowing).
-- [ ] `project.godot`'s `[layer_names]` section gains
+- [x] `project.godot`'s `[layer_names]` section gains
       `2d_physics/layer_4="prop"`.
-- [ ] `project.godot`'s `[layer_names]` section no longer declares
+- [x] `project.godot`'s `[layer_names]` section no longer declares
       `2d_physics/layer_3="item"` (D4.2 — bit 3 is retired, not populated).
-- [ ] `2d_physics/layer_1="world"` and `2d_physics/layer_2="player"` are left
+- [x] `2d_physics/layer_1="world"` and `2d_physics/layer_2="player"` are left
       unchanged.
 
 ---
@@ -158,10 +158,10 @@ Read via `ProjectSettings.get_setting()`, which is headless-safe (L6).
 
 ### Manual verification
 
-- [ ] `collision_layers.gd` is warning-clean under gdUnit4 warnings-as-errors
+- [x] `collision_layers.gd` is warning-clean under gdUnit4 warnings-as-errors
       discovery. Run the full suite, not just this file — one warning anywhere
       fails discovery for every test.
-- [ ] The class doc comment states the D4.4 precedence rule and the D4.6
+- [x] The class doc comment states the D4.4 precedence rule and the D4.6
       runtime-mutation ban in-file, per Implementation Notes.
 
 **Estimated test count**: ~12 assertions, all inside story 004's file.
@@ -182,7 +182,7 @@ This story has no dedicated test file of its own — `collision_layers.gd` is
 constants only, and story 004's `collision_layers_test.gd` is what exercises
 it. Evidence for *this* story is that story 004's test passes once both land.
 
-**Status**: [ ] Not yet created
+**Status**: [x] Satisfied — see Completion Notes
 
 ---
 
@@ -190,3 +190,35 @@ it. Evidence for *this* story is that story 004's test passes once both land.
 
 - Depends on: None
 - Unlocks: Story 002, Story 003, Story 004, Story 005
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-23
+**Criteria**: 5/5 passing.
+
+- AC-1 auto-verified by `diff` against `adr-0004-collision-layer-allocation.md:302-331`
+  — `src/scripts/collision_layers.gd` is byte-identical to the ADR's *Key
+  Interfaces* block apart from the code fence. Bit 3 is undeclared; only the
+  comment marks it retired.
+- AC-2 verified by running the full gdUnit4 suite: 5/5 suites discovered,
+  75/75 cases, 0 errors, 0 orphans. Warnings-as-errors discovery is clean.
+- AC-3/4/5 verified by reading `project.godot` `[layer_names]` directly:
+  `layer_1="world"`, `layer_2="player"`, `layer_4="prop"`, no `layer_3`.
+
+**Deviations**: None. Manifest version matched (story `2026-08-17` = current
+`2026-08-17`). No forbidden pattern present — no runtime layer/mask assignment.
+
+**Test Evidence**: Satisfied via story 004's
+`tests/unit/physics/collision_layers_test.gd`, landed the same day. Its group 0
+(9 cases) and group 4 (2 cases) implement T1.1–T1.12, so every criterion above
+now has a regression guard rather than only a one-time inspection.
+
+**Code Review**: Pending — `/code-review` deferred to sprint close-out by
+developer decision. Low risk: the file is 26 lines of constants already verified
+verbatim against the governing ADR.
+
+**Note for whoever runs CI next**: `.godot/global_script_class_cache.cfg` was
+stale and `GdUnitCmdTool.gd` would not load at all until
+`godot --headless --path . --import` was run. Nothing to do with this story, but
+a clean checkout will hit it. Relevant to CLR-5.

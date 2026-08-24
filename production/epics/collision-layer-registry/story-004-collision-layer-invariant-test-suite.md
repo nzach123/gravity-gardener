@@ -1,12 +1,12 @@
 # Story 004: Collision layer invariant test suite
 
 > **Epic**: Collision Layer Registry
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-23
 
 ## Context
 
@@ -49,35 +49,35 @@ verified against engine source at the 2026-08-14 specialist gate:
 
 *From ADR-0004 D4.5 and Validation Criterion 1, scoped to this story:*
 
-- [ ] `tests/unit/physics/collision_layers_test.gd` exists and instantiates
+- [x] `tests/unit/physics/collision_layers_test.gd` exists and instantiates
       each relevant scene via `PackedScene.instantiate()` without adding it to
       the `SceneTree` (per L5).
-- [ ] **Assertion group 1 — isolation invariants, expressed as derived bit
+- [x] **Assertion group 1 — isolation invariants, expressed as derived bit
       tests, never raw integer equality**: e.g.
       `prop.collision_mask & CollisionLayers.PLAYER == 0`, and the mirror
       checks for player→prop, interactable→prop, and prop→interactable, per
       D4.3's four-pair table.
-- [ ] **Assertion group 2 — no scene uses an unallocated bit**:
+- [x] **Assertion group 2 — no scene uses an unallocated bit**:
       `(layer | mask) & ~CollisionLayers.ALLOCATED == 0`, checked across every
       scene under `src/scenes/**/*.tscn` (enumerated by directory scan, not a
       hardcoded list — a new scene must be covered on creation). Explicitly
       filter to the exact `.tscn` suffix so `.tscn*.tmp` editor autosaves are
       never picked up.
-- [ ] **Assertion group 3 — every `TileSet.physics_layer_0/collision_layer`
+- [x] **Assertion group 3 — every `TileSet.physics_layer_0/collision_layer`
       equals `CollisionLayers.WORLD`**, across all inline sub-resources
       (levels 03–06, `test_main`) and the shared `Simple_tileset.tres`.
-- [ ] **Assertion group 4 — `project.godot` names agree with the
+- [x] **Assertion group 4 — `project.godot` names agree with the
       constants**, read via `ProjectSettings.get_setting()` for
       `layer_names/2d_physics/layer_1` through `layer_4`.
-- [ ] The test passes on the current codebase (after stories 001–003 land).
-- [ ] The test **fails** when any of the following is deliberately introduced
+- [x] The test passes on the current codebase (after stories 001–003 land).
+- [x] The test **fails** when any of the following is deliberately introduced
       on a scratch branch, per Validation Criterion 1 — verify each by hand
       once, then revert:
       - A prop masking `player`.
       - A player masking `prop`.
       - Any node using bit 3 or an unallocated bit (5–32).
       - A tileset whose physics layer is not `world`.
-- [ ] Both `collision_layers_test.gd` and `collision_layers.gd` (story 001)
+- [x] Both `collision_layers_test.gd` and `collision_layers.gd` (story 001)
       are warning-clean under gdUnit4's warnings-as-errors discovery.
 
 ---
@@ -235,7 +235,7 @@ test-for-the-test. The scratch-branch negative checks in the acceptance
 criteria are a one-time manual verification during implementation, not a
 committed artifact.
 
-**Status**: [ ] Not yet created
+**Status**: [x] Satisfied — see Completion Notes
 
 ---
 
@@ -245,3 +245,71 @@ committed artifact.
   Recommended after Story 002 and Story 003 for narrative cleanliness, but not
   blocked on them.
 - Unlocks: None
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-23
+**Criteria**: 8/8 passing.
+
+**Delivered**: `tests/unit/physics/collision_layers_test.gd` — 21 test cases
+across all five assertion groups. Full suite after landing: 75/75, 0 errors,
+0 failures, 0 orphans, exit 0.
+
+**Design decisions worth knowing:**
+
+- Bodies are classified by the bits they carry, not by class name or a scene
+  list, so group 1's prop-side pairs begin covering ADR-0011's `PropBody` the
+  moment one is authored, without this file changing. As ADR-0004 predicted,
+  those loops iterate zero times today.
+- The five interactables are named explicitly (`INTERACTABLE_SCENES`) rather
+  than derived. Classifying a detector by `collision_layer == 0` and then
+  asserting it equals 0 would be circular and prove nothing; naming them makes
+  "these carry no layer" a real assertion. Group 2's scan remains a directory
+  walk, per T4.6.
+- T4.4 (prop → interactable) is tautological while `DETECTOR_LAYER` is 0 —
+  nothing can mask a body occupying no layer. It is implemented for pair-table
+  completeness, but the load-bearing half is the `DETECTOR_LAYER` assertion in
+  `test_interactables_are_detectors_that_never_mask_prop`, which is what
+  actually goes red if an interactable gains a layer.
+- Anti-vacuous floors: >= 15 scenes, >= 10 collision bodies, >= 9 TileMapLayers
+  (actual: 18 / 9). Set below current counts so legitimate authoring does not
+  trip them, far enough above zero that a broken glob fails loudly.
+
+**Negative checks (blocking AC) — all four confirmed, then reverted:**
+
+| Mutation | Test that caught it |
+|---|---|
+| Platform on PROP layer masking `player` | `test_prop_never_masks_player` |
+| `player.tscn` mask → 9 (`WORLD\|PROP`) | `test_player_never_masks_prop` |
+| Platform claims retired bit 3 (value 4) | `test_no_scene_uses_an_unallocated_bit` |
+| Platform claims unallocated bit 5 (value 16) | `test_no_scene_uses_an_unallocated_bit` |
+| `level_03` inline TileSet → layer 2 | `test_every_tileset_physics_layer_is_world` |
+
+The first attempt at the bit-3 check was invalid and was redone. Setting
+`spike_hazard.collision_layer = 4` tripped the interactable check (test #12)
+before group 2 (test #14) ever ran, so it proved the wrong assertion. Re-running
+the mutation on the moving platform — which no earlier group classifies —
+exercised group 2 directly. Both bit 3 and bit 5 were verified separately.
+
+**Deviations**: None from ADR-0004. One correction was made to a *sibling*
+story: story 003's T3.3 expected `AnimatableBody2D.collision_mask == 0` after
+the authored line is deleted. `CollisionObject2D.collision_mask` defaults to
+`1`, not `0` (probed directly on 4.7.1), so T3.3 would have failed against a
+correct implementation of story 003. Corrected in place there before
+implementing; group 5 asserts `== 1`.
+
+**Test Evidence**: This story's implementation is its own evidence. The
+negative checks above are the one-time manual verification required by
+ADR-0004 Validation Criterion 1 and are recorded here, not committed.
+
+**Code Review**: Pending — deferred to sprint close-out with story 001.
+
+**Open item for CLR-5.** Across all five negative-check runs, the executed-case
+count equalled the index of the first failing test (10, 11, 12, 14, 15 of 21),
+which indicates the suite stops at the first failing test rather than running to
+completion. In CI, one failure would mask every later one. Cause not
+investigated — it is a gdUnit4 runner setting, not a defect in this test.
+Separately, `.godot/global_script_class_cache.cfg` was stale and the runner
+would not load until `--import` was run. Both belong with CLR-5, which owns the
+CI workflow.

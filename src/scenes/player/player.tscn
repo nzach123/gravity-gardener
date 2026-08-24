@@ -128,13 +128,6 @@ autoplay = "Idle"
 position = Vector2(-1.25, -7)
 shape = SubResource("CapsuleShape2D_y68me")
 
-[node name="PlayerArea2D" type="Area2D" parent="." unique_id=550897856]
-position = Vector2(0, -6)
-
-[node name="PlayerCollisionShape2D" type="CollisionShape2D" parent="PlayerArea2D" unique_id=2063023771]
-position = Vector2(-1.5, -1)
-shape = SubResource("CapsuleShape2D_y68me")
-
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2145732260]
 
 [node name="Debugger" parent="CanvasLayer" unique_id=1376778258 node_paths=PackedStringArray("player") instance=ExtResource("3_alesa")]

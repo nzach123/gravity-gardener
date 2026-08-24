@@ -1,12 +1,12 @@
 # Story 003: Remove vestigial PlayerArea2D and dead moving-platform mask
 
 > **Epic**: Collision Layer Registry
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1 hour)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-23
 
 ## Context
 
@@ -46,14 +46,14 @@ logic are added or altered.
 
 *From ADR-0004 Migration Plan steps 4–5, defects 2 and 3:*
 
-- [ ] The `PlayerArea2D` node and its child `CollisionShape2D` are removed
+- [x] The `PlayerArea2D` node and its child `CollisionShape2D` are removed
       from `src/scenes/player/player.tscn` (currently at `player/player.tscn:131`).
-- [ ] The now-dangling `col_shape` `@onready var` is removed from
+- [x] The now-dangling `col_shape` `@onready var` is removed from
       `src/scripts/player.gd` (currently at `player.gd:48`), and no other line
       in that file references it.
-- [ ] No other `.tscn` file references the `PlayerArea2D` node path — confirm
+- [x] No other `.tscn` file references the `PlayerArea2D` node path — confirm
       with a project-wide search before deleting (ADR-0004's own instruction).
-- [ ] `collision_mask = 2` is removed from the `AnimatableBody2D` node in
+- [x] `collision_mask = 2` is removed from the `AnimatableBody2D` node in
       `src/scenes/moving_platform.tscn` (currently at line 16).
 - [ ] The player scene (`src/scenes/player/player.tscn`) loads with zero
       script errors or warnings in the Godot console, and the moving-platform
@@ -108,11 +108,30 @@ manual. `/story-done` should expect no `tests/unit/` path for this story.
 |---|---|---|
 | T3.1 | `player.tscn` instantiated → search children for a node named `PlayerArea2D` | Not found |
 | T3.2 | `player.tscn` → no `Area2D` descendant remains under the player root | Zero matches. Catches a rename-instead-of-delete |
-| T3.3 | `moving_platform.tscn` → `AnimatableBody2D.collision_mask` | `== 0` (property removed, so the engine default applies) |
+| T3.3 | `moving_platform.tscn` → `AnimatableBody2D.collision_mask` | `== 1` (property removed, so the engine default applies) |
 
 *T3.3 asserts the value, not the property's absence — a removed `.tscn` line and
-an explicit `= 0` are indistinguishable after `instantiate()`. Both satisfy the
-intent, which is that nothing reads as deliberate configuration.*
+an explicit line restating the default are indistinguishable after
+`instantiate()`. Both satisfy the intent, which is that nothing reads as
+deliberate configuration.*
+
+> **Corrected 2026-08-23.** This case previously expected `== 0` on the reasoning
+> that a removed property leaves the mask empty. That is wrong:
+> `CollisionObject2D.collision_mask` defaults to `1`, not `0`, so deleting
+> `moving_platform.tscn:16` leaves the body masking `WORLD`. Verified by direct
+> probe on Godot 4.7.1 — `AnimatableBody2D.new()` reports `layer=1 mask=1`, as do
+> `StaticBody2D`, `Area2D` and `CharacterBody2D`. The expectation is now `== 1`.
+>
+> The deletion itself is unaffected and still correct. ADR-0004 migration step 5
+> says only "delete `moving_platform.tscn:16`, which per L4 does nothing" — it
+> never claimed the resulting value would be `0`. Per **L4**, an animatable
+> body's own mask is never evaluated for its own motion
+> (`godot_body_pair_2d.cpp:256` reads `collide_A` only when `mode > KINEMATIC`),
+> so the residual `1` is just as inert as the `2` being removed. Nothing reads as
+> deliberate configuration either way, which is the intent the case is testing.
+>
+> Had this not been caught, story 004's group 5 would have failed against a
+> correct implementation of this story.
 
 ### Regression case
 
@@ -175,3 +194,49 @@ continuing to load and pass their current tests without the deleted nodes.
 - Depends on: Story 001 (land after the registry exists, for a coherent
   migration history — not a hard code dependency)
 - Unlocks: None
+
+---
+
+## Implementation Record — 2026-08-23
+
+**Status: In Review.** Acceptance criteria 1–4 are done and verified. Criterion
+5 — the manual smoke check — is outstanding and is the only thing between this
+story and Complete.
+
+**Changes made:**
+
+| File | Change |
+|---|---|
+| `src/scenes/player/player.tscn` | Deleted the `PlayerArea2D` node and its child `PlayerCollisionShape2D` (defect 2) |
+| `src/scripts/player.gd` | Deleted the now-dangling `col_shape` `@onready var` binding |
+| `src/scenes/moving_platform.tscn` | Deleted `collision_mask = 2` from the `AnimatableBody2D` (defect 3) |
+
+**Pre-deletion safety checks, both required by this story and both clean:**
+
+- `col_shape` was bound at `player.gd:48` and read nowhere else in `src/` or
+  `tests/`. The ADR's claim still held — re-verified rather than assumed.
+- No `.tscn`, `.gd` or `.tres` in the project referenced the `PlayerArea2D`
+  node path outside its own declaration, so no `NodePath` was orphaned.
+
+**T3.4 regression case: passing.** Full gdUnit4 suite after both deletions is
+75/75, 0 errors, 0 orphans, exit 0 — including `gamemanager_test.gd` and
+`kill_area_death_test.gd`, which both load the player scene.
+
+**T3.1–T3.3 are now enforced** by story 004's
+`tests/unit/physics/collision_layers_test.gd` (group 5), which landed the same
+day and passes.
+
+**T3.3 was corrected before implementation** — see the *Corrected 2026-08-23*
+note in the QA Test Cases section above. It expected a mask of `0`; the engine
+default is `1`.
+
+**Still required before this story can close** — criterion 5, none of which can
+be done headlessly:
+
+- [ ] `player.tscn` opens in the editor with zero script errors and zero console warnings
+- [ ] `moving_platform.tscn` opens clean
+- [ ] The moving platform still animates along its configured path, unchanged
+- [ ] The player scene runs in a level: movement, jump and gravity flip behave as before
+
+The deleted mask was inert per L4, so any behaviour change in the platform means
+something else was removed by mistake.

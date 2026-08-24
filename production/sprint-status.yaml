@@ -26,11 +26,11 @@ stories:
     name: "Create the CollisionLayers registry and correct project.godot naming"
     file: "production/epics/collision-layer-registry/story-001-create-collision-layers-registry.md"
     priority: must-have
-    status: review
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.25
     blocker: ""
-    completed: ""
+    completed: "2026-08-23"
 
   - id: "CLR-2"
     name: "Fix BUG-0001 — dead kill-plane masks on levels 05 and 06"
@@ -46,7 +46,7 @@ stories:
     name: "Remove vestigial PlayerArea2D and dead moving-platform mask"
     file: "production/epics/collision-layer-registry/story-003-remove-dead-collision-configuration.md"
     priority: must-have
-    status: ready-for-dev
+    status: review
     owner: "godot-gdscript-specialist"
     estimate_days: 0.15
     blocker: ""
@@ -56,11 +56,11 @@ stories:
     name: "Collision layer invariant test suite"
     file: "production/epics/collision-layer-registry/story-004-collision-layer-invariant-test-suite.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "qa-tester"
     estimate_days: 0.4
     blocker: ""
-    completed: ""
+    completed: "2026-08-23"
 
   - id: "CLR-5"
     name: "CI grep enforcing the D4.6 runtime-mutation ban"

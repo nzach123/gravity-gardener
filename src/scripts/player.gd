@@ -45,7 +45,6 @@ class_name Player
 # NODE REFERENCES
 # ---------------------------------------------------------------
 @onready var sprite: AnimatedSprite2D = $PlayerAnimatedSprite2D
-@onready var col_shape: CollisionShape2D = $PlayerArea2D/PlayerCollisionShape2D
 
 @onready var movement_component: PlayerMovementComponent = $PlayerMovementComponent
 @onready var gravity_component: PlayerGravityComponent = $PlayerGravityComponent
