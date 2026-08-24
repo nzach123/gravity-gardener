@@ -30,7 +30,7 @@ project level, not the decision level.** No `modules/core.md` engine reference
 exists — `modules/` holds only `physics-2d.md` and `ui-control.md` — so the
 `Resource` / `preload` / `@export_range` domain has no curated snapshot to check
 against. No post-cutoff API is used, and facts T1–T3 were verified at the
-2026-08-14 specialist gate. T4 was not.
+2026-08-14 specialist gate. T4 was executed separately on 2026-08-24, by story 001.
 
 ## GDD Requirements
 
@@ -44,7 +44,7 @@ against. No post-cutoff API is used, and facts T1–T3 were verified at the
 
 | Risk | Status | How this epic handles it |
 |---|---|---|
-| **T4 was verified from documentation only and never executed.** The claim: `@export_range` constrains the inspector but does **not** clamp or reject a value loaded from a hand-edited `.tres`. The specialist began building an isolated project against the pinned 4.7.1 binary and did not finish. | **OPEN — the headline risk of this epic** | Migration Plan step 5 of ADR-0006 says this is where T4 gets closed. **Execute it against the real 4.7.1 binary.** Until then, treat every `@export_range` as an inspector hint, not a validator. If a knob must be clamped, clamp it in code. |
+| **T4 was verified from documentation only and never executed.** The claim: `@export_range` constrains the inspector but does **not** clamp or reject a value loaded from a hand-edited `.tres`. | **CLOSED 2026-08-24 — the claim held** | Story 001 executed it against `4.7.1.stable.official.a13da4feb`. Out-of-range values load intact: no clamp, no rejection, no fallback to the default. The rule for implementers does not change — treat every `@export_range` as an inspector hint, not a validator. If a knob must be clamped, clamp it in code. Evidence: `production/qa/evidence/t4-export-range-clamp-spike.md`. |
 | **HIGH engine-risk domain with no in-repo reference.** | Standing gap | Verify any uncertain `Resource`-system API against the official 4.7 docs before writing code, per `VERSION.md`. Do not answer from training data — training coverage stops at roughly 4.3. |
 | **GH#73615 — a `preload()`ed resource can resolve non-null yet be the wrong type.** | Known | Validation V1 must assert `is PropTuning`, not merely non-null. This is stated as load-bearing in Migration Plan step 5. |
 | **`resource_local_to_scene` must be `false` on all three `.tres` files** (D6.9). If true, each scene gets its own copy and tuning silently stops being global. | Known, checked at creation | Migration Plan step 3 requires verifying this at file creation, together with inspector slider behaviour. |
@@ -56,7 +56,7 @@ against. No post-cutoff API is used, and facts T1–T3 were verified at the
 
 | # | Story | Type | Status | ADR |
 |---|-------|------|--------|-----|
-| 001 | [T4 spike — does `@export_range` clamp a hand-edited `.tres`?](story-001-t4-export-range-clamp-spike.md) | Integration | Ready | ADR-0006 |
+| 001 | [T4 spike — does `@export_range` clamp a hand-edited `.tres`?](story-001-t4-export-range-clamp-spike.md) | Integration | Complete | ADR-0006 |
 | 002 | [Create the three tuning `Resource` scripts](story-002-create-tuning-resource-scripts.md) | Config/Data | Ready | ADR-0006 |
 | 003 | [Author the three tuning `.tres` files at GDD defaults](story-003-author-tuning-tres-files.md) | Config/Data | Ready | ADR-0006 |
 | 004 | [Create the `Tuning` const accessor](story-004-create-tuning-accessor.md) | Logic | Ready | ADR-0006 |
@@ -79,7 +79,7 @@ No story is created here for it.
 This epic is complete when:
 - All stories are implemented, reviewed, and closed via `/story-done`
 - V1–V4 and V9 pass as headless gdUnit4 tests before any consumer depends on this
-- **T4 is executed against the pinned 4.7.1 binary and its result is recorded in ADR-0006**
+- ~~**T4 is executed against the pinned 4.7.1 binary and its result is recorded in ADR-0006**~~ — done 2026-08-24
 - `V-PROP-BUDGET` is closed in `LevelValidation`, and the "BLOCKED on ADR-0006" note is removed from ADR-0003
 - All Logic and Integration stories have passing test files in `tests/`
 - All Visual/Feel and UI stories have evidence docs with sign-off in `production/qa/evidence/`

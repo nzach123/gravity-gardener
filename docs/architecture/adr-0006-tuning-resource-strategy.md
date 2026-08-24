@@ -17,7 +17,7 @@
 | **Knowledge Risk** | **HIGH** at the project level. No `modules/core.md` reference exists — only `physics-2d.md` and `ui-control.md` — so this domain has no curated snapshot to check against |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md` · `breaking-changes.md` · `deprecated-apis.md` · `current-best-practices.md` |
 | **Post-Cutoff APIs Used** | **None.** `Resource`, `preload()`, `class_name`, `@export_range` and typed constants all predate the ~4.3 training coverage. `breaking-changes.md` and `deprecated-apis.md` list nothing touching the Resource system across 4.4 → 4.7 |
-| **Verification Required** | **T1–T3 discharged** by the engine specialist gate on 2026-08-14; **T4 partially discharged** — see below |
+| **Verification Required** | **T1–T3 discharged** by the engine specialist gate on 2026-08-14; **T4 discharged** by execution against the pinned `4.7.1-stable` binary on 2026-08-24 — see below |
 
 ### Engine facts, verified 2026-08-14
 
@@ -29,18 +29,17 @@ not ADR-0003's E1–E3 nor ADR-0004's L1–L6.**
 | **T1** | A typed constant holding a `preload()`ed custom `Resource` — `const PROP: PropTuning = preload(...)` — is legal GDScript and resolves at script-load time | **VERIFIED TRUE** | `docs/…/static_typing.html` §Custom types — `class_name` types are usable as annotations anywhere. See the F1 caveat below |
 | **T2** | `preload()` resolves with **no `SceneTree` involvement whatsoever** | **VERIFIED TRUE — and stronger than the draft claimed** | `best_practices/logic_preferences.html` §"Loading vs. preloading": a preloaded const *"spawns when the Script object loads"*. Resolution is at script-load time and is **categorically independent** of tree or node state, not merely compatible with a null tree |
 | **T3** | Two `preload()`s of the same path yield the **same instance**, and that identity survives `reload_current_scene()` | **VERIFIED TRUE** | `Resource` class docs: *"The engine keeps a global cache of all loaded resources, referenced by paths… subsequent loads using its path will return the cached reference."* The cache is engine-global, not scene-scoped |
-| **T4** | `@export_range` constrains the inspector but does **not** clamp or reject a value loaded from a hand-edited `.tres` | **VERIFIED TRUE — documentation only, not executed** | The `"or_greater"` / `"or_less"` hints exist precisely because otherwise *"the editor widget will not cap the value"*, and `PropertyHint` is inspector metadata rather than a `set()` validator. **No test was run against the pinned `4.7.1-stable` binary** |
+| **T4** | `@export_range` constrains the inspector but does **not** clamp or reject a value loaded from a hand-edited `.tres` | **VERIFIED TRUE — executed 2026-08-24** | Executed against `4.7.1.stable.official.a13da4feb` in an isolated project. `1.9` in an `@export_range(0.8, 1.2)` float and `500` in an `@export_range(10, 80)` int both loaded intact, with no clamp, no error and no fallback to the default. Bound, just-above-bound, below-bound and negative values behaved the same. The game path and the editor path agreed on every value of the declared type. Evidence: `production/qa/evidence/t4-export-range-clamp-spike.md` |
 
 > **T3 caveat:** cache entries are released once all references drop. Immaterial
 > here — `Tuning`'s constants hold a reference for the whole process lifetime, so
 > the instance can never be evicted and re-created.
 
-> **T4 remains open in practice.** The specialist began building an isolated
-> project against the actual `4.7.1-stable` binary to confirm T1–T4 empirically and
-> did not finish. Migration Plan step 5 must actually execute before T4 is treated
-> as closed. Nothing in the decision *depends* on T4 — it only justifies why D6.4
-> is authoring-time-only — but the claim should not be repeated as settled until
-> the test runs.
+> **T4 is closed.** It was executed on 2026-08-24 against the pinned
+> `4.7.1-stable` binary, as Migration Plan step 5 required. The documented claim
+> held. D6.4 keeps its stance, and the failure mode named in D6.4's closing
+> paragraph is the real one. Full method and every observed value:
+> `production/qa/evidence/t4-export-range-clamp-spike.md`.
 
 `current-best-practices.md` independently endorses the direction taken here:
 *"Resources for data: use Godot Resources to store data independently of nodes.
@@ -595,11 +594,10 @@ zero per-frame allocation and zero file I/O after parse · a missing or renamed
   inspector**, silently dissolving the single-instance guarantee with no error and
   no symptom. *Mitigation*: D6.9 states the requirement explicitly and V9 asserts
   it. Specialist finding F4 — the draft had not anticipated this.
-- **T4 has not been executed.** The claim that `@export_range` does not clamp a
-  hand-edited `.tres` value rests on documentation wording alone. *Mitigation*:
-  Migration Plan step 5 runs it against the pinned binary. Low stakes — T4 only
-  justifies why D6.4 is authoring-time-only; if it turns out values *are* clamped
-  at load, the ADR gets stronger, not weaker.
+- ~~**T4 has not been executed.**~~ **CLOSED 2026-08-24.** Executed against the
+  pinned `4.7.1-stable` binary. Values are not clamped and not rejected — the
+  documented claim held, so D6.4 is unchanged. Evidence:
+  `production/qa/evidence/t4-export-range-clamp-spike.md`.
 - **An editor tool script mutates and saves a tuning `.tres`**, silently editing
   authored values in version control. *Mitigation*: covered by D6.5; the
   recommended CI grep would catch it.
@@ -653,8 +651,8 @@ migration — only creation. `src/resources/` holds `Industrial.tres`,
    this. Two are load-bearing: **V2** (assert resolution inside a test that
    instantiates a level scene and never adds it to the tree) and **V1** (assert
    `is PropTuning`, not just non-null — see the GH#73615 risk).
-   **Execute T4 here as well** — it is the one engine claim the specialist gate
-   could not discharge empirically, and this is where it gets closed.
+   ~~**Execute T4 here as well**~~ — **done 2026-08-24**, ahead of V1–V4 rather
+   than with them. T4 is closed; V1–V4 and V9 are still owed.
 6. **Close `V-PROP-BUDGET`** in `LevelValidation` (ADR-0003 Migration Plan
    step 8) and remove the "BLOCKED on ADR-0006" note from ADR-0003's registry
    entry and Ordering Note.

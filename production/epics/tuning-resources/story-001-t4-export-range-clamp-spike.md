@@ -1,12 +1,12 @@
 # Story 001: T4 spike — does `@export_range` clamp a hand-edited `.tres`?
 
 > **Epic**: Tuning Resources
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: S (1-2 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-24
 
 ## Context
 
@@ -21,8 +21,9 @@ under TR-watering-013 / TR-oxygen-011 / TR-props-009 — read fresh at review ti
 **ADR Decision Summary**: D6.4 puts an `@export_range` on every tuning knob, using
 the GDD range verbatim, and treats that range as an **authoring-time constraint
 only**. That stance rests on T4: the claim that `@export_range` shapes the inspector
-but does not clamp or reject a value typed by hand into a `.tres`. T4 is the one
-engine claim the 2026-08-14 specialist gate could not discharge empirically.
+but does not clamp or reject a value typed by hand into a `.tres`. T4 was the one
+engine claim the 2026-08-14 specialist gate could not discharge empirically. This
+story discharged it on 2026-08-24.
 
 **Engine**: Godot 4.7.1 | **Risk**: **HIGH**
 **Engine Notes**:
@@ -34,9 +35,10 @@ engine claim the 2026-08-14 specialist gate could not discharge empirically.
   `@export_range` all predate the ~4.3 training coverage, and
   `breaking-changes.md` / `deprecated-apis.md` list nothing touching the Resource
   system across 4.4 → 4.7.
-- T1, T2 and T3 are **VERIFIED TRUE** by the 2026-08-14 gate. **T4 is not.** The
-  specialist began an isolated project against the pinned 4.7.1 binary and did not
-  finish it.
+- T1, T2 and T3 are **VERIFIED TRUE** by the 2026-08-14 gate. **T4 was open when
+  this story was written** — the specialist began an isolated project against the
+  pinned 4.7.1 binary and did not finish it. **T4 is now VERIFIED TRUE, executed
+  2026-08-24 by this story.** See `production/qa/evidence/t4-export-range-clamp-spike.md`.
 - Do not answer this from training data. Run it against the installed
   `Godot_v4.7.1-stable_win64` binary.
 
@@ -53,27 +55,30 @@ engine claim the 2026-08-14 specialist gate could not discharge empirically.
 
 *From ADR-0006 Migration Plan step 5 and the epic's headline risk:*
 
-- [ ] An isolated Godot project is built against the pinned `Godot_v4.7.1-stable`
+- [x] An isolated Godot project is built against the pinned `Godot_v4.7.1-stable`
       binary, holding one `Resource` subclass with one `@export_range(0.8, 1.2)`
       float property and one `@export_range(10, 80)` int property.
-- [ ] A `.tres` file for that resource is **hand-edited outside the editor** to a
+- [x] A `.tres` file for that resource is **hand-edited outside the editor** to a
       value beyond the declared range (for example `1.9` and `500`).
-- [ ] The result is observed for each of these three questions, and each answer is
+- [x] The result is observed for each of these three questions, and each answer is
       recorded as OBSERVED, not inferred:
       - Does loading the `.tres` **clamp** the value to the range bound?
       - Does loading **reject** the file, error, or fall back to the default?
       - Does the out-of-range value **survive intact** into the loaded resource?
-- [ ] The observation is repeated once **headless** (`--headless`) and once with the
+- [x] The observation is repeated once **headless** (`--headless`) and once with the
       **editor open**, because the two load paths are not assumed to agree.
-- [ ] The result is written to
+      *(The editor path ran as a headless editor process. A windowed editor launch
+      segfaults in the GL compatibility driver on this machine — see the limitation
+      section of the evidence doc.)*
+- [x] The result is written to
       `production/qa/evidence/t4-export-range-clamp-spike.md`, with the exact binary
       version string, the test file contents, and the observed values.
-- [ ] **ADR-0006 is updated**: the T4 row's Verdict changes from partially discharged
+- [x] **ADR-0006 is updated**: the T4 row's Verdict changes from partially discharged
       to the observed verdict, the *Risks* entry for T4 is closed, and the
       *Verification Required* field in the Engine Compatibility table is corrected.
-- [ ] The `tuning-resources` epic's Risks table row for T4 changes from **OPEN** to
+- [x] The `tuning-resources` epic's Risks table row for T4 changes from **OPEN** to
       the observed outcome.
-- [ ] `production/epics/index.md`'s "Open risks carried by these epics" row for
+- [x] `production/epics/index.md`'s "Open risks carried by these epics" row for
       ADR-0006 T4 is updated from **OPEN**.
 
 ---
@@ -146,11 +151,11 @@ the thing under test is the engine, not this project's code.*
 
 ### Manual verification — this story is entirely manual
 
-- [ ] `godot --version` output recorded verbatim in the evidence doc
-- [ ] Resource script contents recorded verbatim
-- [ ] Hand-edited `.tres` contents recorded verbatim
-- [ ] Observed value recorded for every case above, headless and editor
-- [ ] ADR-0006 T4 row updated to the observed verdict
+- [x] `godot --version` output recorded verbatim in the evidence doc
+- [x] Resource script contents recorded verbatim
+- [x] Hand-edited `.tres` contents recorded verbatim
+- [x] Observed value recorded for every case above, headless and editor
+- [x] ADR-0006 T4 row updated to the observed verdict
 
 ---
 
@@ -162,7 +167,7 @@ the thing under test is the engine, not this project's code.*
   binary version, the test artefacts, and every observed value
 - ADR-0006's T4 row updated in `docs/architecture/adr-0006-tuning-resource-strategy.md`
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — `production/qa/evidence/t4-export-range-clamp-spike.md` (2026-08-24)
 
 ---
 

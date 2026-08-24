@@ -96,20 +96,20 @@ stories:
     name: "T4 spike — does @export_range clamp a hand-edited .tres?"
     file: "production/epics/tuning-resources/story-001-t4-export-range-clamp-spike.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-specialist"
     estimate_days: 0.5
     blocker: ""
-    completed: ""
+    completed: "2026-08-24"
 
   - id: "TUN-2"
     name: "Implement WateringTuning / OxygenTuning / PropTuning and the Tuning accessor"
     file: "production/epics/tuning-resources/EPIC.md"
     priority: must-have
-    status: backlog
+    status: ready-for-dev
     owner: "godot-gdscript-specialist"
     estimate_days: 1.5
-    blocker: "Depends on TUN-1"
+    blocker: ""
     completed: ""
 
   - id: "LV-0"

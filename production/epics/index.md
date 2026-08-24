@@ -73,7 +73,7 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 
 | Item | Epic | Status |
 |---|---|---|
-| ADR-0006 T4 — `@export_range` does not clamp a hand-edited `.tres`; verified from documentation only, never executed | `tuning-resources` | **OPEN** — execute against the 4.7.1 binary |
+| ADR-0006 T4 — `@export_range` does not clamp a hand-edited `.tres` | `tuning-resources` | **CLOSED 2026-08-24** — executed against the 4.7.1 binary; the claim held |
 | ADR-0001 Verification 2 — a default-space gravity write in `_physics_process` reaches every `RigidBody2D` in the same step | `gravity-authority` | **OPEN** — confirm at implementation |
 | ADR-0004 F8 — the registry guarantees authored state only, not runtime mutation | `collision-layer-registry` | **Decided** — story 005 adds a CI grep step |
 | ADR-0003 D3.3's printed `V-WIRING` table is stale — `hud` still reads "not required" and `level_bounds` is absent, though ADR-0010 and ADR-0011 are both Accepted | `level-validation` | **Doc lag** — D3.3's own admission rule resolves it; story 004 implements four rows, a doc-only ADR amendment is owed |
