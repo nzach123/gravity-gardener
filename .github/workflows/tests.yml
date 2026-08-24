@@ -17,6 +17,44 @@ jobs:
         with:
           lfs: true
 
+      # ADR-0004 D4.6: collision layers and masks are AUTHORED data. No
+      # gameplay script may mutate them at runtime. The ADR calls this the
+      # weakest link in the decision — enforced by review, not structure.
+      # This step makes it structural.
+      #
+      # Scoped to src/**/*.gd on purpose. .tscn files assign these properties
+      # legitimately (that IS the authored data D4.6 permits), and a grep
+      # widened to scenes would fail on correct changes.
+      #
+      # src/scripts/collision_layers.gd is the one allowed home for these
+      # tokens, as constant declarations and doc comments.
+      #
+      # Comment lines are NOT excluded: the tokens should not appear in
+      # gameplay scripts at all, and a "# never set collision_mask = 2"
+      # comment is a deliberate, cheap false positive rather than a
+      # regex-comment-stripping problem.
+      - name: Enforce the ADR-0004 runtime collision-mutation ban
+        run: |
+          set -euo pipefail
+          # grep exits 1 when it finds NOTHING, which is the inverse of what
+          # this step needs, so the match is captured and the exit code is
+          # decided explicitly below. A bare grep here would pass forever.
+          violations=$(
+            grep -rnE \
+              -e 'set_collision_(layer|mask)_value[[:space:]]*\(' \
+              -e '(^|[^_[:alnum:]])collision_(layer|mask)[[:space:]]*=[^=]' \
+              --include='*.gd' \
+              src/ \
+              | grep -v '^src/scripts/collision_layers\.gd:' \
+            || true
+          )
+          if [ -n "$violations" ]; then
+            echo "::error::ADR-0004 D4.6 violation - collision layers/masks are authored data and must not be mutated at runtime."
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: no runtime collision layer/mask mutation in src/**/*.gd"
+
       - name: Run GdUnit4 Tests
         uses: MikeSchulze/gdUnit4-action@v1
         with:

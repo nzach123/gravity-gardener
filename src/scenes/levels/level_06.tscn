@@ -391,6 +391,8 @@ position = Vector2(429, 333)
 
 [node name="KillArea2D" type="Area2D" parent="." unique_id=807113841]
 position = Vector2(1241, 0)
+collision_layer = 0
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="KillArea2D" unique_id=120128148]
 position = Vector2(-45, 325)

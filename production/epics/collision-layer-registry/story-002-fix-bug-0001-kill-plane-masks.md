@@ -1,12 +1,12 @@
 # Story 002: Fix BUG-0001 — dead kill-plane masks on levels 05 and 06
 
 > **Epic**: Collision Layer Registry
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: S (1-2 hours, plus a playtest of both levels)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-23
 
 ## Context
 
@@ -55,13 +55,13 @@ step; no new bodies, shapes, or per-frame work are added.
 *From `docs/qa/bugs/BUG-0001.md` and ADR-0004 Validation Criterion 4, scoped to
 this story:*
 
-- [ ] `level_05.tscn`'s `KillArea2D` node has `collision_layer = 0` and
+- [x] `level_05.tscn`'s `KillArea2D` node has `collision_layer = 0` and
       `collision_mask = 2` explicitly set.
-- [ ] `level_06.tscn`'s `KillArea2D` node has `collision_layer = 0` and
+- [x] `level_06.tscn`'s `KillArea2D` node has `collision_layer = 0` and
       `collision_mask = 2` explicitly set.
-- [ ] A player falling out of bounds in level 05 triggers
+- [x] A player falling out of bounds in level 05 triggers
       `_on_kill_area_2d_body_entered`, and the level restarts.
-- [ ] A player falling out of bounds in level 06 triggers the same handler,
+- [x] A player falling out of bounds in level 06 triggers the same handler,
       and the level restarts.
 - [ ] Both levels are manually played through the out-of-bounds fall at least
       once each — this is a **live behaviour change** (the kill plane has
@@ -209,7 +209,7 @@ of both levels' out-of-bounds fall, since the fix is a live behaviour change
 that the ADR explicitly calls out as needing human verification, not just a
 passing test.
 
-**Status**: [ ] Not yet created
+**Status**: [x] Automated regression guard landed and passing. [ ] Playtest outstanding (AC-5).
 
 ---
 
@@ -219,3 +219,62 @@ passing test.
   fix uses — not a hard code dependency, but land after it for a coherent
   history)
 - Unlocks: None
+
+---
+
+## Implementation Record
+
+*Written 2026-08-23.*
+
+### What changed
+
+| File | Change |
+|---|---|
+| `src/scenes/levels/level_05.tscn` | `KillArea2D` gains `collision_layer = 0`, `collision_mask = 2` |
+| `src/scenes/levels/level_06.tscn` | Same |
+| `tests/integration/main/kill_area_death_test.gd` | Characterization test migrated; level_06 coverage added; authored-state cases T2.1-T2.5 added |
+
+No script changes, as the story specified.
+
+### Test results
+
+Full suite: **81/81 passing**, 0 errors, 0 failures, 0 orphans, exit 0.
+The suite was 75/75 before this story, so all 6 new cases are accounted for.
+
+The characterization test was migrated as required, not deleted:
+`test_kill_area_currently_does_not_kill_player_bug_0001` flipped to
+`is_true()` and was renamed `test_kill_area_kills_player_bug_0001_fixed`.
+`test_kill_area_handler_kills_player_and_resets_state` was left untouched.
+
+### The new guards were confirmed to be load-bearing
+
+A passing test proves nothing until it has been seen to fail. `level_05`'s
+`collision_mask` was reverted to `1` (the bug) and the suite re-run:
+
+- `test_level_05_kill_area_masks_the_player` — **FAILED**, exit 100
+- `test_kill_area_kills_player_bug_0001_fixed` — **FAILED**, exit 100, run in
+  an isolated scratch suite because the runner stops at the first failure and
+  never reached it in the full file
+
+The mask was restored and the scratch suite deleted. Both guards therefore
+depend on the fix rather than passing vacuously.
+
+Note for whoever automates this: `-a "res://path/to/test.gd:test_name"` is
+**not** a supported selector. It exits `0` having executed nothing, which
+reads exactly like a pass. Isolate a single test with a scratch suite instead.
+
+### Open — blocks Complete
+
+**AC-5, the playtest, is not done.** This is a live behaviour change: a fall
+that used to strand the player now restarts the level. Three checks are owed,
+and the third cannot be automated at all:
+
+- [ ] Level 05: fall out of bounds. The level restarts cleanly — no stranding,
+      no double restart, no stuck camera
+- [ ] Level 06: same
+- [ ] Neither level has an in-bounds spot where the kill plane fires
+      unexpectedly (R2 — a kill area inside playable space is forbidden and is
+      not automatically detectable)
+
+Evidence goes to `production/qa/evidence/`. Sign-off: nzach123.
+`BUG-0001` stays `Open` until then.

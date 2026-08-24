@@ -1,12 +1,12 @@
 # Story 005: CI grep enforcing the D4.6 runtime-mutation ban
 
 > **Epic**: Collision Layer Registry
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1 hour)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-23
 
 ## Context
 
@@ -46,16 +46,16 @@ the repository's `.gd` files, not a runtime or engine-specific check.
 *From ADR-0004 Validation Criterion 5 and the Risks table's "Runtime mutation
 silently voids the guarantee (F8)" row:*
 
-- [ ] `.github/workflows/tests.yml` gains a CI step that greps the repository
+- [x] `.github/workflows/tests.yml` gains a CI step that greps the repository
       for `set_collision_layer_value`, `set_collision_mask_value`, and any
       assignment to `collision_layer` or `collision_mask` (e.g.
       `collision_layer =`, `collision_mask =`), scoped to `src/**/*.gd`.
-- [ ] The grep step **excludes** `src/scripts/collision_layers.gd` itself —
+- [x] The grep step **excludes** `src/scripts/collision_layers.gd` itself —
       that file is the one place these tokens are allowed to appear (as
       constant declarations, not runtime calls).
-- [ ] The grep step fails the CI job (non-zero exit) if any match is found
+- [x] The grep step fails the CI job (non-zero exit) if any match is found
       outside the excluded file.
-- [ ] The step runs before or alongside the existing GdUnit4 test step, so a
+- [x] The step runs before or alongside the existing GdUnit4 test step, so a
       violation is caught in the same CI run as everything else.
 - [ ] Verified once on a scratch branch: deliberately add a
       `set_collision_mask_value()` call to any gameplay script (e.g.
@@ -181,7 +181,7 @@ hand on a scratch branch.
   story's completion notes rather than as a separate test file — there is no
   gdUnit4 test for a CI workflow step.
 
-**Status**: [ ] Not yet created
+**Status**: [x] CI step landed and verified locally. [ ] Not yet verified by a real CI run - see Implementation Record.
 
 ---
 
@@ -190,3 +190,77 @@ hand on a scratch branch.
 - Depends on: Story 001 (the exclusion path `src/scripts/collision_layers.gd`
   must exist for the grep step to reference it correctly)
 - Unlocks: None
+
+---
+
+## Implementation Record
+
+*Written 2026-08-23.*
+
+### What changed
+
+`.github/workflows/tests.yml` gains one step, **Enforce the ADR-0004 runtime
+collision-mutation ban**, placed before the GdUnit4 step so a violation is
+caught in the same run as everything else.
+
+### Decisions the next author needs
+
+- **Exit-code inversion handled explicitly.** `grep` returns `1` when it finds
+  *nothing*, which is the inverse of what this step needs. The matches are
+  captured into a variable and the exit code is decided by an `if`. A bare
+  `grep` here would have passed forever while looking correct — the edge case
+  the story flagged as most likely to ship unnoticed.
+- **Scoped to `--include='*.gd'` under `src/`.** `.tscn` files assign these
+  properties legitimately; that authored data is exactly what D4.6 permits.
+- **Comment lines are NOT excluded.** A `# never set collision_mask = 2`
+  comment will fail the step. Chosen deliberately: the token should not appear
+  in a gameplay script at all, and this is cheaper than stripping comments in
+  a regex. Recorded here because the next author will hit it.
+- **No double-reporting.** The assignment pattern is guarded by
+  `[^_[:alnum:]]`, so `set_collision_layer_value(` is matched only by the
+  method-call pattern, not twice.
+
+### Verification performed (locally, not in CI)
+
+| # | Case | Result |
+|---|---|---|
+| T5.1 | Clean `src/**/*.gd` as committed | no output, step passes |
+| T5.2 | Exclusion of `collision_layers.gd` | load-bearing — unfiltered, that file produces 2 hits (lines 7 and 8, doc comments) |
+| T5.3 | `.tscn` files assigning layer/mask | not matched; this story's own `level_05`/`level_06` edits do not trip it |
+| T5.4 | `set_collision_mask_value(2, true)` in `player.gd` | caught |
+| T5.5 | `set_collision_layer_value(1, false)` | caught |
+| T5.6 | `collision_layer=1` (no spaces) | caught |
+| T5.7 | `collision_mask = 2` | caught |
+| — | `collision_mask  =  8` (multiple spaces) | caught |
+
+All five planted violations were reported with file and line number, then
+reverted. `git status` confirms `player.gd` is unmodified.
+
+### Open — blocks Complete
+
+**AC-5 is only partly satisfied.** It requires a *scratch-branch CI run* with
+the step's failing output pasted in. What was done is a local reproduction of
+the exact shell the step runs. The grep logic is proven; the step's behaviour
+inside GitHub Actions is not.
+
+This cannot be closed from here, because the workflow triggers on `main` and
+this repo's main branch is `development`. **No CI run has ever fired on this
+sprint's work.** Fixing the trigger was ruled out of scope by the developer,
+so this AC stays open until either the trigger is widened or the branch merges.
+
+### Related CI problems, recorded not fixed
+
+Both were ruled out of scope for this story:
+
+1. **Stale `.godot` class cache.** A clean checkout fails to load the runner
+   with `Could not find type "GdUnitTestCIRunner"` — presenting as a parse
+   error in the addon, not a test failure. The fix is a `godot --headless
+   --path . --import` pass before the tests. It cannot simply be added here:
+   the workflow uses `MikeSchulze/gdUnit4-action@v1`, which installs and runs
+   Godot itself, so there is no Godot binary for a preceding step to call.
+   Doing this properly needs that action's actual input list.
+2. **The runner stops at the first failing test.** Reproduced again this
+   session: with one deliberate failure, the file reported `2 test cases` out
+   of 8. In CI a single failure would mask every later one, so a red build
+   under-reports the damage. Cause not investigated; believed to be a gdUnit4
+   runner setting, not a defect in any test file.
