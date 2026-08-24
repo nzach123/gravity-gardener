@@ -19,8 +19,8 @@ Skills and agents are assigned to model tiers based on task complexity:
 | Tier | Model | When to use |
 |------|-------|-------------|
 | **Haiku** | `claude-haiku-4-5-20251001` | Read-only status checks, formatting, simple lookups — no creative judgment needed |
-| **Sonnet** | `claude-sonnet-4-6` | Implementation, design authoring, analysis of individual systems — default for most work |
-| **Opus** | `claude-opus-4-6` | Multi-document synthesis, high-stakes phase gate verdicts, cross-system holistic review |
+| **Sonnet** | `claude-sonnet-5` | Implementation, design authoring, analysis of individual systems — default for most work |
+| **Opus** | `claude-opus-5` | Multi-document synthesis, high-stakes phase gate verdicts, cross-system holistic review |
 
 Skills with `model: haiku`: `/help`, `/sprint-status`, `/story-readiness`, `/scope-check`,
 `/project-stage-detect`, `/changelog`, `/patch-notes`, `/onboard`

@@ -36,6 +36,49 @@ Each agent owns a specific domain, enforcing separation of concerns and quality.
 ## Agent
 this project is using Godot engine, use a Godot agent to ensure accurate context.
 
+## Model Orchestration Policy
+
+This policy applies to every session. It sets which model does which work.
+
+### Opus 5 -- orchestrator (main session)
+
+- Opus 5 at high effort owns the main session. It owns requirements,
+  judgment, integration, and final verification.
+- Opus 5 does not run large builds inline. For a bounded, difficult
+  implementation, Opus 5 writes the spec, dispatches an Opus 5 executor
+  subagent, and verifies the result.
+- Opus 5 stays at requirements, judgment, and integration. An executor
+  that converges fast on an approved spec is correct behavior. It is
+  not a defect.
+- Brief a subagent on five items only: the exact delta, the scope, the
+  output, the stopping condition, and the exclusions.
+
+### Opus 5 -- executor (put these lines in every executor prompt)
+
+- Deliver the requested scope. Stop before unasked work.
+- Correct an immaterial slip silently. Report a correction only when it
+  changes a number, a conclusion, or a decision.
+- Do not replace grounding or fresh retrieval with confidence or
+  self-review.
+
+### Sonnet 5 -- fan-out worker
+
+- Dispatch Sonnet 5 freely for fan-out that needs per-item judgment:
+  blind reader panels, audits, and workspace sweeps.
+- Give it an exact brief, a defined output, and a stopping condition.
+- Complete the exact requested deliverable and stop. Do not audit the
+  surrounding system. Do not report adjacent issues. Do not recommend
+  extra improvements.
+- A request to diagnose or to report does not authorize a fix. A
+  one-file request does not authorize related changes.
+- Do not create subagents. Do not delegate.
+
+### Haiku -- mechanical worker
+
+- Haiku agents do bounded mechanical reads and transforms.
+- Give an exact brief. Require a compact return. Do not delegate again.
+- Return extracted key numbers and paths. Do not return raw dumps.
+
 ## Collaboration Protocol
 
 **User-driven collaboration, not autonomous execution.**
