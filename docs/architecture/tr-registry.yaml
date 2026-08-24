@@ -48,22 +48,56 @@
 #
 # Created: 2026-08-15
 # Source: docs/architecture/architecture-review-2026-08-15.md § Traceability Matrix
+#
+# 2026-08-24 SWEEP — hazards.md and level-flow.md (sprint task ARCH-1)
+# ------------------------------------------------------------------
+# Both GDDs were authored 2026-08-17, after this registry's 52-TR baseline was
+# frozen, so neither had a single TR ID. `production/epics/index.md` recorded
+# the result twice as a live traceability gap. This sweep closes it: 12 hazards
+# IDs and 10 level-flow IDs, taking the baseline from 52 to 74.
+#
+# These IDs carry a THIRD provenance value:
+#
+#   provenance: allocated
+#     The ID was created by this sweep. It is not recovered from a surviving
+#     citation and it is not fitted to one. The GDD rule it names is the fact;
+#     the ID and its slot number are new. 22 of 74.
+#
+# `derived` would have been the wrong label. That value means the ID's
+# existence and its owning ADR are reliable from surviving prose, and only the
+# slot number is an assignment. Nothing cited these requirements at all.
+#
+# Two facts a later reader needs before trusting the hazards block:
+#
+#   1. NO ADR OWNS HAZARDS. 10 of the 12 hazards entries are gap / unowned.
+#      That is not a defect in this sweep — it is the architecture gap the
+#      sweep makes countable. `architecture.md` places SpikeHazard / KillArea
+#      in the Feature layer and `production/epics/index.md` files Hazards under
+#      "Not yet epic'd".
+#   2. `hazards.md` HAS NOT PASSED /design-review. Its rule numbering may still
+#      move. Every hazards entry carries a note saying so. Correct in place if
+#      it moves — do not supersede.
 
-version: 1
-last_updated: 2026-08-16 (session 23)
+version: 2
+last_updated: 2026-08-24 (ARCH-1 sweep)
 
 baseline:
-  total: 52
+  total: 74
   by_system:
     gravity: 13
     watering: 18
     oxygen: 12
     props: 9
+    hazards: 12
+    flow: 10
+  note: >
+    52 through 2026-08-16. The 2026-08-24 ARCH-1 sweep added hazards (12) and
+    flow (10). 13 + 18 + 12 + 9 + 12 + 10 = 74.
 
 coverage:
-  covered_by_accepted_adr: 49
+  covered_by_accepted_adr: 59
   gap_assigned_to_unwritten_adr: 0
-  gap_unowned: 1
+  gap_unowned: 13
   parked_or_implemented: 2
   note: >
     All six Foundation ADRs became Accepted on 2026-08-15 (session 12). The
@@ -102,9 +136,24 @@ coverage:
     planned ADRs are now Accepted; the only remaining non-covered requirement
     is TR-watering-002, deliberately unowned (see its entry).
 
+    2026-08-24 (ARCH-1 sweep): hazards and flow enter the baseline. 10 of the
+    22 new IDs are covered by an already-Accepted ADR — ADR-0005 owns the
+    level-flow latch, chokepoint and shared death path (7), ADR-0014 owns the
+    completion hold (1), ADR-0002 owns the total reset (1), and ADR-0004 owns
+    the hazard mask predicate (1). covered_by_accepted_adr moves 49 → 59.
+    The other 12 are unowned: 10 hazards entries with no ADR of any kind, plus
+    TR-flow-005 (a HUD element that does not exist) and TR-flow-010 (a design
+    decision the GDD marks TBD). gap_unowned moves 1 → 13.
+    59 + 0 + 13 + 2 = 74.
+
+    Read the jump in gap_unowned as measurement, not regression. These
+    requirements were already unowned on 2026-08-17. Until this sweep they were
+    merely uncounted.
+
 provenance_summary:
   verbatim: 7
   derived: 45
+  allocated: 22
 
 status_values:
   covered: Owned by a written, Accepted ADR
@@ -774,6 +823,331 @@ requirements:
       status: covered
       provenance: derived
 
+  # ---------------------------------------------------------------- hazards --
+  #
+  # Allocated 2026-08-24 by the ARCH-1 sweep. IDs 001-010 map one-to-one onto
+  # hazards.md R1-R10. IDs 011 and 012 carry the two LevelValidation checks the
+  # GDD's own §6 Dependencies table proposes but does not own.
+  #
+  # hazards.md has NOT passed /design-review and NO ADR covers this system.
+  # Both facts are repeated per entry rather than stated once, because a reader
+  # arriving at a single entry through a grep will not see this comment.
+  hazards:
+    - id: TR-hazards-001
+      requirement: "Hazard contact is instant death; no health pool, no partial damage, no invulnerability frames"
+      gdd: hazards.md
+      gdd_anchor: "R1, AC1, AC3"
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        No ADR covers hazards. hazards.md §7 states there is no damage, health or
+        invulnerability knob and that there must never be one; game-concept.md's
+        Anti-Pillars rule out a health system. GDD is pre-/design-review.
+
+    - id: TR-hazards-002
+      requirement: "Two hazard kinds, two jobs: spikes are authored visible geometry, kill areas bound the space"
+      gdd: hazards.md
+      gdd_anchor: R2
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        No ADR covers hazards. GDD is pre-/design-review.
+
+    - id: TR-hazards-003
+      requirement: "Hazard death is indistinguishable from any other death; one shared restart path"
+      gdd: hazards.md
+      gdd_anchor: "R3, AC2"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        ADR-0005 owns the _transition_pending chokepoint and names spike and
+        kill-area death explicitly: a guard protecting only the oxygen path
+        would leave these two unguarded. ADR-0008 reuses that path unchanged
+        for oxygen death. suit-oxygen.md R3 requires the same indistinguishable
+        presentation from the other direction. The routing is owned; the
+        PRESENTATION of the death sequence belongs to TR-flow-006.
+
+    - id: TR-hazards-004
+      requirement: "A hazard is readable from contour alone, before it is lethal"
+      gdd: hazards.md
+      gdd_anchor: "R4, AC4, AC5"
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        art-bible.md owns the reserved hazard shape grammar and Hazard Crimson
+        #B21030. R4 states that contract as a rule. No ADR covers it, and a
+        greyscale-screenshot check (AC4) is Visual-typed evidence, not Logic.
+        GDD is pre-/design-review.
+
+    - id: TR-hazards-005
+      requirement: "A hazard mounts and renders at any orientation: floor, ceiling and both walls"
+      gdd: hazards.md
+      gdd_anchor: "R5, AC6"
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        Marked ⚠ in the GDD. hazards.md §6 records that spike_hazard.gd carries a
+        horizontal-only constraint R5 removes, so this is a change to shipped
+        code, not new work. No ADR covers hazards. GDD is pre-/design-review.
+
+    - id: TR-hazards-006
+      requirement: "Hazards do not move with gravity; a flip leaves world position and rotation unchanged"
+      gdd: hazards.md
+      gdd_anchor: "R6, AC7"
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        Hazards are level geometry, not props. ADR-0001's global broadcast and
+        ADR-0011's prop body contract both concern bodies that DO follow the
+        vector, so neither ADR states this by implication. No ADR covers
+        hazards. GDD is pre-/design-review.
+
+    - id: TR-hazards-007
+      requirement: "Hazard placement must not break the oxygen derivation; the route is measured around the hazard"
+      gdd: hazards.md
+      gdd_anchor: "R7, AC12"
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        Reciprocal with watering-system.md: d_f / d_r / d_exit must be measured
+        around a hazard that forces a detour, so placing a hazard re-derives the
+        level's oxygen_capacity. AC12 is a level-authoring check the GDD itself
+        marks ADVISORY. No ADR covers hazards. GDD is pre-/design-review.
+
+    - id: TR-hazards-008
+      requirement: "A kill area may only bound the playable space, and nothing else"
+      gdd: hazards.md
+      gdd_anchor: R8
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        Adjacent to ADR-0003's V-BOUNDS but NOT the same rule. V-BOUNDS checks
+        that level_bounds resolves to a live Area2D and that every PropBody
+        starts inside its extent. R8 restricts what a kill area is allowed to
+        be used FOR, which no rule checks. No ADR covers hazards. GDD is
+        pre-/design-review.
+
+    - id: TR-hazards-009
+      requirement: "Every hazard's collision mask includes the player's layer"
+      gdd: hazards.md
+      gdd_anchor: R9
+      adr: ADR-0004
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        ADR-0004 owns the layer allocation this predicate is checked against,
+        and its Validation Criterion 4 requires levels 05 and 06 to restart on
+        an out-of-bounds fall. BUG-0001 is this requirement failing in those two
+        levels. The requirement is owned; the LOAD-TIME CHECK for it is not —
+        see TR-hazards-011.
+
+    - id: TR-hazards-010
+      requirement: "No hazard is unavoidable on the intended route"
+      gdd: hazards.md
+      gdd_anchor: R10
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        A level-authoring rule, not a runtime one. Its tuning knob min_clearance
+        is ⚠ unset in hazards.md §7 and the GDD declines to invent a value
+        without a playtest. No ADR covers hazards. GDD is pre-/design-review.
+
+    - id: TR-hazards-011
+      requirement: "A level containing a hazard whose mask excludes the player layer fails LevelValidation at load"
+      gdd: hazards.md
+      gdd_anchor: AC8
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        The owed LevelValidation rule V-HAZARD-MASK. It is NOT in ADR-0003's
+        seven-rule set and must not be assumed present. See this file's
+        open_items entry for the route by which it lands. Mechanically cheap:
+        a property read, with none of TR-hazards-012's feasibility risk.
+
+    - id: TR-hazards-012
+      requirement: "A level whose spawn point overlaps a hazard fails LevelValidation at load"
+      gdd: hazards.md
+      gdd_anchor: AC9
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        The owed LevelValidation rule V-HAZARD-SPAWN. Not in ADR-0003's
+        seven-rule set. Carries a feasibility risk the mask check does not: it
+        needs a geometric overlap test on a node instantiated but never added to
+        a tree, which is the same headless extent read production/epics/index.md
+        already lists as UNVERIFIED against 4.7.1 for V-BOUNDS. Verify the read
+        before specifying the rule.
+
+  # ------------------------------------------------------------------- flow --
+  #
+  # Allocated 2026-08-24 by the ARCH-1 sweep. IDs 001-010 map one-to-one onto
+  # level-flow.md R1-R10. Unlike hazards, this system is well covered: ADR-0005
+  # and ADR-0014 were both written against this GDD by name, which is why 8 of
+  # 10 enter the registry already covered.
+  #
+  # level-flow.md has no TR IDs of its own and traced by rule anchor until this
+  # sweep. That is the gap production/epics/index.md recorded.
+  flow:
+    - id: TR-flow-001
+      requirement: "A level has exactly two outcomes: completion or death"
+      gdd: level-flow.md
+      gdd_anchor: "R1, AC1, AC8"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        AC8 (airlock entry with goal_unlocked false produces no state change and
+        no on-screen element) is the negative half of the same completion
+        predicate, so it sits here rather than in its own slot.
+
+    - id: TR-flow-002
+      requirement: "level_complete is a write-once latch, and LevelRoot is its only writer"
+      gdd: level-flow.md
+      gdd_anchor: "R2, AC3, AC4"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        ADR-0002 declared the LevelState.level_complete field and deliberately
+        deferred when it is read and written to ADR-0005. ADR-0002 also
+        registered level_state_reset_method as a forbidden pattern, which is
+        what keeps the latch write-once.
+
+    - id: TR-flow-003
+      requirement: "Completion outranks death on the same frame"
+      gdd: level-flow.md
+      gdd_anchor: "R3, AC5"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+
+    - id: TR-flow-004
+      requirement: "Completion is announced to the player: a brief hold with game systems paused"
+      gdd: level-flow.md
+      gdd_anchor: "R4, AC11"
+      adr: ADR-0014
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        ADR-0014 rules that "game systems paused" IS SceneTree.paused, written
+        only through PauseController, and exempts the sequence driver and
+        hud.md E6/E9 to PROCESS_MODE_ALWAYS so the hold advances. The mechanism
+        is owned; complete_hold_duration is still ⚠ unset — see open_items.
+        AC11 is playtest evidence the GDD marks ADVISORY.
+
+    - id: TR-flow-005
+      requirement: "The completion sequence does not restate what the player already knows"
+      gdd: level-flow.md
+      gdd_anchor: R5
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        A content rule for a HUD element that does not exist yet. ADR-0010 owns
+        HUD composition but does not specify this element; level-flow.md §6
+        records that hud.md itself states the death sequence "is not specified
+        in any GDD" and that level-flow.md is now that GDD. Belongs to the
+        Presentation HUD epic. Do not read TR-flow-004's coverage as covering
+        this: ADR-0014 owns the pause gating around the sequence, not its
+        content.
+
+    - id: TR-flow-006
+      requirement: "Death is cause-agnostic: oxygen, spike and kill-area death share one sequence"
+      gdd: level-flow.md
+      gdd_anchor: "R6, AC6"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        ADR-0008 reuses the ADR-0005 chokepoint unchanged for oxygen death, and
+        ADR-0014 D14.3 keeps hud.md E6 running through the pause so the sequence
+        actually plays. Reciprocal with TR-hazards-003, which states the same
+        guarantee from the hazards side.
+
+    - id: TR-flow-007
+      requirement: "Death is unreachable once level_complete latches"
+      gdd: level-flow.md
+      gdd_anchor: "R7, AC7"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        A death armed before the latch must not present after it. This is the
+        guard ADR-0005 D5 exists for, and the case its frame table walks at
+        priority +100.
+
+    - id: TR-flow-008
+      requirement: "Restart is a total reset: oxygen, buckets, plant intake and goal_unlocked all return to their authored state"
+      gdd: level-flow.md
+      gdd_anchor: "R8, AC9"
+      adr: ADR-0002
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        ADR-0002 owns state ownership and the injection lifecycle, so a restart
+        constructs fresh state objects rather than clearing fields in place.
+        GravityAuthority is an autoload and survives restart, so the reset holds
+        for gravity only because LevelRoot re-asserts the level's authored
+        default on load (ADR-0001 D6). level-flow.md §6 states that coupling.
+
+    - id: TR-flow-009
+      requirement: "Both endings route through one guarded chokepoint; either firing order produces exactly one transition"
+      gdd: level-flow.md
+      gdd_anchor: "R9, AC10"
+      adr: ADR-0005
+      adr_status: accepted
+      status: covered
+      provenance: allocated
+      note: >
+        _transition_pending is the guard. ADR-0014's pause lock is set at the
+        same instant, not in place of it.
+
+    - id: TR-flow-010
+      requirement: "Completion advances to the next level in the authored sequence"
+      gdd: level-flow.md
+      gdd_anchor: R10
+      adr: null
+      adr_status: unowned
+      status: gap
+      provenance: allocated
+      note: >
+        Marked ⚠ TBD by the GDD itself: what happens after the FINAL level is
+        undecided. production/epics/index.md carries it as BLOCKED on a design
+        decision owed. ADR-0003 owns load-time validity of the next level's
+        scene, which is a different question and does not close this one.
+
+
 # ---------------------------------------------------------------------------
 # Open items carried by this registry
 # ---------------------------------------------------------------------------
@@ -820,3 +1194,70 @@ open_items:
       confirmed correct by a second godot-specialist validation pass at
       Acceptance (2026-08-16). ADR-0009 Accepted 2026-08-16.
     severity: resolved
+
+  - id: TR-hazards-011
+    issue: >
+      V-HAZARD-MASK is OWED, not present. ADR-0003's v1 rule set has seven rules
+      and this is not one of them. Do not assume LevelValidation catches a
+      hazard whose mask excludes the player layer — today nothing does, and
+      BUG-0001 is that failure shipped in levels 05 and 06.
+
+      Route, decided 2026-08-24 (ARCH-1): the rule lands when a hazards ADR is
+      written, and THAT ADR amends ADR-0003 D3.3's table in the same changeset.
+      This is ADR-0003's own documented mechanism and it has been exercised
+      once already — V-BOUNDS was added this way by ADR-0011 D11.7 on
+      2026-08-24. ADR-0003's Risks table states the general rule: "Every future
+      GDD introducing a level-authoring invariant must add a rule here."
+
+      hazards.md §6 already names both checks and assigns them: "proposed here,
+      owned there." ADR-0003 is NOT being reopened now to pre-add rules for a
+      GDD that has not passed /design-review.
+    severity: adr_extension_owed
+
+  - id: TR-hazards-012
+    issue: >
+      V-HAZARD-SPAWN is OWED. Same route as TR-hazards-011, with one extra
+      condition: verify the engine behaviour before specifying the rule.
+
+      The check needs a geometric overlap test between the spawn point and a
+      hazard on a node that is instantiated but never added to a tree. Reading
+      an Area2D extent under those conditions is UNVERIFIED against 4.7.1 and is
+      already carried as an open risk for V-BOUNDS in
+      production/epics/index.md. If the read does not work headlessly, this rule
+      needs a different mechanism, not a different owner.
+    severity: adr_extension_owed
+
+  - id: TR-hazards-000
+    issue: >
+      SYSTEM-LEVEL, not entry-level. NO ADR COVERS HAZARDS — 10 of the 12
+      hazards requirements are unowned, which is the largest single block of
+      unowned requirements in this registry. architecture.md places SpikeHazard
+      and KillArea in the Feature layer, production/epics/index.md files Hazards
+      under "Not yet epic'd", and hazards.md has not passed /design-review.
+
+      hazards.md §6 also records three defects in shipped code: R1 renames
+      inc_hazard_dmg, R5 removes a horizontal-only constraint in
+      spike_hazard.gd, and R9 is BUG-0001. Those are code changes waiting on an
+      epic, not design questions.
+
+      Sequence, so this is not read as a call to write the ADR immediately:
+      /design-review on hazards.md first, then the ADR, then the epic. The
+      rule numbering these 12 IDs anchor to is not yet stable.
+    severity: system_unowned
+
+  - id: TR-flow-010
+    issue: >
+      Design decision owed, and the GDD says so itself with a ⚠ TBD. What
+      follows the FINAL level in the authored sequence is undecided.
+      production/epics/index.md carries this as BLOCKED for the level-outcomes
+      epic. It is a design question for the owner, not an architecture gap.
+    severity: design_decision_owed
+
+  - id: TR-flow-004
+    issue: >
+      complete_hold_duration is ⚠ unset. level-flow.md §7 proposes 0.6 s in a
+      0.2-1.5 s range and ADR-0014 deliberately leaves it unset. Needs a HUMAN
+      playtest, not an agent one — agent-driven playtests have already been
+      found unreliable for pacing judgements on this project. The mechanism is
+      owned by ADR-0014; only the value is open.
+    severity: playtest_owed

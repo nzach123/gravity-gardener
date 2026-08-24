@@ -95,11 +95,11 @@ stories:
     name: "Sweep hazards.md and level-flow.md into tr-registry.yaml (/architecture-review)"
     file: "docs/architecture/tr-registry.yaml"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "technical-director"
     estimate_days: 0.5
     blocker: ""
-    completed: ""
+    completed: "2026-08-24"
 
   # ── tuning-resources ───────────────────────────────────────────────────────
   - id: "TUN-0"

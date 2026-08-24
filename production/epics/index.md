@@ -32,7 +32,9 @@ only. Its restart path, level transition and terminal sequences belong to
 
 The two source documents disagree, because `level-flow.md` and `hazards.md` were
 authored 2026-08-17 — after `architecture.md` v1.0 and after the 52-TR baseline was
-frozen.
+frozen. **The traceability half of that is closed.** The 2026-08-24 ARCH-1 sweep
+allocated `TR-flow-001`–`010` and `TR-hazards-001`–`012`, taking the baseline from
+52 to 74. The layer disagreement below is unchanged.
 
 | Source | Core membership |
 |---|---|
@@ -77,7 +79,8 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 | ADR-0001 Verification 2 — a default-space gravity write in `_physics_process` reaches every `RigidBody2D` in the same step | `gravity-authority` | **OPEN** — confirm at implementation |
 | ADR-0004 F8 — the registry guarantees authored state only, not runtime mutation | `collision-layer-registry` | **Decided** — story 005 adds a CI grep step |
 | ADR-0003 D3.3's printed `V-WIRING` table is stale — `hud` still reads "not required" and `level_bounds` is absent, though ADR-0010 and ADR-0011 are both Accepted | `level-validation` | **Doc lag** — D3.3's own admission rule resolves it; story 004 implements four rows, a doc-only ADR amendment is owed |
-| `V-WIRING` has no TR-ID, and neither does `V-BOUNDS` | `level-validation` | **Traceability gap** — extend `tr-registry.yaml` or record the exception; do not back-fill during implementation |
+| `V-WIRING` has no TR-ID, and neither does `V-BOUNDS` | `level-validation` | **CLOSED 2026-08-24 (ARCH-1) — as an exception, not by back-filling.** `V-BOUNDS` traces through its GDD source to `TR-props-005` (`physics-props.md` R7) and `V-PROP-BUDGET` to `TR-props-007` (R8, §5); both already existed. `V-WIRING` gets no ID and should not get one — its source is an ADR-0002 delegation, and `tr-registry.yaml`'s own SCOPE rule admits GDD-derived requirements only |
+| `V-HAZARD-MASK` and `V-HAZARD-SPAWN` are owed and absent from ADR-0003's seven-rule set | `level-validation` / *(Hazards)* | **OPEN** — `TR-hazards-011` / `TR-hazards-012`. Route decided 2026-08-24: a hazards ADR adds them to D3.3 in the same changeset, the mechanism ADR-0011 D11.7 used for `V-BOUNDS`. ADR-0003 is **not** reopened now. `V-HAZARD-SPAWN` also needs the headless extent read verified first — same 4.7.1 unknown as `V-BOUNDS` |
 | Reading an `Area2D` extent headlessly, on a node instantiated but never added to a tree, is unverified — not covered by ADR-0003 E1–E3 | `level-validation` | **OPEN** — verify against the 4.7.1 binary in story 006 |
 | ADR-0008 — the `LevelRoot`-ancestor `process_mode` invariant has no automated check | `oxygen-drain` | **OPEN** — scene test owed once a pause menu exists |
 | `level-flow.md` R10 — what follows the final level | `level-outcomes` | **BLOCKED** — design decision owed |
@@ -86,7 +89,7 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 | TR-gravity-010 — camera-follow / camera-rotation split specified but not applied (ADR-0013 D13.5) | `gravity-authority` | **Blocked** on a human playtest of `level_01` and `level_07` |
 | TR-watering-002 — carry scales `max_speed` only; ADR-0007 explicitly declines it | *(Feature watering)* | **GAP** — no accepted ADR owns the mechanism |
 | `PlayerWallJumpComponent` — no GDD, no TR IDs, no ADR (QQ-05) | `player-core` | **Unowned** — behaviour stories are Blocked |
-| `level-flow.md` has no TR IDs; traces by rule anchor | `level-outcomes` | **Traceability gap** — extend `tr-registry.yaml` or record the exception |
+| `level-flow.md` has no TR IDs; traces by rule anchor | `level-outcomes` | **CLOSED 2026-08-24 (ARCH-1)** — `TR-flow-001`–`010`, one per rule R1–R10. 8 of 10 entered already covered by ADR-0005, ADR-0014 and ADR-0002. The two that did not are `TR-flow-005` (HUD element, Presentation) and `TR-flow-010` (R10, the blocked decision already on this table) |
 | Settings system — remapping, presets, text scaling; no GDD, no ADR, no menu code | *(unassigned)* | **Unowned** — largest hidden cost per the 2026-08-17 Producer gate |
 | TR-gravity-008 — `zone_priority` overlap resolution | `gravity-authority` | **Parked** by design; no story |
 
@@ -96,7 +99,7 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 |---|---|---|
 | Watering | Feature | Feature run. Blocked on `level-state`. |
 | Physics Props | Presentation | Presentation run. Content deferred to Vertical-Slice tier by `art-bible.md` §1.3. |
-| Hazards | Feature | No ADR; GDD pending `/design-review`; records 3 code defects to fix. |
+| Hazards | Feature | No ADR; GDD pending `/design-review`; records 3 code defects to fix. `TR-hazards-001`–`012` allocated 2026-08-24, and **10 of the 12 are unowned** — the largest block of unowned requirements in the registry. Sequence: `/design-review` first, then the ADR, then the epic. The rule numbering those IDs anchor to is not stable until the review runs. |
 | HUD / Pause Menu | Presentation | Presentation run, under ADR-0010 and ADR-0014. |
 | Moving platforms | Feature | Implemented, undocumented. No GDD, no TRs, no ADR. |
 
