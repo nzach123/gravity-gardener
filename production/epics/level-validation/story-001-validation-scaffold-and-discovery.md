@@ -1,12 +1,12 @@
 # Story 001: LevelValidation scaffold — type-scan discovery and count_buckets()
 
 > **Epic**: Level Load Validation
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-24
 
 ## Context
 

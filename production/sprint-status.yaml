@@ -19,7 +19,7 @@ goal: "Land the Foundation layer's data and validation base — collision regist
 start: "2026-08-18"
 end: "2026-08-31"
 generated: "2026-08-18"
-updated: "2026-08-23"
+updated: "2026-08-24"
 
 stories:
   - id: "CLR-1"
@@ -106,10 +106,10 @@ stories:
     name: "Implement WateringTuning / OxygenTuning / PropTuning and the Tuning accessor"
     file: "production/epics/tuning-resources/EPIC.md"
     priority: must-have
-    status: ready-for-dev
+    status: review
     owner: "godot-gdscript-specialist"
     estimate_days: 1.5
-    blocker: ""
+    blocker: "Editor-only ACs: story 003 AC-1/AC-2 (open each .tres in the inspector, drag one slider to its bound) and story 002 smoke item 2 (the three classes appear in Create New Resource). The windowed editor segfaults on this machine — same human-check bucket as CLR-3. Story 005 also has one negative check that behaved differently from its AC: re-pointing a .tres at the wrong script is a parse error at load, not a group 1 failure, so V1 was never demonstrated red."
     completed: ""
 
   - id: "LV-0"
@@ -126,10 +126,10 @@ stories:
     name: "Implement 5 of 6 LevelValidation rules and their tests"
     file: "production/epics/level-validation/EPIC.md"
     priority: must-have
-    status: backlog
+    status: review
     owner: "gameplay-programmer"
     estimate_days: 1.25
-    blocker: "Depends on TUN-2"
+    blocker: "Owed before close-out: /code-review on level_validation.gd and its four test files. Two doc-only amendments to ADR-0003 are also owed (not blocking, do not amend as part of LV-1): D3.3's printed V-WIRING table still shows 3 rows and marks hud as pending ADR-0010, but ADR-0010 and ADR-0011 are Accepted so the implemented table has 4 rows; and D3.3's frozen six-rule wording does not account for ADR-0011's V-BOUNDS, whose constant is now declared. Story 001's grep AC also needs scoping to code — it forbids find_children/get_nodes_in_group appearing at all, which collides with the AC requiring the ADR-0003 doc block that names them."
     completed: ""
 
   - id: "LV-2"

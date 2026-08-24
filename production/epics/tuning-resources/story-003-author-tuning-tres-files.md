@@ -1,12 +1,12 @@
 # Story 003: Author the three tuning `.tres` files at GDD defaults
 
 > **Epic**: Tuning Resources
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Estimate**: S (1 hour)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-24
 
 ## Context
 

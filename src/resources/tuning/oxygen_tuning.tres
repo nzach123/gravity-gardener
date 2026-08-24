@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="OxygenTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/tuning/oxygen_tuning.gd" id="1_oxygen"]
+
+[resource]
+script = ExtResource("1_oxygen")
+margin = 0.4
+drain_rate = 1.0
+threshold_caution = 0.5
+threshold_warning = 0.25
+threshold_critical = 0.1

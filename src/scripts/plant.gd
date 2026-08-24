@@ -9,6 +9,13 @@ signal plant_watered
 var water_progress: float = 0.0
 var is_watered: bool = false
 @export var water_duration: float = 5.0
+## Buckets this plant needs before it is fully watered (watering-system.md R5).
+## Declared here ahead of ADR-0009 because V-BUCKET-SUM and V-PLANT-MIN cannot be
+## tested against a property no class declares. The behaviour half — buckets_received,
+## the intake cap, pour refusal, growth visuals — stays with ADR-0009.
+## The range does not clamp a hand-edited .tscn (ADR-0006 T4); V-PLANT-MIN is the
+## load-time floor that actually holds.
+@export_range(1, 4) var buckets_required: int = 1
 var player_in_range: Player = null
 
 

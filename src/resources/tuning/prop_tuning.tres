@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PropTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scripts/tuning/prop_tuning.gd" id="1_prop"]
+
+[resource]
+script = ExtResource("1_prop")
+prop_gravity_scale = 1.0
+prop_max_speed = 2000.0
+props_per_level_budget = 40

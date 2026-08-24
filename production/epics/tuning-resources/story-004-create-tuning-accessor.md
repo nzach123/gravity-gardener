@@ -1,12 +1,12 @@
 # Story 004: Create the `Tuning` const accessor
 
 > **Epic**: Tuning Resources
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1 hour)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-24
 
 ## Context
 

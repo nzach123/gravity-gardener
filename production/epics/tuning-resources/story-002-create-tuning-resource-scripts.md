@@ -1,12 +1,12 @@
 # Story 002: Create the three tuning `Resource` scripts
 
 > **Epic**: Tuning Resources
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-24
 
 ## Context
 
