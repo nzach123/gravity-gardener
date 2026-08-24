@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/watering-system.md · design/gdd/suit-oxygen.md
 > **Architecture Module**: `LevelState` · `OxygenState` · `GameManager` · `LevelRoot` (construction and injection only)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories level-state`
+> **Stories**: 6 — created 2026-08-24 (sprint task LS-0)
 
 ## Overview
 
@@ -64,6 +64,48 @@ This epic is complete when:
 - All Visual/Feel and UI stories have evidence docs with sign-off in `production/qa/evidence/`
 - The ADR-0001 caller-name correction is applied
 
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | `LevelState` — the injectable level-scoped state object | Logic | Ready | ADR-0002 |
+| 002 | `OxygenState` — capacity validated at construction, drain-only | Logic | Ready | ADR-0002 |
+| 003 | `FramePriority` — the const-only physics ordering contract | Logic | Ready | ADR-0005 |
+| 004 | `LevelRoot` constructs both state objects and injects them | Integration | Ready | ADR-0002 |
+| 005 | The `level_complete` write-once latch and the ordered goal handler | Logic | Ready | ADR-0005 |
+| 006 | Restart is reconstruction — `GameManager` keeps only `player_lives` | Integration | Ready | ADR-0002 |
+
+Implementation order is the numbering. Each story's `Depends on:` field states what
+must be DONE first: 001 and 002 have no dependency, 003 has none, 004 needs both
+types, 005 needs 001 and 004, and 006 needs 004.
+
+### Two scoping decisions taken at decomposition, 2026-08-24
+
+**Story 003 is not named in this epic's Architecture Module line.** It was added
+deliberately. `FramePriority` blocks `gravity-authority`, `player-core` and
+`oxygen-drain` and belongs to none of them, and ADR-0005 A5-05 forbids the
+placement that would have made it a member of one — the constants cannot live on
+`LevelRoot`, because `GravityAuthority` is an autoload present before any level
+scene loads. This epic is the earliest of the four in the build order, so placing
+it here blocks nobody. Story 003 carries the same note in its own Context.
+
+**Two acceptance criteria cannot close inside this epic, and the stories say so.**
+`watering-system.md` AC13 and `suit-oxygen.md` AC8 — the depletion-frame outcomes
+that `TR-watering-012` and `TR-oxygen-010` name — need `OxygenDrain`'s arm-and-defer
+behaviour (ADR-0005 D5.2), which is ADR-0008 and the Core `oxygen-drain` epic.
+Story 005 lands the latch half only and states this in its acceptance criteria, so
+`/story-done` cannot close it against criteria it does not satisfy.
+
+### One seam left open on purpose
+
+Story 004 implements initialisation-order steps (a), (c) and (d), and leaves step
+(b) — `LevelValidation.validate()` — as a named, commented insertion point.
+That is **LV-005**, which is blocked on this epic: `LevelState` and `OxygenState`
+did not exist, and LV-005's real subject is the ORDERING between `validate()` and
+their construction. Leaving the seam makes LV-005 an insertion rather than a merge
+conflict.
+
 ## Next Step
 
-Run `/create-stories level-state` to break this epic into implementable stories.
+Run `/story-readiness production/epics/level-state/story-001-level-state-object.md`,
+then `/dev-story` on the same file.

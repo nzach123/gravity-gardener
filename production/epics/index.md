@@ -1,13 +1,13 @@
 # Epics Index
 
-Last Updated: 2026-08-23
+Last Updated: 2026-08-24
 Engine: Godot 4.7.1
 Control Manifest Version: 2026-08-17
 
 | Epic | Layer | System | GDD | Stories | Status |
 |------|-------|--------|-----|---------|--------|
 | [Gravity Authority](gravity-authority/EPIC.md) | Foundation | Gravity | `gravity.md` | 7 stories | Ready |
-| [Level State Ownership](level-state/EPIC.md) | Foundation | Watering / Suit Oxygen | `watering-system.md`, `suit-oxygen.md` | Not yet created | Ready |
+| [Level State Ownership](level-state/EPIC.md) | Foundation | Watering / Suit Oxygen | `watering-system.md`, `suit-oxygen.md` | 6 stories | Ready |
 | [Level Load Validation](level-validation/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
 | [Collision Layer Registry](collision-layer-registry/EPIC.md) | Foundation | Physics Props | `physics-props.md` | 5 stories | Ready |
 | [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |

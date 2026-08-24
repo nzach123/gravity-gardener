@@ -249,11 +249,11 @@ stories:
     name: "Create stories for the level-state epic"
     file: "production/epics/level-state/EPIC.md"
     priority: nice-to-have
-    status: backlog
+    status: done
     owner: "producer"
     estimate_days: 0.25
     blocker: ""
-    completed: ""
+    completed: "2026-08-24"
 
 # ── Cut to Sprint 2 on 2026-08-24 ──────────────────────────────────────────────
 #
