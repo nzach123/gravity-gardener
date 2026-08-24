@@ -14,6 +14,7 @@ Control Manifest Version: 2026-08-17
 | [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | Not yet created | Ready |
 | [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | Not yet created | Ready |
 | [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | Not yet created | Ready |
+| [Physics Props](physics-props/EPIC.md) | Presentation | Physics Props | `physics-props.md` | Not yet created | Ready — scheduling deferred |
 
 ## Scoping notes
 
@@ -47,6 +48,21 @@ cover it and the work is fully specified. **Hazards is deferred to the Feature
 run** — `architecture.md` places `SpikeHazard` / `KillArea` in Feature, the GDD is
 still pending `/design-review`, and it has no ADR at all.
 
+### Presentation
+
+`physics-props` is the first Presentation-tier epic, created 2026-08-24. It is
+well-formed and has **no untraced requirements** — all nine `TR-props-*` IDs trace
+to an Accepted ADR — but **its content is deferred to Vertical-Slice tier** by
+`art-bible.md` §1.3, and ADR-0011 carries a matching Implementation Scope Note.
+Read it as unblocked-but-not-next-up rather than as ready to schedule whole.
+
+Four of its nine requirements are satisfied by other epics. ADR-0011 deliberately
+declines to re-claim `TR-props-001`, `-002`, `-004` and `-007`, which ADR-0001,
+ADR-0004 and ADR-0003 already cover, so `physics-props` consumes their output and
+adds no guard of its own.
+
+`HUD / Pause Menu` remains the other Presentation system, still un-epic'd.
+
 ### Requirement splits across layers
 
 - **Gravity's 13 TRs span three layers.** `gravity-authority` (Foundation) takes
@@ -66,10 +82,15 @@ Hard ordering constraints, each stated in the ADRs themselves:
 3. **`gravity-authority` before `player-core`.** The components read the authority
    rather than holding a gravity field, and the mandatory init-order guard lives in
    the authority (architecture.md QQ-02).
+4. **`physics-props` D11.1 before `LV-006`.** `LV-006` is *unschedulable*, not
+   merely unstarted: it needs `class_name PropBody` to exist, and no other epic
+   delivers it. The D11.1 story alone clears that, ahead of any prop content — so
+   this one story can be pulled forward without pulling the epic forward.
 
 Suggested order: `collision-layer-registry` → `tuning-resources` →
 `level-validation` → `gravity-authority` → `level-state` → `player-core` →
-`oxygen-drain` → `level-outcomes`.
+`oxygen-drain` → `level-outcomes`. `physics-props` sits after all of these, with
+the D11.1 exception noted above.
 
 ## Open risks carried by these epics
 
@@ -98,7 +119,6 @@ Suggested order: `collision-layer-registry` → `tuning-resources` →
 | System | Layer per architecture.md | Why not yet |
 |---|---|---|
 | Watering | Feature | Feature run. Blocked on `level-state`. |
-| Physics Props | Presentation | Presentation run. Content deferred to Vertical-Slice tier by `art-bible.md` §1.3. |
 | Hazards | Feature | No ADR; GDD pending `/design-review`; records 3 code defects to fix. `TR-hazards-001`–`012` allocated 2026-08-24, and **10 of the 12 are unowned** — the largest block of unowned requirements in the registry. Sequence: `/design-review` first, then the ADR, then the epic. The rule numbering those IDs anchor to is not stable until the review runs. |
 | HUD / Pause Menu | Presentation | Presentation run, under ADR-0010 and ADR-0014. |
 | Moving platforms | Feature | Implemented, undocumented. No GDD, no TRs, no ADR. |
