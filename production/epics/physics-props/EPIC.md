@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/physics-props.md
 > **Architecture Module**: `PhysicsProps` (`architecture.md:118` — cosmetic rigid bodies, new)
 > **Status**: Ready — **scheduling deferred to Vertical-Slice tier**
-> **Stories**: Not yet created — run `/create-stories physics-props`
+> **Stories**: 6 stories — created 2026-08-24
 
 ## Overview
 
@@ -145,6 +145,43 @@ This epic is complete when:
 is typed **Visual, advisory** by the GDD and needs a human. It cannot be closed
 from a session.
 
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | `PropBody` — the scripted rigid body and its registry membership | Logic | Ready | ADR-0011 (D11.1) |
+| 002 | The fall-speed cap, clamped inside `_integrate_forces` | Logic | Ready | ADR-0011 (D11.2) |
+| 003 | `reset_to()` writes the space parameters synchronously | Integration | Ready | ADR-0011 (D11.5) |
+| 004 | `LevelBounds` frees out-of-bounds props | Integration | Ready | ADR-0011 (D11.3) |
+| 005 | Restart reset is structural, and runtime spawning is banned | Integration | Ready | ADR-0011 (D11.4) |
+| 006 | Flip frame-budget harness, and the AC10 gate-level decision | Integration | Ready | ADR-0011 (V7) |
+
+**Validation coverage**: V1, V2, V4 → story 002. V6 → story 003. V5 → story 004.
+V9 → story 005. V7 → story 006. **V3 and V8 have no story here, by design** —
+V3 (the force-wake criterion) belongs to `gravity-authority` story 007, and V8
+(`validate()` returns `[V-BOUNDS]`) to `level-validation` story 006. This epic
+consumes both.
+
+### Two scope corrections made at decomposition
+
+1. **The Overview above overstates this epic's scope.** It claims to implement
+   ADR-0001 Changeset B parts 4, 4a and 4b. `gravity-authority` stories 006 and
+   007 already own exactly those. What ADR-0011 genuinely adds is **D11.5**, the
+   *synchronous* `reset_to()` write, which no gravity-authority story covers —
+   that is story 003, and it is the only part of Changeset B claimed here.
+
+2. **D11.1 cannot be pulled forward alone.** `index.md`'s build-order note says
+   the D11.1 story by itself clears `LV-006`. `PropBody._ready()` calls
+   `GravityAuthority.register_prop()`, and **no `GravityAuthority` autoload
+   exists** — `project.godot` registers only `GameManager`. Pulling story 001
+   forward pulls `gravity-authority` stories 001 and 007 with it.
+
 ## Next Step
 
-Run `/create-stories physics-props` to break this epic into implementable stories.
+Run `/story-readiness production/epics/physics-props/story-001-prop-body-rigid-body-and-registry.md`,
+then `/dev-story`. Work through the stories in order — each story's `Depends on:`
+field names what must be DONE first.
+
+Note that every story here depends on `gravity-authority`, and stories 004 and 005
+also depend on `level-state` and `level-outcomes` respectively. This epic remains
+**unblocked but not next-up**, per the Scheduling Note above.

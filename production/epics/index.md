@@ -14,7 +14,7 @@ Control Manifest Version: 2026-08-17
 | [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | Not yet created | Ready |
 | [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | Not yet created | Ready |
 | [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | Not yet created | Ready |
-| [Physics Props](physics-props/EPIC.md) | Presentation | Physics Props | `physics-props.md` | Not yet created | Ready — scheduling deferred |
+| [Physics Props](physics-props/EPIC.md) | Presentation | Physics Props | `physics-props.md` | 6 stories | Ready — scheduling deferred |
 
 ## Scoping notes
 
@@ -82,10 +82,14 @@ Hard ordering constraints, each stated in the ADRs themselves:
 3. **`gravity-authority` before `player-core`.** The components read the authority
    rather than holding a gravity field, and the mandatory init-order guard lives in
    the authority (architecture.md QQ-02).
-4. **`physics-props` D11.1 before `LV-006`.** `LV-006` is *unschedulable*, not
+4. **`physics-props` story 001 before `LV-006`.** `LV-006` is *unschedulable*, not
    merely unstarted: it needs `class_name PropBody` to exist, and no other epic
-   delivers it. The D11.1 story alone clears that, ahead of any prop content — so
-   this one story can be pulled forward without pulling the epic forward.
+   delivers it. Story 001 clears that, ahead of any prop content — so this one
+   story can be pulled forward without pulling the whole epic forward.
+   **Corrected 2026-08-24 at decomposition**: it is not free. `PropBody._ready()`
+   calls `GravityAuthority.register_prop()`, and no `GravityAuthority` autoload
+   exists — `project.godot` registers only `GameManager`. Pulling story 001
+   forward pulls `gravity-authority` stories 001 and 007 with it.
 
 Suggested order: `collision-layer-registry` → `tuning-resources` →
 `level-validation` → `gravity-authority` → `level-state` → `player-core` →
@@ -111,6 +115,8 @@ the D11.1 exception noted above.
 | TR-watering-002 — carry scales `max_speed` only; ADR-0007 explicitly declines it | *(Feature watering)* | **GAP** — no accepted ADR owns the mechanism |
 | `PlayerWallJumpComponent` — no GDD, no TR IDs, no ADR (QQ-05) | `player-core` | **Unowned** — behaviour stories are Blocked |
 | `level-flow.md` has no TR IDs; traces by rule anchor | `level-outcomes` | **CLOSED 2026-08-24 (ARCH-1)** — `TR-flow-001`–`010`, one per rule R1–R10. 8 of 10 entered already covered by ADR-0005, ADR-0014 and ADR-0002. The two that did not are `TR-flow-005` (HUD element, Presentation) and `TR-flow-010` (R10, the blocked decision already on this table) |
+| ADR-0011 V-E2 — a synchronous `PhysicsServer2D.area_set_param` write from `LevelRoot._ready()` lands before the new scene's first physics step | `physics-props` | **OPEN** — story 003 discharges it against the 4.7.1 binary. Named fallback exists (a dirty flag consumed by the authority's `_physics_process`, costing one frame of stale space gravity at load) |
+| AC10's evidence gate level is undefined — `coding-standards.md`'s table has no Performance row, and this is the **second** instance (ADR-0012 recorded the same for `watering-system.md`) | `physics-props` | **OPEN — decision owed** — story 006 AC-1. ADR-0011 notes the repeat suggests the standards table, not the two GDDs, is what needs the edit |
 | Settings system — remapping, presets, text scaling; no GDD, no ADR, no menu code | *(unassigned)* | **Unowned** — largest hidden cost per the 2026-08-17 Producer gate |
 | TR-gravity-008 — `zone_priority` overlap resolution | `gravity-authority` | **Parked** by design; no story |
 
