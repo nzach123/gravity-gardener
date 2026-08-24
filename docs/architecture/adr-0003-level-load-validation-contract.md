@@ -224,7 +224,7 @@ none. `Plant`, `Bucket` and `PropBody` are not autoloads, and 13 of the 14 scrip
 in `src/scripts/` already declare a `class_name`. Recorded here so a future reader
 does not misapply A1-03 as a blanket ban.
 
-### D3.3 — The v1 rule set: six rules
+### D3.3 — The v1 rule set: seven rules
 
 | Code | Rule | Source |
 |---|---|---|
@@ -234,6 +234,11 @@ does not misapply A1-03 as a blanket ban.
 | `V-GRAV-EXPORT` | `default_gravity_direction` is non-zero **and** `default_gravity_multiplier > 0` | ADR-0001 (delegated), `gravity.md` R7 |
 | `V-PROP-BUDGET` | `PropBody` count `<= PropTuning.props_per_level_budget` | `physics-props.md` R8, §5, §7 |
 | `V-WIRING` | every **required** consumer `NodePath` export on `LevelRoot` is non-empty and resolves — required set enumerated below | ADR-0002 (delegated) |
+| `V-BOUNDS` | `level_bounds` is non-empty, resolves to a live `Area2D`, and every `PropBody` in the level starts inside its extent | `physics-props.md` R7; ADR-0011 D11.7 |
+
+*(`V-BOUNDS` added 2026-08-24 by ADR-0011 D11.7, under this ADR's own rule that an
+ADR adding a `LevelRoot` consumer amends this table in the same changeset. Its
+constant is declared in `level_validation.gd`; the rule logic lands with story 006.)*
 
 Three notes on the set.
 
@@ -255,14 +260,18 @@ use. The two checks are complementary and neither subsumes the other. This
 resolution is a narrowing of ADR-0002's request, not a refusal of it.
 
 **The required-consumer set, and how it grows.** *(Added 2026-08-15 — resolves
-conflict C1 of `architecture-review-2026-08-15.md`.)* A consumer is **required** when
-the ADR that introduces it is **Accepted**. The set as of 2026-08-15:
+conflict C1 of `architecture-review-2026-08-15.md`. Table amended 2026-08-24 —
+ADR-0010 and ADR-0011 are now Accepted, so the admission rule below admits `hud`
+and `level_bounds`. This records what the rule already required; it is not a new
+decision.)* A consumer is **required** when the ADR that introduces it is
+**Accepted**. The set as of 2026-08-24:
 
 | Export | Consumer | Owning ADR | Required |
 |---|---|---|---|
 | `player` | `Player` / `PlayerWateringComponent` | ADR-0002 (Accepted) | **Yes** |
 | `goal` | `Goal` | ADR-0002 (Accepted) | **Yes** |
-| `hud` | `HUD` | **ADR-0010 — unwritten** | **No** — admitted when ADR-0010 is Accepted |
+| `hud` | `HUD` | ADR-0010 (Accepted) | **Yes** — admitted 2026-08-24 |
+| `level_bounds` | `LevelBounds` `Area2D` | ADR-0011 (Accepted, D11.7) | **Yes** — admitted 2026-08-24 |
 
 `OxygenDrain` is out of scope for this rule entirely: ADR-0002 part 4 makes it a
 *child* of `LevelRoot`, not a `NodePath` export, so there is no path for `V-WIRING`
@@ -279,8 +288,13 @@ plan authors a HUD. The epic would close with the gate red, or `V-WIRING` would 
 quietly weakened during implementation — which is how a validation rule becomes
 decoration, the exact failure `architecture.md` P4 exists to close.
 
+*(2026-08-24 — the scoping argument above is now historical. ADR-0010 is Accepted
+and ADR-0011 adds `level_bounds`, so both rows are Required. The close condition it
+protected now falls to the level migration epic, which must author both.)*
+
 **This is an obligation on ADR-0010, recorded here so its author inherits it rather
-than discovers it.** When ADR-0010 is Accepted, `hud` moves to Required and every
+than discovers it.** *(Discharged 2026-08-24 — ADR-0010 was Accepted and `hud`
+moved to Required.)* When ADR-0010 is Accepted, `hud` moves to Required and every
 level must wire one. Any future ADR that adds a `LevelRoot` consumer export adds a
 row to this table in the same changeset.
 
@@ -404,9 +418,10 @@ const V_OXY_CAP     := "V-OXY-CAP"
 const V_GRAV_EXPORT := "V-GRAV-EXPORT"
 const V_PROP_BUDGET := "V-PROP-BUDGET"
 const V_WIRING      := "V-WIRING"
+const V_BOUNDS      := "V-BOUNDS"
 
 ## Returns every contract breach found, each prefixed with its stable code.
-## An empty result means the level satisfies all six rules.
+## An empty result means the level satisfies every implemented rule.
 static func validate(level: Node) -> PackedStringArray
 
 ## The single definition of "a bucket in this level". Used by validate() for
@@ -552,8 +567,9 @@ to the tree · codes are stable across message rewording.
    order is defective as written (D3.1).
 2. **Add `class_name`** to `plant.gd` and `bucket.gd`; `PropBody` gets one when it
    is created under ADR-0011.
-3. **Implement `LevelValidation`** with five of the six rules. `V-PROP-BUDGET` is
-   written but inert until `PropTuning` exists.
+3. **Implement `LevelValidation`** with five of the seven rules. `V-PROP-BUDGET`
+   and `V-BOUNDS` are specified with their constants in place and land with
+   story 006.
 4. **Per-rule unit tests** — synthetic trees, one test per code, asserting the right
    code fires and that a clean tree returns empty. **Run the headless suite locally
    before calling this step done**: gdUnit4 treats GDScript warnings as errors
@@ -577,9 +593,13 @@ to the tree · codes are stable across message rewording.
 
 ## Validation Criteria
 
-1. `validate()` on a synthetic level breaching **all six** rules returns six
-   findings, one per code — not one, and not a partial set. This is the
-   report-all-failures guarantee under direct test.
+1. `validate()` on a synthetic level breaching **all seven** rules returns one
+   finding per breached code, and one `V-WIRING` finding per unwired consumer
+   row — not one finding, and not a partial set. This is the report-all-failures
+   guarantee under direct test. *(Amended 2026-08-24: the original wording said
+   "six findings, one per code". `V-WIRING` fires per row, so the count is not
+   equal to the number of codes — the shipped gate test returns nine findings
+   across the five implemented codes.)*
 2. `validate()` on a level with `oxygen_capacity = 0` returns `V-OXY-CAP` **and the
    level still reaches step (b)**, proving the D3.1 reordering actually fixed the
    abort rather than merely relocating it.

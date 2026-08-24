@@ -92,8 +92,19 @@ reference. **Do not re-search them** — ADR-0003 states this explicitly.
       this story done.
 - [ ] `grep -n "is_debug_build" src/scripts/level_validation.gd` returns nothing
       (ADR-0003 Validation Criterion 3, D3.6).
-- [ ] `grep -n "get_nodes_in_group\|find_children" src/scripts/level_validation.gd`
-      returns nothing.
+- [ ] `grep -nE "^[^#]*(get_nodes_in_group|find_children)[[:space:]]*\(" src/scripts/level_validation.gd`
+      returns nothing — i.e. no **call site**. *(Amended 2026-08-24: the grep was
+      unscoped and required the bare identifiers to be absent, which AC-1 makes
+      impossible — the ADR-0003 doc block AC-1 mandates contains the string
+      `find_children` in its "do NOT substitute" warning, and D3.2/F3 require a
+      rationale comment naming it. The intent of this check has always been "no
+      call site", so it is scoped to one. `^[^#]*` is what does the scoping: it
+      requires the identifier to appear before any `#` on the line, so a call in
+      code matches and a mention in a comment does not. Note that requiring a
+      following `(` alone is NOT sufficient — the rationale comments write
+      `find_children()` and `get_nodes_in_group()` with parentheses. Verified
+      2026-08-24 against the shipped file, and against a copy with two call
+      sites injected, which the grep catches.)*
 
 ---
 
@@ -188,8 +199,11 @@ implements against these — do not invent new test cases during implementation.
 - **AC-6**: grep guards — run as shell checks, recorded in the story rather than as
   gdUnit4 cases
   - Setup: from the repository root
-  - Verify: `grep -n "is_debug_build\|get_nodes_in_group\|find_children" src/scripts/level_validation.gd`
-  - Pass condition: no output
+  - Verify: `grep -nE "^[^#]*(is_debug_build|get_nodes_in_group|find_children)[[:space:]]*\(" src/scripts/level_validation.gd`
+  - Pass condition: no output — the check is for a **call site**, not for the
+    identifier. The identifiers appear in the doc block and rationale comments
+    that AC-1 and D3.2/F3 require, parentheses included, so the `^[^#]*` prefix
+    is what makes the check meaningful (amended 2026-08-24).
 
 ---
 
