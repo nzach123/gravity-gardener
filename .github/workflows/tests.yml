@@ -55,6 +55,92 @@ jobs:
           fi
           echo "OK: no runtime collision layer/mask mutation in src/**/*.gd"
 
+      # ADR-0006 V6 (D6.3): a tuning .tres path is written down once, in
+      # src/scripts/tuning/tuning.gd. A path literal elsewhere makes a second
+      # source of truth.
+      #
+      # Scope: src/**/*.gd only, for two reasons.
+      #  - .tres and .tscn files name these paths as authored data. D6.3 permits
+      #    that, so a widened grep would fail on correct files.
+      #  - tests/ may name a tuning path legitimately. tests/ stays out of scope.
+      # The exclusion is the src/scripts/tuning/ DIRECTORY, not tuning.gd alone.
+      # The check then needs no edit if the holder group grows.
+      - name: Enforce the ADR-0006 D6.3 tuning path-literal ban (V6)
+        run: |
+          set -euo pipefail
+          # grep exits 1 when it finds nothing. Capture the match and set the
+          # exit code below. A bare grep in this step would pass forever.
+          violations=$(
+            grep -rnF 'res://src/resources/tuning/' --include='*.gd' src/ \
+              | grep -v '^src/scripts/tuning/' \
+            || true
+          )
+          if [ -n "$violations" ]; then
+            echo "::error::ADR-0006 D6.3 violation - a tuning resource path literal is permitted only in src/scripts/tuning/."
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: no tuning path literal outside src/scripts/tuning/"
+
+      # ADR-0006 V7 (D6.5): tuning resources are read-only at runtime.
+      #
+      # This check is PARTIAL, and the ADR says so: D6.5 is enforced by review
+      # and grep, not by structure. GDScript has no read-only resource. The
+      # grep catches the literal shapes only. It does NOT catch:
+      #  - an alias:        var t := Tuning.PROP    then    t.margin = 0.5
+      #  - a dynamic write: Tuning.PROP.set("margin", 0.5)
+      #  - a @tool script that mutates a .tres and saves it to version control
+      # A pass here is not proof that no mutation exists.
+      - name: Enforce the ADR-0006 D6.5 tuning runtime-mutation ban (V7)
+        run: |
+          set -euo pipefail
+          # grep exits 1 when it finds nothing. Capture the match and set the
+          # exit code below. A bare grep in this step would pass forever.
+          violations=$(
+            grep -rnE \
+              -e 'Tuning\.(WATERING|OXYGEN|PROP)\.[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[-+*/%]?=[^=]' \
+              -e 'Tuning\.(WATERING|OXYGEN|PROP)\.duplicate[[:space:]]*\(' \
+              --include='*.gd' \
+              src/ \
+            || true
+          )
+          if [ -n "$violations" ]; then
+            echo "::error::ADR-0006 D6.5 violation - a tuning resource must not be assigned to or duplicated at runtime."
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: no literal tuning mutation or duplicate() in src/**/*.gd"
+
+      # ADR-0006 V8 (D6.7): no GravityTuning resource. ADR-0001 part 7 keeps the
+      # jump constants on Player by explicit decision, and gravity.md section 5
+      # records the initialisation-order edge case as the accepted price. A
+      # GravityTuning created under the general rule of ADR-0006 reverses both.
+      #
+      # Scope: src/ only. The token GravityTuning appears legitimately in
+      # docs/architecture/, in the control manifest, in
+      # docs/registry/architecture.yaml and in the story that defines the ban. A
+      # repository-wide grep would fail on the documentation that states the rule.
+      #
+      # Two checks, because a gravity_tuning.tres can exist with no occurrence
+      # of the token inside it: file CONTENT, then file NAMES.
+      - name: Enforce the ADR-0006 D6.7 GravityTuning ban (V8)
+        run: |
+          set -euo pipefail
+          # grep exits 1 when it finds nothing. Capture the match and set the
+          # exit code below. A bare grep in this step would pass forever.
+          violations=$(
+            {
+              grep -rnE 'GravityTuning|gravity_tuning' src/ || true
+              find src -iname '*gravity*tuning*' -print || true
+            }
+          )
+          if [ -n "$violations" ]; then
+            echo "::error::ADR-0006 D6.7 violation - no GravityTuning script or resource. ADR-0001 part 7 keeps the jump constants on Player."
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: no GravityTuning script, resource or file name in src/"
+
       - name: Run GdUnit4 Tests
         uses: MikeSchulze/gdUnit4-action@v1
         with:

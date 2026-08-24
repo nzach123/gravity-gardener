@@ -166,7 +166,7 @@ stories:
     name: "CI greps for V6, V7 and V8"
     file: "production/epics/tuning-resources/story-006-ci-greps-for-tuning-bans.md"
     priority: must-have
-    status: ready-for-dev
+    status: review
     owner: "devops-engineer"
     estimate_days: 0.2
     blocker: ""

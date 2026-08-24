@@ -1,12 +1,12 @@
 # Story 006: CI greps for V6, V7 and V8
 
 > **Epic**: Tuning Resources
-> **Status**: Ready
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1-1.5 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-24
 
 ## Context
 
@@ -45,23 +45,23 @@ ban. Match that step's shape and placement.
 
 *From ADR-0006 Validation Criteria V6, V7 and V8:*
 
-- [ ] **V6 — path literal ban.** `.github/workflows/tests.yml` gains a step that
+- [x] **V6 — path literal ban.** `.github/workflows/tests.yml` gains a step that
       greps for the literal `res://src/resources/tuning/` across the repository and
       fails the job if any match appears **outside `src/scripts/tuning/`**.
-- [ ] **V7 — runtime mutation ban.** The same or an adjacent step greps `src/**/*.gd`
+- [x] **V7 — runtime mutation ban.** The same or an adjacent step greps `src/**/*.gd`
       for an assignment to a property of `Tuning.WATERING`, `Tuning.OXYGEN` or
       `Tuning.PROP` (the shape `Tuning.PROP.<anything> =`), and for `.duplicate()`
       called on any of the three. It fails the job on a match.
-- [ ] **V8 — no `GravityTuning`.** A step greps the repository for `GravityTuning`
+- [x] **V8 — no `GravityTuning`.** A step greps the repository for `GravityTuning`
       and `gravity_tuning` (covering both `gravity_tuning.gd` and
       `gravity_tuning.tres`) and fails the job on any match.
-- [ ] Every step fails the CI job with a non-zero exit on a match, and prints the
+- [x] Every step fails the CI job with a non-zero exit on a match, and prints the
       offending file and line, so the failure is self-explaining.
-- [ ] Each failure message names its ADR clause (D6.3, D6.5, D6.7), so a developer
+- [x] Each failure message names its ADR clause (D6.3, D6.5, D6.7), so a developer
       who trips it can find the reasoning without asking.
-- [ ] The steps run in the same CI job as the existing gdUnit4 step, so a violation
+- [x] The steps run in the same CI job as the existing gdUnit4 step, so a violation
       is caught in the same run as everything else.
-- [ ] The steps pass on the repository as committed after Stories 002-005 land.
+- [x] The steps pass on the repository as committed after Stories 002-005 land.
 - [ ] Verified once on a scratch branch, one violation per check, then reverted:
       - A `res://src/resources/tuning/prop_tuning.tres` literal added to a gameplay
         script → V6 step fails
@@ -180,11 +180,11 @@ later reader does not assume more protection than exists.
 Verify each planted violation on a scratch branch, confirm the CI failure, then
 revert. Record all five results in the story's completion notes:
 
-- [ ] T6.5 — V6 fails on a path literal outside `src/scripts/tuning/`
-- [ ] T6.6 — V7 fails on a property assignment
-- [ ] T6.7 — V7 fails on `.duplicate()`
-- [ ] T6.8 — V8 fails on a `GravityTuning` script
-- [ ] T6.1 — all three steps pass on the clean tree
+- [x] T6.5 — V6 fails on a path literal outside `src/scripts/tuning/`
+- [x] T6.6 — V7 fails on a property assignment
+- [x] T6.7 — V7 fails on `.duplicate()`
+- [x] T6.8 — V8 fails on a `GravityTuning` script
+- [x] T6.1 — all three steps pass on the clean tree
 
 ---
 
@@ -196,7 +196,8 @@ revert. Record all five results in the story's completion notes:
 - Scratch-branch verification results recorded in the story's completion notes (a
   one-time manual verification, not a committed artifact)
 
-**Status**: [ ] Not yet created
+**Status**: [x] CI steps landed and verified locally. [ ] Not yet verified by a
+real CI run — see Implementation Record.
 
 ---
 
@@ -205,3 +206,92 @@ revert. Record all five results in the story's completion notes:
 - Depends on: Story 004 (hard — the V6 exclusion directory and the `Tuning.*` symbol
   must exist, or the checks guard nothing)
 - Unlocks: None
+
+---
+
+## Implementation Record
+
+*Written 2026-08-24.*
+
+### What changed
+
+`.github/workflows/tests.yml` gains three steps, named for the criterion each
+one carries:
+
+- **Enforce the ADR-0006 D6.3 tuning path-literal ban (V6)**
+- **Enforce the ADR-0006 D6.5 tuning runtime-mutation ban (V7)**
+- **Enforce the ADR-0006 D6.7 GravityTuning ban (V8)**
+
+All three sit after the ADR-0004 D4.6 step and before the GdUnit4 step, in the
+same job. A violation is caught in the same run as everything else. They are
+kept separate, so a failure names which of V6, V7 or V8 tripped.
+
+### Decisions the next author needs
+
+- **Exit-code inversion handled explicitly, three times.** `grep` returns `1`
+  when it finds *nothing*. Each step captures the matches into a variable and
+  sets the exit code with an `if`. A bare `grep` in a CI step passes forever
+  while looking correct. This is the same shape as the D4.6 step.
+- **V6 excludes the `src/scripts/tuning/` DIRECTORY, not `tuning.gd`.** The
+  check then needs no edit if the holder group grows.
+- **V6 is scoped to `src/`, and `tests/` is therefore out of scope by
+  construction rather than by an explicit exclusion.** The step comment says
+  so. `.tres` and `.tscn` files are excluded by `--include='*.gd'`, because a
+  path in authored data is exactly what D6.3 permits.
+- **V7 is partial, and the step comment says so.** An alias
+  (`var t := Tuning.PROP`), a dynamic `set("margin", 0.5)`, and a `@tool`
+  script that saves a mutated `.tres` all pass this grep. The ADR already
+  records D6.5 as enforced by review and grep, not by structure. A pass on
+  this step is not proof that no mutation exists.
+- **V7 does not fire on a comparison.** The pattern requires the `=` to follow
+  the identifier and optional whitespace, with an optional compound-assign
+  operator, and rejects a following `=`. So `!=`, `>=`, `<=` and `==` are not
+  matched, while `=`, `+=`, `-=`, `*=`, `/=` and `%=` are.
+- **V8 needs two checks, not one.** A `gravity_tuning.tres` can exist with no
+  occurrence of the token in its body. The content grep misses it; the
+  `find -iname` half catches it. T6.9 below is the case that proves this.
+- **V8 is scoped to `src/`.** The token `GravityTuning` appears legitimately in
+  `docs/architecture/`, in the control manifest, in
+  `docs/registry/architecture.yaml` and in this story file. A repository-wide
+  grep would fail on the documentation that states the ban.
+
+### Verification performed (locally, not in CI)
+
+The three `run:` bodies were extracted from the committed
+`.github/workflows/tests.yml` with a YAML parse and executed directly, so the
+shell under test is the workflow's own text and not a hand-copy.
+
+| # | Case | Result |
+|---|---|---|
+| T6.1 | Clean tree, all three steps | all exit `0` |
+| T6.2 | `tuning.gd` holding three tuning path literals | V6 exits `0`. Load-bearing: unfiltered, that file produces 3 hits |
+| T6.3 | `.tres` files naming tuning paths | not matched by `--include='*.gd'` |
+| T6.5 | A tuning path literal in a gameplay script | V6 fails, names file and line, cites D6.3 |
+| T6.6 | `Tuning.PROP.prop_gravity_scale = 1.5` | V7 fails, cites D6.5 |
+| T6.7 | `Tuning.OXYGEN.duplicate()` | V7 fails, cites D6.5 |
+| T6.8 | A new `src/scripts/tuning/gravity_tuning.gd` | V8 fails. Caught by **both** halves |
+| T6.9 | A new `gravity_tuning.tres`, token absent from its body | V8 fails. Caught by the **file-name half only** |
+| — | Near miss: `Tuning.PROP.x != 1.0` and `Tuning.OXYGEN.drain >= 2.0` | correctly NOT matched by V7 |
+
+Every planted file was deleted immediately after its run. `git status` confirms
+`.github/workflows/tests.yml` is the only modified file.
+
+### Open — blocks Complete
+
+**Two items, both recorded rather than fixed.**
+
+1. **The scratch-branch CI run did not happen.** The last acceptance criterion
+   and the Manual Verification block both ask for a CI failure to be observed.
+   What was done is a local execution of the workflow's own shell. The grep
+   logic is proven. The behaviour of the steps inside GitHub Actions is not.
+   This cannot be closed from here: the workflow triggers on `main`, this
+   repository's main branch is `development`, and **no CI run has ever fired on
+   this sprint's work**. Widening the trigger was ruled out of scope by the
+   developer. That decision is live, not closed. This item and CLR-005's
+   identical one close together or not at all.
+
+2. **T6.4 is vacuous today.** No file under `tests/` names a tuning path, so
+   the "tests are out of the checked scope" case has no live instance to
+   exercise. The scoping decision still holds and is stated in the V6 step
+   comment. It is untested because there is nothing to test it against, not
+   because it was skipped.
