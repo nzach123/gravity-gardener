@@ -9,10 +9,27 @@
 #   done           <->  Complete
 #   blocked        <->  Blocked
 #
-# Entries whose `file` points at an EPIC.md (or a doc path) are sprint tasks that
-# have no story file yet — story-creation runs and the architecture sweep. They are
-# tracked here so /sprint-status reflects the whole sprint, not only the 5 stories
-# that exist today.
+# ── 2026-08-24: expanded to one row per story file ───────────────────────────
+#
+# Three sprint tasks were each a single row while mapping to several story
+# files. That rolled-up shape hid real work: TUN-2 read as "blocked on editor
+# checks only" while containing an unstarted story, and level-validation story
+# 005 had no row at all. Every story file now has its own row, and `status` is
+# derived from that file's own Status header, not restated here.
+#
+# ID scheme: <EPIC>-<NNN>, where NNN is the story file number. Rows whose `file`
+# points at an EPIC.md or a doc path are sprint tasks with no story file —
+# story-creation runs, the architecture sweep, and the QA plan.
+#
+# Old -> new ID mapping, so earlier commit and doc references stay traceable:
+#   CLR-1..CLR-5 -> CLR-001..CLR-005   (already 1:1; renamed for consistency)
+#   TUN-1        -> TUN-001
+#   TUN-2        -> TUN-002 .. TUN-006 (5 rows)
+#   LV-1         -> LV-001 .. LV-004   (4 rows)
+#   LV-2         -> LV-006
+#   GA-1         -> GA-001 .. GA-007   (7 rows)
+#   ARCH-1, TUN-0, LV-0, GA-0, LS-0, QA-1 unchanged — these are not stories.
+#   LV-005 is new: it had no row before.
 
 sprint: 1
 goal: "Land the Foundation layer's data and validation base — collision registry, tuning resources, and level-load validation — so Core epics have something to build on, and close BUG-0001."
@@ -22,7 +39,8 @@ generated: "2026-08-18"
 updated: "2026-08-24"
 
 stories:
-  - id: "CLR-1"
+  # ── collision-layer-registry ────────────────────────────────────────────────
+  - id: "CLR-001"
     name: "Create the CollisionLayers registry and correct project.godot naming"
     file: "production/epics/collision-layer-registry/story-001-create-collision-layers-registry.md"
     priority: must-have
@@ -32,27 +50,27 @@ stories:
     blocker: ""
     completed: "2026-08-23"
 
-  - id: "CLR-2"
+  - id: "CLR-002"
     name: "Fix BUG-0001 — dead kill-plane masks on levels 05 and 06"
     file: "production/epics/collision-layer-registry/story-002-fix-bug-0001-kill-plane-masks.md"
     priority: must-have
     status: review
     owner: "gameplay-programmer"
     estimate_days: 0.25
-    blocker: "AC-5 — human playtest of the out-of-bounds fall in levels 05 and 06"
+    blocker: "AC-5 — human playtest of the out-of-bounds fall in levels 05 and 06. No agent can close this."
     completed: ""
 
-  - id: "CLR-3"
+  - id: "CLR-003"
     name: "Remove vestigial PlayerArea2D and dead moving-platform mask"
     file: "production/epics/collision-layer-registry/story-003-remove-dead-collision-configuration.md"
     priority: must-have
     status: review
     owner: "godot-gdscript-specialist"
     estimate_days: 0.15
-    blocker: ""
+    blocker: "AC-5 — editor smoke check of player.tscn and moving_platform.tscn. The windowed editor segfaults on this machine."
     completed: ""
 
-  - id: "CLR-4"
+  - id: "CLR-004"
     name: "Collision layer invariant test suite"
     file: "production/epics/collision-layer-registry/story-004-collision-layer-invariant-test-suite.md"
     priority: must-have
@@ -62,16 +80,17 @@ stories:
     blocker: ""
     completed: "2026-08-23"
 
-  - id: "CLR-5"
+  - id: "CLR-005"
     name: "CI grep enforcing the D4.6 runtime-mutation ban"
     file: "production/epics/collision-layer-registry/story-005-ci-grep-runtime-mutation-ban.md"
     priority: must-have
     status: review
     owner: "devops-engineer"
     estimate_days: 0.15
-    blocker: "AC-5 — needs a real CI run; the workflow triggers on main and this branch never fires it"
+    blocker: "AC-5 — needs a real CI run. The workflow triggers on `main`; this repo's main branch is `development` and no run has fired on this sprint's work. Widening the trigger was ruled out of scope by the developer — a live decision, not a closed one."
     completed: ""
 
+  # ── architecture ───────────────────────────────────────────────────────────
   - id: "ARCH-1"
     name: "Sweep hazards.md and level-flow.md into tr-registry.yaml (/architecture-review)"
     file: "docs/architecture/tr-registry.yaml"
@@ -82,6 +101,7 @@ stories:
     blocker: ""
     completed: ""
 
+  # ── tuning-resources ───────────────────────────────────────────────────────
   - id: "TUN-0"
     name: "Create stories for the tuning-resources epic"
     file: "production/epics/tuning-resources/EPIC.md"
@@ -92,7 +112,7 @@ stories:
     blocker: ""
     completed: "2026-08-23"
 
-  - id: "TUN-1"
+  - id: "TUN-001"
     name: "T4 spike — does @export_range clamp a hand-edited .tres?"
     file: "production/epics/tuning-resources/story-001-t4-export-range-clamp-spike.md"
     priority: must-have
@@ -102,16 +122,57 @@ stories:
     blocker: ""
     completed: "2026-08-24"
 
-  - id: "TUN-2"
-    name: "Implement WateringTuning / OxygenTuning / PropTuning and the Tuning accessor"
-    file: "production/epics/tuning-resources/EPIC.md"
+  - id: "TUN-002"
+    name: "Create the WateringTuning / OxygenTuning / PropTuning resource scripts"
+    file: "production/epics/tuning-resources/story-002-create-tuning-resource-scripts.md"
     priority: must-have
     status: review
     owner: "godot-gdscript-specialist"
-    estimate_days: 1.5
-    blocker: "Editor-only ACs: story 003 AC-1/AC-2 (open each .tres in the inspector, drag one slider to its bound) and story 002 smoke item 2 (the three classes appear in Create New Resource). The windowed editor segfaults on this machine — same human-check bucket as CLR-3. Story 005 also has one negative check that behaved differently from its AC: re-pointing a .tres at the wrong script is a parse error at load, not a group 1 failure, so V1 was never demonstrated red."
+    estimate_days: 0.3
+    blocker: "Smoke item 2 — confirm the three classes appear in Create New Resource. Editor-only."
     completed: ""
 
+  - id: "TUN-003"
+    name: "Author the three tuning .tres files"
+    file: "production/epics/tuning-resources/story-003-author-tuning-tres-files.md"
+    priority: must-have
+    status: review
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.15
+    blocker: "AC-1/AC-2 — open each .tres in the inspector and confirm its knob list; drag prop_gravity_scale and confirm it stops at 0.8 and 1.2, then REVERT BEFORE SAVING (the committed value must stay 1.0). Editor-only; see production/qa/smoke-2026-08-24.md."
+    completed: ""
+
+  - id: "TUN-004"
+    name: "Create the Tuning accessor"
+    file: "production/epics/tuning-resources/story-004-create-tuning-accessor.md"
+    priority: must-have
+    status: done
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.15
+    blocker: ""
+    completed: "2026-08-24"
+
+  - id: "TUN-005"
+    name: "Tuning validation suite"
+    file: "production/epics/tuning-resources/story-005-tuning-validation-suite.md"
+    priority: must-have
+    status: review
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.3
+    blocker: "One negative check behaved differently from its AC: re-pointing a .tres at the wrong script is a PARSE ERROR at load, not a group 1 failure, so V1 (the GH#73615 type-identity guard) was never demonstrated red. Do not weaken V1 to a null check to make it observable."
+    completed: ""
+
+  - id: "TUN-006"
+    name: "CI greps for V6, V7 and V8"
+    file: "production/epics/tuning-resources/story-006-ci-greps-for-tuning-bans.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "devops-engineer"
+    estimate_days: 0.2
+    blocker: ""
+    completed: ""
+
+  # ── level-validation ───────────────────────────────────────────────────────
   - id: "LV-0"
     name: "Create stories for the level-validation epic"
     file: "production/epics/level-validation/EPIC.md"
@@ -122,26 +183,58 @@ stories:
     blocker: ""
     completed: "2026-08-23"
 
-  - id: "LV-1"
-    name: "Implement 5 of 6 LevelValidation rules and their tests"
-    file: "production/epics/level-validation/EPIC.md"
+  - id: "LV-001"
+    name: "Validation scaffold and discovery"
+    file: "production/epics/level-validation/story-001-validation-scaffold-and-discovery.md"
     priority: must-have
     status: review
     owner: "gameplay-programmer"
-    estimate_days: 1.25
-    blocker: "Owed before close-out: /code-review on level_validation.gd and its four test files. Two doc-only amendments to ADR-0003 are also owed (not blocking, do not amend as part of LV-1): D3.3's printed V-WIRING table still shows 3 rows and marks hud as pending ADR-0010, but ADR-0010 and ADR-0011 are Accepted so the implemented table has 4 rows; and D3.3's frozen six-rule wording does not account for ADR-0011's V-BOUNDS, whose constant is now declared. Story 001's grep AC also needs scoping to code — it forbids find_children/get_nodes_in_group appearing at all, which collides with the AC requiring the ADR-0003 doc block that names them."
+    estimate_days: 0.3
+    blocker: ""
     completed: ""
 
-  - id: "LV-2"
-    name: "Close V-PROP-BUDGET and remove the BLOCKED-on-ADR-0006 note from ADR-0003"
-    file: "production/epics/level-validation/EPIC.md"
-    priority: should-have
-    status: backlog
+  - id: "LV-002"
+    name: "V-BUCKET-SUM and V-PLANT-MIN rules"
+    file: "production/epics/level-validation/story-002-bucket-sum-and-plant-min-rules.md"
+    priority: must-have
+    status: review
     owner: "gameplay-programmer"
-    estimate_days: 0.25
-    blocker: "Depends on TUN-2 and LV-1"
+    estimate_days: 0.3
+    blocker: ""
     completed: ""
 
+  - id: "LV-003"
+    name: "V-OXY-CAP and V-GRAV-EXPORT rules"
+    file: "production/epics/level-validation/story-003-oxygen-capacity-and-gravity-export-rules.md"
+    priority: must-have
+    status: review
+    owner: "gameplay-programmer"
+    estimate_days: 0.3
+    blocker: ""
+    completed: ""
+
+  - id: "LV-004"
+    name: "V-WIRING rule and the required-consumer table"
+    file: "production/epics/level-validation/story-004-wiring-rule-required-consumer-table.md"
+    priority: must-have
+    status: review
+    owner: "gameplay-programmer"
+    estimate_days: 0.3
+    blocker: ""
+    completed: ""
+
+  # ── QA ─────────────────────────────────────────────────────────────────────
+  - id: "QA-1"
+    name: "Author the sprint QA plan (/qa-plan sprint)"
+    file: "production/qa/qa-plan-sprint-1.md"
+    priority: must-have
+    status: backlog
+    owner: "qa-lead"
+    estimate_days: 0.25
+    blocker: ""
+    completed: ""
+
+  # ── story-creation runs ────────────────────────────────────────────────────
   - id: "GA-0"
     name: "Create stories for the gravity-authority epic"
     file: "production/epics/gravity-authority/EPIC.md"
@@ -151,16 +244,6 @@ stories:
     estimate_days: 0.25
     blocker: ""
     completed: "2026-08-23"
-
-  - id: "GA-1"
-    name: "Implement GravityAuthority autoload, broadcast, prop registry and force-wake"
-    file: "production/epics/gravity-authority/EPIC.md"
-    priority: should-have
-    status: backlog
-    owner: "gameplay-programmer"
-    estimate_days: 1.75
-    blocker: "Depends on ARCH-1"
-    completed: ""
 
   - id: "LS-0"
     name: "Create stories for the level-state epic"
@@ -172,12 +255,36 @@ stories:
     blocker: ""
     completed: ""
 
-  - id: "QA-1"
-    name: "Author the sprint QA plan (/qa-plan sprint)"
-    file: "production/qa/qa-plan-sprint-1.md"
-    priority: nice-to-have
-    status: backlog
-    owner: "qa-lead"
-    estimate_days: 0.25
-    blocker: ""
-    completed: ""
+# ── Cut to Sprint 2 on 2026-08-24 ──────────────────────────────────────────────
+#
+# These rows are carried here so their derived estimates and real blockers are
+# not re-discovered next sprint. They are NOT part of Sprint 1 and must not be
+# counted in its burndown.
+#
+# GA-001..GA-007 — the gravity-authority epic. Cut at the sprint plan's own
+#   declared cut line. Planned at 1.75 d as a single task; the 7 Ready story
+#   files total 22.5 h ≈ 2.83 d, a ~60% under-estimate. Depends on ARCH-1.
+#
+#     GA-001  GravityAuthority autoload and guards            M (3-4 h)  0.44
+#     GA-002  Direction easing and the exported rate          S (2-3 h)  0.31
+#     GA-003  Player gravity component becomes a consumer     L (4 h)    0.50
+#     GA-004  Zones report to the authority, clear the        M (3 h)    0.38
+#             Area2D override
+#     GA-005  Level default gravity and reset on load         M (3 h)    0.38
+#     GA-006  Default-space gravity write                     M (3-4 h)  0.44
+#     GA-007  Prop registry and the force-wake pass           M (3 h)    0.38
+#                                                             total      2.83
+#
+# LV-005  Wire validate() into LevelRoot._ready() at step (a)  M  0.30
+#   blocked: the level-state epic must land first. LevelState and OxygenState do
+#   not exist, and this story's subject is the ORDERING between validate() and
+#   their construction. Scheduling block, not a design gap. Had NO row before
+#   2026-08-24 — the rolled-up LV-1 task hid it.
+#
+# LV-006  V-PROP-BUDGET and V-BOUNDS                           M  0.30
+#   (was LV-2.) Blocked on TWO prerequisites, not one. PropTuning landed in
+#   b8dba3c and satisfies the first. The second is `class_name PropBody` under
+#   ADR-0011 — no PropBody exists in src/scripts/ and NO EPIC COVERS PHYSICS
+#   PROPS. index.md files it under "Not yet epic'd". LV-006 is unschedulable
+#   until that epic exists. Earlier notes calling LV-2 "now genuinely unblocked"
+#   were wrong.
