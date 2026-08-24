@@ -88,7 +88,7 @@ sweep, the QA plan — keep their original ID.
 | LV-002 | `V-BUCKET-SUM` and `V-PLANT-MIN` | gameplay-programmer | 0.30 | review | Both mismatch directions fire; `V-PLANT-MIN` reports per plant |
 | LV-003 | `V-OXY-CAP` and `V-GRAV-EXPORT` | gameplay-programmer | 0.30 | review | Absent export is a breach, not a skip |
 | LV-004 | `V-WIRING` and the required-consumer table | gameplay-programmer | 0.30 | review | Four rows; both authoring shapes resolve |
-| QA-1 | `/qa-plan sprint` | qa-lead | 0.25 | backlog | Test cases defined per story |
+| QA-1 | `/qa-plan sprint` | qa-lead | 0.25 | **done** | Test cases defined per story — `production/qa/qa-plan-sprint-1.md` |
 
 **QA-1 was promoted from Nice-to-Have to Must Have on 2026-08-24.** This
 sprint's Definition of Done requires `production/qa/qa-plan-sprint-1.md`. A
@@ -106,7 +106,7 @@ Nice-to-Have that the DoD depends on makes the DoD unsatisfiable by definition.
 |----|------|-------------|-----------|--------|---------------------|
 | LS-0 | `/create-stories level-state` | producer | 0.25 | backlog | Stories written |
 
-## Remaining Work: 1.2 Days Against 6
+## Remaining Work: 0.95 Days Against 6
 
 Agent-doable work left in this sprint:
 
@@ -114,9 +114,10 @@ Agent-doable work left in this sprint:
 |----|------|-----------|
 | TUN-006 | CI greps for V6/V7/V8 | 0.20 |
 | ARCH-1 | `tr-registry.yaml` sweep | 0.50 |
-| QA-1 | `/qa-plan sprint` | 0.25 |
 | LS-0 | `/create-stories level-state` | 0.25 |
-| | **Total** | **1.20** |
+| | **Total** | **0.95** |
+
+*(QA-1 completed 2026-08-24 — `production/qa/qa-plan-sprint-1.md`.)*
 
 **The four human-only checks are now the sprint's critical path, not the code.**
 They are parked in `production/qa/smoke-2026-08-24.md`:
@@ -193,7 +194,7 @@ Deferred to Sprint 2 and stated here so they are not pulled in silently:
 
 - [ ] All Must Have tasks completed
 - [ ] All tasks pass acceptance criteria
-- [ ] QA plan exists (`production/qa/qa-plan-sprint-1.md`) — **QA-1**
+- [x] QA plan exists (`production/qa/qa-plan-sprint-1.md`) — **QA-1**, done 2026-08-24
 - [ ] All Logic/Integration stories have passing unit/integration tests
 - [ ] Smoke check passed (`/smoke-check sprint`)
 - [ ] QA sign-off report: APPROVED or APPROVED WITH CONDITIONS (`/team-qa sprint`)

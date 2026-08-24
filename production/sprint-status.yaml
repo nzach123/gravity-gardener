@@ -228,11 +228,11 @@ stories:
     name: "Author the sprint QA plan (/qa-plan sprint)"
     file: "production/qa/qa-plan-sprint-1.md"
     priority: must-have
-    status: backlog
+    status: done
     owner: "qa-lead"
     estimate_days: 0.25
     blocker: ""
-    completed: ""
+    completed: "2026-08-24"
 
   # ── story-creation runs ────────────────────────────────────────────────────
   - id: "GA-0"
