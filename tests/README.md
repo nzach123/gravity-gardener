@@ -34,12 +34,26 @@ godot --headless --path . -s addons/gdUnit4/bin/GdUnitCmdTool.gd \
 tests are pure math and unaffected; any future test that drives input must run
 in a real window instead.
 
-**Working invocation on this machine** (verified 2026-08-13, 52/52 passing):
+**Working invocation on this machine** (verified 2026-08-24, 157/157 passing):
 ```bash
 "/c/00_repos/00-Godot-installer/Godot_v4.7.1-stable_win64.exe/Godot_v4.7.1-stable_win64_console.exe" \
   --headless --path . -s addons/gdUnit4/bin/GdUnitCmdTool.gd \
-  --ignoreHeadlessMode -a res://tests/unit
+  --ignoreHeadlessMode -c \
+  -a res://tests/unit \
+  -a res://tests/integration
 ```
+
+> **Both `-a` paths are required, and this was wrong until 2026-08-24.** The
+> command previously documented here passed `res://tests/unit` only, which
+> silently excluded `tests/integration/main/kill_area_death_test.gd` — 8 cases,
+> and the regression guard for BUG-0001. Every "149/149 green" reported during
+> Sprint 1 omitted them. With both paths the suite is 157/157. CI already passes
+> both paths, so this affected local runs only.
+>
+> **`-c` is required for any run you intend to read.** Without it the runner
+> stops at the first failing test and every later failure is hidden, so a red
+> run reports one failure regardless of how many exist. Observed across five
+> deliberate-failure runs on 2026-08-23.
 
 Two gotchas in that path:
 - `Godot_v4.7.1-stable_win64.exe` is a **directory** containing the real binary
