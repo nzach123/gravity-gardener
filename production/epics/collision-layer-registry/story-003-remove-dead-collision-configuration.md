@@ -1,12 +1,12 @@
 # Story 003: Remove vestigial PlayerArea2D and dead moving-platform mask
 
 > **Epic**: Collision Layer Registry
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1 hour)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-23
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -55,12 +55,19 @@ logic are added or altered.
       with a project-wide search before deleting (ADR-0004's own instruction).
 - [x] `collision_mask = 2` is removed from the `AnimatableBody2D` node in
       `src/scenes/moving_platform.tscn` (currently at line 16).
-- [ ] The player scene (`src/scenes/player/player.tscn`) loads with zero
+- [x] The player scene (`src/scenes/player/player.tscn`) loads with zero
       script errors or warnings in the Godot console, and the moving-platform
       scene (`src/scenes/moving_platform.tscn`) loads and animates on its
       configured path unchanged — confirmed by manual smoke check, since this
       is a pure deletion of unreferenced configuration with no behavior to
       assert via automated test.
+      **METHOD SUBSTITUTED for the console clause, 2026-08-25.** The windowed editor
+      segfaults on this machine, so "zero errors in the Godot console" was not
+      observed by that method. Covered instead by the headless probe at
+      `production/qa/evidence/editor-facts-probe-2026-08-25.md` and by both scenes loading at
+      runtime without error during the developer playtest. The animation and
+      behaviour clauses were confirmed directly in that playtest. AC NOT
+      reworded.
 
 ---
 
@@ -159,13 +166,14 @@ deliberate configuration.*
 Acceptance criterion 5 requires this explicitly, and it is the only proof that
 the deletions were clean.
 
-- [ ] `src/scenes/player/player.tscn` opens in the editor with **zero** script
-      errors and zero warnings in the console
-- [ ] `src/scenes/moving_platform.tscn` opens clean
-- [ ] The moving platform still animates along its configured path, unchanged —
+- [~] `src/scenes/player/player.tscn` opens in the editor with **zero** script
+      errors and zero warnings in the console — METHOD SUBSTITUTED (headless
+      probe + runtime load); the windowed editor segfaults here
+- [~] `src/scenes/moving_platform.tscn` opens clean — same substitution
+- [x] The moving platform still animates along its configured path, unchanged —
       the deleted mask was inert (L4), so any behaviour change here means
       something else was removed by mistake
-- [ ] The player scene runs in a level: movement, jump, and gravity flip all
+- [x] The player scene runs in a level: movement, jump, and gravity flip all
       behave as before
 
 **Estimated test count**: ~4 assertions inside story 004's file, plus a 4-item
@@ -230,13 +238,31 @@ day and passes.
 note in the QA Test Cases section above. It expected a mask of `0`; the engine
 default is `1`.
 
-**Still required before this story can close** — criterion 5, none of which can
-be done headlessly:
+**Criterion 5 — CLOSED 2026-08-25.** Items 3 and 4 by developer playtest; items 1 and 2
+by substituted method, because the windowed editor segfaults on this machine:
 
-- [ ] `player.tscn` opens in the editor with zero script errors and zero console warnings
-- [ ] `moving_platform.tscn` opens clean
-- [ ] The moving platform still animates along its configured path, unchanged
-- [ ] The player scene runs in a level: movement, jump and gravity flip behave as before
+- [~] `player.tscn` opens in the editor with zero script errors and zero console warnings
+      — METHOD SUBSTITUTED: headless probe (`production/qa/evidence/editor-facts-probe-2026-08-25.md`)
+      plus a clean runtime load during the playtest
+- [~] `moving_platform.tscn` opens clean — same substitution
+- [x] The moving platform still animates along its configured path, unchanged
+- [x] The player scene runs in a level: movement, jump and gravity flip behave as before
+
+Evidence: `production/qa/evidence/bug-0001-killplane-playtest-2026-08-25.md`. Sign-off: nzach123.
 
 The deleted mask was inert per L4, so any behaviour change in the platform means
 something else was removed by mistake.
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: all passing. AC-5 items 3-4 by developer playtest; items 1-2 by
+substituted method, annotated inline and NOT reworded.
+**Deviations**: ADVISORY — the editor-console clause of AC-5 was verified by headless
+probe and runtime load rather than by opening the editor. No route to the stated method
+exists on this machine.
+**Test Evidence**: Integration — `production/qa/evidence/bug-0001-killplane-playtest-2026-08-25.md`,
+plus `production/qa/evidence/editor-facts-probe-2026-08-25.md`.
+**Code Review**: Deferred — `/code-review` to be run before sprint close-out. Lean
+review mode; recorded per the /story-done Phase 5 gate.

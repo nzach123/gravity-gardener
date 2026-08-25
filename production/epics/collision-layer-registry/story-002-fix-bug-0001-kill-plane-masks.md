@@ -1,12 +1,12 @@
 # Story 002: Fix BUG-0001 — dead kill-plane masks on levels 05 and 06
 
 > **Epic**: Collision Layer Registry
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: S (1-2 hours, plus a playtest of both levels)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-23
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -209,7 +209,7 @@ of both levels' out-of-bounds fall, since the fix is a live behaviour change
 that the ADR explicitly calls out as needing human verification, not just a
 passing test.
 
-**Status**: [x] Automated regression guard landed and passing. [ ] Playtest outstanding (AC-5).
+**Status**: [x] Automated regression guard landed and passing. [x] Playtest complete (AC-5), 2026-08-25.
 
 ---
 
@@ -265,16 +265,28 @@ reads exactly like a pass. Isolate a single test with a scratch suite instead.
 
 ### Open — blocks Complete
 
-**AC-5, the playtest, is not done.** This is a live behaviour change: a fall
+**AC-5, the playtest, is DONE as of 2026-08-25.** This was a live behaviour change: a fall
 that used to strand the player now restarts the level. Three checks are owed,
 and the third cannot be automated at all:
 
-- [ ] Level 05: fall out of bounds. The level restarts cleanly — no stranding,
+- [x] Level 05: fall out of bounds. The level restarts cleanly — no stranding,
       no double restart, no stuck camera
-- [ ] Level 06: same
-- [ ] Neither level has an in-bounds spot where the kill plane fires
+- [x] Level 06: same
+- [x] Neither level has an in-bounds spot where the kill plane fires
       unexpectedly (R2 — a kill area inside playable space is forbidden and is
       not automatically detectable)
 
-Evidence goes to `production/qa/evidence/`. Sign-off: nzach123.
-`BUG-0001` stays `Open` until then.
+**CLOSED 2026-08-25 by developer playtest.** All three checks PASS. Evidence:
+`production/qa/evidence/bug-0001-killplane-playtest-2026-08-25.md`. Sign-off: nzach123.
+`BUG-0001` is closed.
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: all passing. AC-5's three playtest checks closed by developer sign-off.
+**Deviations**: None.
+**Test Evidence**: Integration — automated regression guard in the collision layer
+suite, plus the developer playtest recorded at `production/qa/evidence/bug-0001-killplane-playtest-2026-08-25.md`. BUG-0001 closed as a result.
+**Code Review**: Deferred — `/code-review` to be run before sprint close-out. Lean
+review mode; recorded per the /story-done Phase 5 gate.

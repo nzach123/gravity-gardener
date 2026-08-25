@@ -54,21 +54,21 @@ stories:
     name: "Fix BUG-0001 — dead kill-plane masks on levels 05 and 06"
     file: "production/epics/collision-layer-registry/story-002-fix-bug-0001-kill-plane-masks.md"
     priority: must-have
-    status: review
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.25
-    blocker: "AC-5 — human playtest of the out-of-bounds fall in levels 05 and 06. No agent can close this."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   - id: "CLR-003"
     name: "Remove vestigial PlayerArea2D and dead moving-platform mask"
     file: "production/epics/collision-layer-registry/story-003-remove-dead-collision-configuration.md"
     priority: must-have
-    status: review
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.15
-    blocker: "AC-5 — editor smoke check of player.tscn and moving_platform.tscn. The windowed editor segfaults on this machine."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   - id: "CLR-004"
     name: "Collision layer invariant test suite"
