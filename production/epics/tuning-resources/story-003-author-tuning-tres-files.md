@@ -1,12 +1,12 @@
 # Story 003: Author the three tuning `.tres` files at GDD defaults
 
 > **Epic**: Tuning Resources
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Estimate**: S (1 hour)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-24
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -293,3 +293,12 @@ before saving did not arise, because nothing was saved.
 - `production/qa/smoke-2026-08-24.md` — the `.tres` text checks and the negative
   verification runs
 - `tests/unit/tuning/tuning_resources_test.gd` — permanent proof, groups 4 and 5
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: 8/8 passing (no deferred items)
+**Deviations**: ADVISORY, accepted 2026-08-25. AC-4, AC-5 and AC-6 name an editor METHOD (open the inspector, drag the slider, view the checkbox), not only a fact. They were closed by a headless probe reading the same `@export_range` metadata one layer down. Each AC carries an inline METHOD SUBSTITUTED note and NONE were reworded. Accepted because the windowed editor segfaults on this machine and the godot-ai MCP plugin disables itself under a headless editor (`addons/godot_ai/plugin.gd:211`), so no route to the stated method exists here. An in-editor re-check is a Sprint-2 verification item, not a Sprint-1 blocker.
+**Test Evidence**: Config/Data: smoke check pass recorded in `production/qa/smoke-2026-08-24.md`.
+**Code Review**: Deferred — `/code-review` to be run on these files before sprint close-out. Lean review mode; recorded per the /story-done Phase 5 gate.

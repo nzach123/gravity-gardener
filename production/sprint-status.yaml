@@ -87,7 +87,7 @@ stories:
     status: review
     owner: "devops-engineer"
     estimate_days: 0.15
-    blocker: "AC-5 — needs a real CI run. The workflow triggers on `main`; this repo's main branch is `development` and no run has fired on this sprint's work. Widening the trigger was ruled out of scope by the developer — a live decision, not a closed one."
+    blocker: "AC-5 — needs a scratch-branch CI run with one deliberate violation, confirmed red, then reverted. The trigger was widened to `development` on 2026-08-25 (d77337c), so the workflow can now fire; before that it never had. The run itself is still outstanding."
     completed: ""
 
   # ── architecture ───────────────────────────────────────────────────────────
@@ -126,21 +126,21 @@ stories:
     name: "Create the WateringTuning / OxygenTuning / PropTuning resource scripts"
     file: "production/epics/tuning-resources/story-002-create-tuning-resource-scripts.md"
     priority: must-have
-    status: review
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.3
-    blocker: "Smoke item 2 — confirm the three classes appear in Create New Resource. Editor-only."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   - id: "TUN-003"
     name: "Author the three tuning .tres files"
     file: "production/epics/tuning-resources/story-003-author-tuning-tres-files.md"
     priority: must-have
-    status: review
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.15
-    blocker: "AC-1/AC-2 — open each .tres in the inspector and confirm its knob list; drag prop_gravity_scale and confirm it stops at 0.8 and 1.2, then REVERT BEFORE SAVING (the committed value must stay 1.0). Editor-only; see production/qa/smoke-2026-08-24.md."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   - id: "TUN-004"
     name: "Create the Tuning accessor"
@@ -169,7 +169,7 @@ stories:
     status: review
     owner: "devops-engineer"
     estimate_days: 0.2
-    blocker: ""
+    blocker: "Final AC — the same scratch-branch CI run CLR-005 needs: one deliberate violation per check (V6 path literal, V7 assignment, V7 .duplicate(), V8 GravityTuning script), each confirmed red, then reverted. Unblocked by the trigger widening on 2026-08-25 (d77337c); the run is still outstanding. The blocker field was previously EMPTY, which wrongly read as no gate."
     completed: ""
 
   # ── level-validation ───────────────────────────────────────────────────────
@@ -187,41 +187,41 @@ stories:
     name: "Validation scaffold and discovery"
     file: "production/epics/level-validation/story-001-validation-scaffold-and-discovery.md"
     priority: must-have
-    status: review
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.3
     blocker: ""
-    completed: ""
+    completed: "2026-08-25"
 
   - id: "LV-002"
     name: "V-BUCKET-SUM and V-PLANT-MIN rules"
     file: "production/epics/level-validation/story-002-bucket-sum-and-plant-min-rules.md"
     priority: must-have
-    status: review
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.3
     blocker: ""
-    completed: ""
+    completed: "2026-08-25"
 
   - id: "LV-003"
     name: "V-OXY-CAP and V-GRAV-EXPORT rules"
     file: "production/epics/level-validation/story-003-oxygen-capacity-and-gravity-export-rules.md"
     priority: must-have
-    status: review
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.3
     blocker: ""
-    completed: ""
+    completed: "2026-08-25"
 
   - id: "LV-004"
     name: "V-WIRING rule and the required-consumer table"
     file: "production/epics/level-validation/story-004-wiring-rule-required-consumer-table.md"
     priority: must-have
-    status: review
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.3
     blocker: ""
-    completed: ""
+    completed: "2026-08-25"
 
   # ── QA ─────────────────────────────────────────────────────────────────────
   - id: "QA-1"

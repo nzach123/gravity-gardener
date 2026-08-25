@@ -1,12 +1,12 @@
 # Story 002: V-BUCKET-SUM and V-PLANT-MIN
 
 > **Epic**: Level Load Validation
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-24
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -233,3 +233,12 @@ sprint. This record closes the paperwork, which had not been written.
 `tests/unit/level/level_validation_watering_rules_test.gd` contributes 14 cases.
 Depth coverage is explicit: `test_bucket_sum_counts_buckets_at_any_depth` and
 `test_plant_min_checks_plants_at_any_depth`.
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: 8/8 passing (no deferred items)
+**Deviations**: None.
+**Test Evidence**: Logic: `tests/unit/level/level_validation_watering_rules_test.gd` — present in the green run `reports/report_49` (178/178, exit 0, 2026-08-25).
+**Code Review**: Deferred — `/code-review` to be run on these files before sprint close-out. Lean review mode; recorded per the /story-done Phase 5 gate.

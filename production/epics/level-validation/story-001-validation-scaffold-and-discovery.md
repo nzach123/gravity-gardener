@@ -1,12 +1,12 @@
 # Story 001: LevelValidation scaffold — type-scan discovery and count_buckets()
 
 > **Epic**: Level Load Validation
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-24
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -266,3 +266,12 @@ forward reference — "rules arrive in stories 002-004 and 006" — anticipated.
 and `_check_wiring`. The clause was a sequencing condition at story-001 close,
 not a permanent property, so it is annotated on the AC rather than treated as a
 failure. `V-PROP-BUDGET` and `V-BOUNDS` still have no branch, awaiting story 006.
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: 9/9 passing (no deferred items)
+**Deviations**: None.
+**Test Evidence**: Logic: `tests/unit/level/level_validation_scaffold_test.gd` — present in the green run `reports/report_49` (178/178, exit 0, 2026-08-25).
+**Code Review**: Deferred — `/code-review` to be run on these files before sprint close-out. Lean review mode; recorded per the /story-done Phase 5 gate.

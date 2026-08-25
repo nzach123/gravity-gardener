@@ -1,12 +1,12 @@
 # Story 002: Create the three tuning `Resource` scripts
 
 > **Epic**: Tuning Resources
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-24
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -260,3 +260,12 @@ does not prove the dialog draws it. Full detail and the limitation statement:
 
 The probe only loads and reads. No source file, scene or resource changed during
 verification.
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: 9/9 passing (no deferred items)
+**Deviations**: None.
+**Test Evidence**: Config/Data: smoke check pass recorded in `production/qa/smoke-2026-08-24.md`.
+**Code Review**: Deferred — `/code-review` to be run on these files before sprint close-out. Lean review mode; recorded per the /story-done Phase 5 gate.
