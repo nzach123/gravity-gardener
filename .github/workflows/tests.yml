@@ -6,6 +6,21 @@ on:
   pull_request:
     branches: [development, main]
 
+# MikeSchulze/gdUnit4-action runs dorny/test-reporter internally, which creates
+# a check run to surface test results on the PR. A workflow's GITHUB_TOKEN
+# cannot do that without checks: write, and the run fails at the reporting step
+# with "Resource not accessible by integration" even when every test passed.
+#
+# Declaring the block explicitly also pins the rest to read-only rather than
+# inheriting whatever the repository's default happens to be.
+#
+# Note this cannot work for a pull request from a FORK: GITHUB_TOKEN is
+# read-only there regardless of what this block asks for. Same-repo PRs and
+# pushes, which is all this project uses, are fine.
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   test:
     name: Run GdUnit4 Tests
