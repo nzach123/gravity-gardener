@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/suit-oxygen.md
 > **Architecture Module**: `OxygenDrain` · `OxygenAccessibility` (autoload)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories oxygen-drain`
+> **Stories**: 6 — see the Stories table below
 
 ## Overview
 
@@ -75,6 +75,62 @@ This epic is complete when:
 - All Visual/Feel and UI stories have evidence docs with sign-off in `production/qa/evidence/`
 - The pause-invariant scene test is either written, or recorded as owed to the Presentation HUD epic
 
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | `OxygenAccessibility` — one clamped field, scene autoload, no `class_name` | Logic | Ready | ADR-0008 (§3) |
+| 002 | `OxygenDrain` — bind, `+100` priority, accessibility-scaled drain call | Logic | Ready | ADR-0008 (§1, §3) |
+| 003 | The kill policy — freeze-if-complete, arm, restart next frame | Logic | Ready | ADR-0008 (§1) · ADR-0005 |
+| 004 | Depletion-frame outcomes — `suit-oxygen` AC8 and `watering-system` AC13 | Integration | Ready | ADR-0005 (D5.2–D5.6) |
+| 005 | Wall-clock fidelity — capacity seconds ±0.1 s, at multiplier 1.0 and 0.5 | Integration | Ready | ADR-0008 (§3) |
+| 006 | Pause halts drain, and the ancestor `process_mode` invariant | Integration | Ready | ADR-0008 (§2) · ADR-0014 |
+
+Build order is 001 → 002 → 003 → (004, 005, 006 in any order). Story 001 is the
+only one that can start before the `level-state` epic lands — the autoload has no
+dependency on any level object.
+
+### Scope corrections found at decomposition
+
+Three, recorded here rather than left for `/story-done` to discover:
+
+1. **The Overview above overclaims the threshold bands.** It says "The drain node
+   also emits threshold changes at the 50 / 25 / 10 percent bands". **ADR-0008
+   assigns `OxygenDrain` no band behaviour at all**, and `level-state` story 002's
+   *AC10, logic half* already owns `threshold_changed` on `OxygenState` — where it
+   belongs, since the bands are a property of the tank, not of the node driving it.
+   **No story in this epic takes the bands.** The Overview sentence is left as
+   written and corrected here; the Presentation HUD epic (ADR-0010) owns what the
+   player sees.
+2. **ADR-0008's Key Interfaces block declares `class_name OxygenAccessibility` on
+   a node whose autoload singleton name is also `OxygenAccessibility`.** ADR-0001
+   bans exactly this shape on `gravity_authority.gd` and the control manifest
+   carries that ban, but there is **no oxygen equivalent** in the manifest, which
+   is why the slip went unremarked. The prototype already omits `class_name`.
+   Story 001 follows ADR-0001 and the prototype, and verifies the collision
+   behaviour against the 4.7.1 binary rather than assuming it. **Neither ADR is
+   amended.**
+3. **ADR-0008's `@export_range(0.5, 1.0, 0.01)` does not actually clamp.** T4 is
+   VERIFIED TRUE on 4.7.1 — `@export_range` is an inspector hint, not a validator
+   — so a direct assignment escapes the range, and only
+   `set_drain_rate_multiplier()` clamps. The prototype hardened this with a
+   property-level `set:`. Story 001 implements the prototype's shape; that
+   delivers ADR-0008's decision (the 0.5–1.0 range) rather than departing from it.
+
+### The pause risk is narrower than the row above says
+
+The Risks table and `production/epics/index.md` both carry "**OPEN** — scene test
+owed once a pause menu exists". **A test does not need a menu in order to pause**
+— a gdUnit4 scene test sets `SceneTree.paused` itself. Story 006 therefore closes
+`TR-oxygen-006`'s automated half now, including the ancestor-chain walk that
+ADR-0008 says "is enforced by nothing but this document". What genuinely stays
+owed to the Presentation HUD epic is narrower: the same test re-run with a real
+`PROCESS_MODE_ALWAYS` overlay parented under `LevelRoot`, and
+`accessibility-requirements.md` T9's manual run (whose pass condition includes
+"HUD freezes per U10.3"). **Flagged, not amended** — ADR-0008 and the index risk
+row are unchanged.
+
 ## Next Step
 
-Run `/create-stories oxygen-drain` to break this epic into implementable stories.
+Run `/story-readiness production/epics/oxygen-drain/story-001-oxygen-accessibility-autoload.md`,
+then `/dev-story`. Work the stories in order — each carries a `Depends on:` field.

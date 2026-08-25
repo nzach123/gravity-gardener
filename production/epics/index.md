@@ -12,7 +12,7 @@ Control Manifest Version: 2026-08-17
 | [Collision Layer Registry](collision-layer-registry/EPIC.md) | Foundation | Physics Props | `physics-props.md` | 5 stories | Ready |
 | [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
 | [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | 6 stories | Ready |
-| [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | Not yet created | Ready |
+| [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | 6 stories | Ready |
 | [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | Not yet created | Ready |
 | [Physics Props](physics-props/EPIC.md) | Presentation | Physics Props | `physics-props.md` | 6 stories | Ready — scheduling deferred |
 
@@ -110,6 +110,8 @@ the D11.1 exception noted above.
 | `V-HAZARD-MASK` and `V-HAZARD-SPAWN` are owed and absent from ADR-0003's seven-rule set | `level-validation` / *(Hazards)* | **OPEN** — `TR-hazards-011` / `TR-hazards-012`. Route decided 2026-08-24: a hazards ADR adds them to D3.3 in the same changeset, the mechanism ADR-0011 D11.7 used for `V-BOUNDS`. ADR-0003 is **not** reopened now. `V-HAZARD-SPAWN` also needs the headless extent read verified first — same 4.7.1 unknown as `V-BOUNDS` |
 | Reading an `Area2D` extent headlessly, on a node instantiated but never added to a tree, is unverified — not covered by ADR-0003 E1–E3 | `level-validation` | **OPEN** — verify against the 4.7.1 binary in story 006 |
 | ADR-0008 — the `LevelRoot`-ancestor `process_mode` invariant has no automated check | `oxygen-drain` | **OPEN** — scene test owed once a pause menu exists |
+| ADR-0008's Key Interfaces block declares `class_name OxygenAccessibility` on a node whose autoload singleton name is also `OxygenAccessibility`. ADR-0001 bans exactly this shape on `gravity_authority.gd` and the manifest carries that ban, but there is **no oxygen equivalent** in the manifest | `oxygen-drain` | **Flagged, not amended, 2026-08-24** — story 001 follows ADR-0001 and the prototype (which already omits `class_name`) and verifies the collision behaviour against the 4.7.1 binary. If the check confirms a hard conflict, the mechanism is a registry supersession entry or a manifest rule, not an edit to ADR-0008 |
+| `control-manifest.md` extracts **no rule from ADR-0014**, and its header is stale for ADR-0013 | *(cross-epic)* / `oxygen-drain` | **OPEN — `/create-control-manifest update` is owed.** Investigated 2026-08-24: the body cites ADR-0013 at two places, added by commit `584e1d8` without regenerating the header or bumping `Manifest Version`; ADR-0014 is cited **nowhere** (loose grep for `0014`, "pause gating", "terminal sequence" → zero hits). So this is a real regeneration, not the header edit it was first assumed to be. Bites `oxygen-drain` story 006, which has an Accepted governing ADR with no manifest rule to quote. Every story to date embeds `Manifest Version: 2026-08-17`, which `/story-readiness` checks against |
 | `level-flow.md` R10 — what follows the final level | `level-outcomes` | **BLOCKED** — design decision owed |
 | `complete_hold_duration` ⚠ unset (0.6 s proposed, 0.2–1.5 s range) | `level-outcomes` | **OPEN** — needs a human playtest, not an agent one |
 | No `pause` action exists in `project.godot` | `level-outcomes` | **Blocked** on `design/ux/pause-menu.md` |
