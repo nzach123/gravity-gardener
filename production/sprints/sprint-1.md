@@ -5,6 +5,17 @@
 > **Review Mode**: lean (PR-SPRINT producer gate skipped — not a phase gate)
 > **Generated**: 2026-08-18
 > **Revised**: 2026-08-24 (`/sprint-plan update`)
+> **Closed out**: 2026-08-25 — QA verdict **APPROVED WITH CONDITIONS**
+> **Retrospective**: `production/retrospectives/retro-sprint-1-2026-08-25.md`
+> **Successor**: `production/sprints/sprint-2.md`
+
+**Status at close-out: 20 of 22 rows done, must-have 17 of 19.** The status
+column in the tables below was refreshed on 2026-08-25 against
+`production/sprint-status-sprint-1.yaml`, which is the archived machine-readable
+record for this sprint. `production/sprint-status.yaml` now holds Sprint 2.
+
+The only outstanding work is **CI-1** — one live-fire CI run that closes both
+CLR-005 and TUN-006, and that needs a human. See Remaining Work below.
 
 ## Sprint Goal
 
@@ -71,23 +82,23 @@ sweep, the QA plan — keep their original ID.
 | ID | Task | Agent/Owner | Est. Days | Status | Acceptance Criteria |
 |----|------|-------------|-----------|--------|---------------------|
 | CLR-001 | CollisionLayers registry, correct `project.godot` naming | godot-gdscript-specialist | 0.25 | **done** | Warning-clean; constants match `[layer_names]` |
-| CLR-002 | Fix BUG-0001 dead kill-plane masks (levels 05, 06) | gameplay-programmer | 0.25 | review | Both levels restart on out-of-bounds fall; BUG-0001 closed |
-| CLR-003 | Remove vestigial `PlayerArea2D` and dead platform mask | godot-gdscript-specialist | 0.15 | review | Nodes deleted; no behaviour change |
+| CLR-002 | Fix BUG-0001 dead kill-plane masks (levels 05, 06) | gameplay-programmer | 0.25 | **done** | Both levels restart on out-of-bounds fall; BUG-0001 closed |
+| CLR-003 | Remove vestigial `PlayerArea2D` and dead platform mask | godot-gdscript-specialist | 0.15 | **done** | Nodes deleted; no behaviour change |
 | CLR-004 | Collision layer invariant test suite | qa-tester | 0.40 | **done** | Fails on each ADR-0004 criterion-1 violation |
 | CLR-005 | CI grep enforcing the D4.6 runtime-mutation ban | devops-engineer | 0.15 | review | CI step fails on a planted violation |
-| ARCH-1 | Sweep `hazards.md` / `level-flow.md` into `tr-registry.yaml` | technical-director | 0.50 | ready-for-dev | `TR-hazards-*` and level-flow entries exist |
+| ARCH-1 | Sweep `hazards.md` / `level-flow.md` into `tr-registry.yaml` | technical-director | 0.50 | **done** | `TR-hazards-*` and level-flow entries exist |
 | TUN-0 | `/create-stories tuning-resources` | producer | 0.25 | **done** | Stories written with TR-ID and ADR-0006 guidance |
 | TUN-001 | T4 spike — does `@export_range` clamp a hand-edited `.tres`? | godot-specialist | 0.50 | **done** | Executed against 4.7.1; result recorded |
-| TUN-002 | Create the three tuning resource scripts | godot-gdscript-specialist | 0.30 | review | Classes registered; `resource_local_to_scene = false` |
-| TUN-003 | Author the three tuning `.tres` files | godot-gdscript-specialist | 0.15 | review | Knobs match GDD defaults; committed `prop_gravity_scale` stays `1.0` |
+| TUN-002 | Create the three tuning resource scripts | godot-gdscript-specialist | 0.30 | **done** | Classes registered; `resource_local_to_scene = false` |
+| TUN-003 | Author the three tuning `.tres` files | godot-gdscript-specialist | 0.15 | **done** | Knobs match GDD defaults; committed `prop_gravity_scale` stays `1.0` |
 | TUN-004 | Create the `Tuning` accessor | godot-gdscript-specialist | 0.15 | **done** | `preload`, not `load`; no autoload |
-| TUN-005 | Tuning validation suite | godot-gdscript-specialist | 0.30 | review | V1–V4 and V9 pass headless |
-| TUN-006 | **CI greps for V6, V7 and V8** | devops-engineer | 0.20 | **ready-for-dev** | CI step fails on a planted violation |
+| TUN-005 | Tuning validation suite | godot-gdscript-specialist | 0.30 | **done** | V1–V4 and V9 pass headless |
+| TUN-006 | **CI greps for V6, V7 and V8** | devops-engineer | 0.20 | review | CI step fails on a planted violation |
 | LV-0 | `/create-stories level-validation` | producer | 0.25 | **done** | Stories written |
-| LV-001 | Validation scaffold and discovery | gameplay-programmer | 0.30 | review | Seven codes declared; discovery finds nodes at any depth and with no owner |
-| LV-002 | `V-BUCKET-SUM` and `V-PLANT-MIN` | gameplay-programmer | 0.30 | review | Both mismatch directions fire; `V-PLANT-MIN` reports per plant |
-| LV-003 | `V-OXY-CAP` and `V-GRAV-EXPORT` | gameplay-programmer | 0.30 | review | Absent export is a breach, not a skip |
-| LV-004 | `V-WIRING` and the required-consumer table | gameplay-programmer | 0.30 | review | Four rows; both authoring shapes resolve |
+| LV-001 | Validation scaffold and discovery | gameplay-programmer | 0.30 | **done** | Seven codes declared; discovery finds nodes at any depth and with no owner |
+| LV-002 | `V-BUCKET-SUM` and `V-PLANT-MIN` | gameplay-programmer | 0.30 | **done** | Both mismatch directions fire; `V-PLANT-MIN` reports per plant |
+| LV-003 | `V-OXY-CAP` and `V-GRAV-EXPORT` | gameplay-programmer | 0.30 | **done** | Absent export is a breach, not a skip |
+| LV-004 | `V-WIRING` and the required-consumer table | gameplay-programmer | 0.30 | **done** | Four rows; both authoring shapes resolve |
 | QA-1 | `/qa-plan sprint` | qa-lead | 0.25 | **done** | Test cases defined per story — `production/qa/qa-plan-sprint-1.md` |
 
 **QA-1 was promoted from Nice-to-Have to Must Have on 2026-08-24.** This
@@ -104,47 +115,58 @@ Nice-to-Have that the DoD depends on makes the DoD unsatisfiable by definition.
 
 | ID | Task | Agent/Owner | Est. Days | Status | Acceptance Criteria |
 |----|------|-------------|-----------|--------|---------------------|
-| LS-0 | `/create-stories level-state` | producer | 0.25 | backlog | Stories written |
+| LS-0 | `/create-stories level-state` | producer | 0.25 | **done** | Stories written |
 
-## Remaining Work: 0.95 Days Against 6
+## Remaining Work: 0.35 Days, and It Needs a Human
 
-Agent-doable work left in this sprint:
+*Updated 2026-08-25 at close-out. Every agent-doable row is done.*
 
-| ID | Task | Est. Days |
-|----|------|-----------|
-| TUN-006 | CI greps for V6/V7/V8 | 0.20 |
-| ARCH-1 | `tr-registry.yaml` sweep | 0.50 |
-| LS-0 | `/create-stories level-state` | 0.25 |
-| | **Total** | **0.95** |
+| ID | Task | Est. Days | Who |
+|----|------|-----------|-----|
+| CLR-005 | AC-5 — a live CI run with a planted D4.6 violation | 0.15 | **Human** |
+| TUN-006 | Final AC — the same run, four planted tuning violations | 0.20 | **Human** |
+| | **Total** | **0.35** | |
 
-*(QA-1 completed 2026-08-24 — `production/qa/qa-plan-sprint-1.md`.)*
+Both are one action. It is carried into Sprint 2 as **CI-1** and is the only
+thing standing between this project and `/gate-check production`.
 
-**The four human-only checks are now the sprint's critical path, not the code.**
-They are parked in `production/qa/smoke-2026-08-24.md`:
+**Mechanics matter.** The workflow fires on push to `development` or `main`, or
+on a pull request targeting them. **A scratch branch pushed on its own will not
+fire it.** There is no `gh` CLI on this machine, so opening a PR is a web-UI
+action by the developer. The trigger was widened from `main` to `development` on
+2026-08-25 in `d77337c` — before that it had never fired once, because this
+repository has no `main` branch at all.
 
-- **CLR-002 AC-5** — playtest the out-of-bounds fall in levels 05 and 06.
-  Agent playtests do not judge this reliably.
-- **CLR-003 AC-5** — open `player.tscn` and `moving_platform.tscn`, confirm zero
-  console errors, the platform animates, the player moves/jumps/flips.
-- **CLR-005 AC-5** — a real CI run.
-- **TUN-003 / TUN-002** — open each `.tres` in the inspector and confirm its knob
-  list; drag `prop_gravity_scale` and confirm it stops at 0.8 and 1.2, then
-  **revert before saving**; confirm the three classes appear in Create New
-  Resource.
+### The four human-only checks — three of four are now closed
 
-The windowed Godot editor **segfaults on this machine**, so no session can clear
-any of these.
+They were parked in `production/qa/smoke-2026-08-24.md`:
 
-## Cut to Sprint 2 (2026-08-24)
+- **CLR-002 AC-5** — **CLOSED 2026-08-25.** Developer playtest of the
+  out-of-bounds fall in levels 05 and 06. BUG-0001 closed on the same sign-off.
+  Evidence: `production/qa/evidence/bug-0001-killplane-playtest-2026-08-25.md`
+- **CLR-003 AC-5** — **CLOSED 2026-08-25.** Items 1–2 by headless probe, items
+  3–4 directly in the playtest. Annotated METHOD SUBSTITUTED, not reworded.
+- **TUN-003 / TUN-002** — **CLOSED 2026-08-25** by a headless probe reading the
+  same `@export_range` hint metadata the inspector renders from. Annotated
+  METHOD SUBSTITUTED.
+- **CLR-005 AC-5** — **OPEN.** The CI run above. The only survivor.
+
+The windowed Godot editor **still segfaults on this machine**. The route around
+it is the read-only headless probe recorded in
+`production/qa/evidence/editor-facts-probe-2026-08-25.md`. It proves the data,
+not the rendering, and says so explicitly. Reuse it rather than re-deriving it.
+
+## Cut to Sprint 2 (2026-08-24, statuses refreshed 2026-08-25)
 
 | ID | Task | Est. Days | Blocker |
 |----|------|-----------|---------|
-| GA-001 … GA-007 | GravityAuthority epic — autoload, easing, player consumer, zones, level defaults, space-gravity write, prop registry | **2.83** | ARCH-1 |
-| LV-005 | Wire `validate()` into `LevelRoot._ready()` at step (a) | 0.30 | The level-state epic must land first |
-| LV-006 | `V-PROP-BUDGET` and `V-BOUNDS` (was LV-2) | 0.30 | **`class_name PropBody` — ADR-0011 has no epic** |
+| GA-002 … GA-007 | GravityAuthority epic — easing, player consumer, zones, level defaults, space-gravity write, prop registry | **2.39** | ARCH-1, done 2026-08-24. **GA-001 was NOT cut** — it landed in `783953b` and carries its own done row above |
+| LV-005 | Wire `validate()` into `LevelRoot._ready()` at step (a) | 0.31 | The level-state epic must land first. Scheduled Sprint 2 behind LS-004 |
+| LV-006 | `V-PROP-BUDGET` and `V-BOUNDS` (was LV-2) | 0.31 | **CORRECTED 2026-08-25** — the earlier blocker, "`class_name PropBody`, and ADR-0011 has no epic", is stale. The `physics-props` epic was created 2026-08-24 in `c53c421` and decomposed in `4c5572c`. This is sequencing, not a design gap: it needs PP-001, which needs GA-007 |
 
-Per-story GA breakdown is recorded in `production/sprint-status.yaml` so the
-derived estimate is not re-discovered next sprint.
+All three are scheduled in `production/sprints/sprint-2.md`. The per-story GA
+breakdown is preserved in `production/sprint-status-sprint-1.yaml`, the archived
+Sprint 1 record, so the derived estimate is not re-discovered a third time.
 
 ## Carryover from Previous Sprint
 
@@ -192,15 +214,15 @@ Deferred to Sprint 2 and stated here so they are not pulled in silently:
 
 ## Definition of Done for this Sprint
 
-- [ ] All Must Have tasks completed
-- [ ] All tasks pass acceptance criteria
+- [ ] All Must Have tasks completed — **17 of 19.** CLR-005 and TUN-006 both wait on CI-1
+- [ ] All tasks pass acceptance criteria — the same two rows, and no others
 - [x] QA plan exists (`production/qa/qa-plan-sprint-1.md`) — **QA-1**, done 2026-08-24
-- [ ] All Logic/Integration stories have passing unit/integration tests
-- [ ] Smoke check passed (`/smoke-check sprint`)
-- [ ] QA sign-off report: APPROVED or APPROVED WITH CONDITIONS (`/team-qa sprint`)
-- [ ] No S1 or S2 bugs in delivered features (BUG-0001 is S2 — it must close)
-- [ ] Design documents updated for any deviations
-- [ ] Code reviewed and merged
+- [x] All Logic/Integration stories have passing unit/integration tests — 178/178, 11/11 suites, exit 0 (2026-08-25)
+- [x] Smoke check passed — `production/qa/smoke-2026-08-25.md`, zero missing test evidence
+- [x] QA sign-off report: **APPROVED WITH CONDITIONS** — `production/qa/qa-signoff-sprint-1-2026-08-25.md`
+- [x] No S1 or S2 bugs in delivered features — BUG-0001 closed 2026-08-25 on developer playtest sign-off. BUG-0002 is S4 and deferred
+- [x] Design documents updated for any deviations — four ACs annotated (TUN-003 AC-4/5/6, CLR-003 AC-5, LV-001 AC-3, GA-002 AC-1). No requirement was reworded
+- [ ] Code reviewed and merged — **reviewed, not merged.** Nothing has been pushed — `vertical-slice` is many commits ahead of `origin` (re-derive the count). CI-1 will be the first push
 
 **Code review status:** the owed review over `collision_layers.gd`,
 `level_validation.gd` and their five test files was run in one pass on
