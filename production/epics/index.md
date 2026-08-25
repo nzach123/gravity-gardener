@@ -11,7 +11,7 @@ Control Manifest Version: 2026-08-17
 | [Level Load Validation](level-validation/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
 | [Collision Layer Registry](collision-layer-registry/EPIC.md) | Foundation | Physics Props | `physics-props.md` | 5 stories | Ready |
 | [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
-| [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | Not yet created | Ready |
+| [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | 6 stories | Ready |
 | [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | Not yet created | Ready |
 | [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | Not yet created | Ready |
 | [Physics Props](physics-props/EPIC.md) | Presentation | Physics Props | `physics-props.md` | 6 stories | Ready — scheduling deferred |
@@ -62,6 +62,8 @@ ADR-0004 and ADR-0003 already cover, so `physics-props` consumes their output an
 adds no guard of its own.
 
 `HUD / Pause Menu` remains the other Presentation system, still un-epic'd.
+
+**A third Presentation module is referenced by name and does not exist.** `gravity-authority` story 003 and this index's requirement-split note both defer TR-gravity-013 to "the Presentation visual epic" (`PlayerVisualComponent`). No such epic has been created. Found during `player-core` decomposition on 2026-08-24 — see the two new rows in the open-risk table above.
 
 ### Requirement splits across layers
 
@@ -114,6 +116,8 @@ the D11.1 exception noted above.
 | TR-gravity-010 — camera-follow / camera-rotation split specified but not applied (ADR-0013 D13.5) | `gravity-authority` | **Blocked** on a human playtest of `level_01` and `level_07` |
 | TR-watering-002 — carry scales `max_speed` only; ADR-0007 explicitly declines it | *(Feature watering)* | **GAP** — no accepted ADR owns the mechanism |
 | `PlayerWallJumpComponent` — no GDD, no TR IDs, no ADR (QQ-05) | `player-core` | **Unowned** — behaviour stories are Blocked |
+| TR-gravity-013 — `apply_screen_relative_axis` had **no owning story in any epic**. ADR-0013's step 1 puts it on `GravityAuthority` (Foundation), but no `gravity-authority` story adds it, and that epic's story 003 routes ADR-0013 to a "Presentation visual-component epic" that does not exist | `player-core` (absorbed) / *(Presentation visual)* | **Half-owned by decision, 2026-08-24** — `player-core` story 005 takes the Foundation static function and the `PlayerMovementComponent` caller. The `PlayerVisualComponent` caller stays unowned until a Presentation visual epic exists; **TR-gravity-013 does not close until then** |
+| ADR-0013's supersession is scoped to "the method contract of ADR-0007 D7.4 only", but D7.3's code block also passes `camera_rotation_enabled` at its step 6 and step 8 call sites | `player-core` | **Flagged, not amended** — story 005 changes those call sites to `camera_rotation`. Neither ADR is edited; recorded here so the change is not read as drift |
 | `level-flow.md` has no TR IDs; traces by rule anchor | `level-outcomes` | **CLOSED 2026-08-24 (ARCH-1)** — `TR-flow-001`–`010`, one per rule R1–R10. 8 of 10 entered already covered by ADR-0005, ADR-0014 and ADR-0002. The two that did not are `TR-flow-005` (HUD element, Presentation) and `TR-flow-010` (R10, the blocked decision already on this table) |
 | ADR-0011 V-E2 — a synchronous `PhysicsServer2D.area_set_param` write from `LevelRoot._ready()` lands before the new scene's first physics step | `physics-props` | **OPEN** — story 003 discharges it against the 4.7.1 binary. Named fallback exists (a dirty flag consumed by the authority's `_physics_process`, costing one frame of stale space gravity at load) |
 | AC10's evidence gate level is undefined — `coding-standards.md`'s table has no Performance row, and this is the **second** instance (ADR-0012 recorded the same for `watering-system.md`) | `physics-props` | **OPEN — decision owed** — story 006 AC-1. ADR-0011 notes the repeat suggests the standards table, not the two GDDs, is what needs the edit |
