@@ -34,6 +34,8 @@ jobs:
       # comment is a deliberate, cheap false positive rather than a
       # regex-comment-stripping problem.
       - name: Enforce the ADR-0004 runtime collision-mutation ban
+        id: guard_d46
+        continue-on-error: true
         run: |
           set -euo pipefail
           # grep exits 1 when it finds NOTHING, which is the inverse of what
@@ -66,6 +68,8 @@ jobs:
       # The exclusion is the src/scripts/tuning/ DIRECTORY, not tuning.gd alone.
       # The check then needs no edit if the holder group grows.
       - name: Enforce the ADR-0006 D6.3 tuning path-literal ban (V6)
+        id: guard_v6
+        continue-on-error: true
         run: |
           set -euo pipefail
           # grep exits 1 when it finds nothing. Capture the match and set the
@@ -92,6 +96,8 @@ jobs:
       #  - a @tool script that mutates a .tres and saves it to version control
       # A pass here is not proof that no mutation exists.
       - name: Enforce the ADR-0006 D6.5 tuning runtime-mutation ban (V7)
+        id: guard_v7
+        continue-on-error: true
         run: |
           set -euo pipefail
           # grep exits 1 when it finds nothing. Capture the match and set the
@@ -124,6 +130,8 @@ jobs:
       # Two checks, because a gravity_tuning.tres can exist with no occurrence
       # of the token inside it: file CONTENT, then file NAMES.
       - name: Enforce the ADR-0006 D6.7 GravityTuning ban (V8)
+        id: guard_v8
+        continue-on-error: true
         run: |
           set -euo pipefail
           # grep exits 1 when it finds nothing. Capture the match and set the
@@ -157,3 +165,37 @@ jobs:
         with:
           name: test-results
           path: reports/
+
+      # continue-on-error above lets every guard report in one run instead of
+      # the first failure hiding the rest AND skipping the test suite entirely.
+      # A guard's own step log carries the offending file and line; this step
+      # only decides the job's exit code. Without it the job would go green,
+      # because continue-on-error suppresses each guard's failure.
+      #
+      # if: always() so the gate is still reached when the GdUnit4 step fails.
+      #
+      # -e is dropped from the set line on purpose: with it, a `check` call
+      # returning non-zero would abort the step before the remaining guards
+      # were reported. -uo pipefail keeps the useful strictness.
+      - name: ADR guard gate
+        if: always()
+        run: |
+          set -uo pipefail
+          failed=0
+          check() {
+            if [ "$2" = "success" ]; then
+              echo "OK: $1 guard passed."
+            else
+              echo "::error::$1 guard FAILED ($2) - see that step's log above."
+              failed=1
+            fi
+          }
+          check "ADR-0004 D4.6" "${{ steps.guard_d46.outcome }}"
+          check "ADR-0006 V6"   "${{ steps.guard_v6.outcome }}"
+          check "ADR-0006 V7"   "${{ steps.guard_v7.outcome }}"
+          check "ADR-0006 V8"   "${{ steps.guard_v8.outcome }}"
+          if [ "$failed" -ne 0 ]; then
+            echo "One or more ADR guards failed. See the errors above."
+            exit 1
+          fi
+          echo "All four ADR guards passed."
