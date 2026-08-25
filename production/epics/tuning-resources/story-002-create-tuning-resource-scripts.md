@@ -55,36 +55,36 @@ with the GDD-documented default and range **verbatim**.
 
 *From ADR-0006 D6.1, D6.2, D6.4 and Migration Plan steps 1-2:*
 
-- [ ] `src/scripts/tuning/` and `src/resources/tuning/` exist.
-- [ ] `src/scripts/tuning/watering_tuning.gd` declares `class_name WateringTuning
+- [x] `src/scripts/tuning/` and `src/resources/tuning/` exist.
+- [x] `src/scripts/tuning/watering_tuning.gd` declares `class_name WateringTuning
       extends Resource` with exactly these four knobs, defaults and ranges:
       `carry_speed_multiplier: float = 0.6` `@export_range(0.4, 0.9)`;
       `throw_arc_height: float = 120.0` `@export_range(60.0, 200.0)`;
       `throw_duration: float = 0.6` `@export_range(0.4, 0.8)`;
       `throw_angle_spread: float = 45.0` `@export_range(0.0, 90.0)`.
-- [ ] `src/scripts/tuning/oxygen_tuning.gd` declares `class_name OxygenTuning
+- [x] `src/scripts/tuning/oxygen_tuning.gd` declares `class_name OxygenTuning
       extends Resource` with exactly these five knobs:
       `margin: float = 0.4` `@export_range(0.3, 0.6)`;
       `drain_rate: float = 1.0` `@export_range(0.5, 1.0)`;
       `threshold_caution: float = 0.50` `@export_range(0.0, 1.0)`;
       `threshold_warning: float = 0.25` `@export_range(0.0, 1.0)`;
       `threshold_critical: float = 0.10` `@export_range(0.0, 1.0)`.
-- [ ] `src/scripts/tuning/prop_tuning.gd` declares `class_name PropTuning
+- [x] `src/scripts/tuning/prop_tuning.gd` declares `class_name PropTuning
       extends Resource` with exactly these three knobs:
       `prop_gravity_scale: float = 1.0` `@export_range(0.8, 1.2)`;
       `prop_max_speed: float = 2000.0` `@export_range(1000.0, 4000.0)`;
       `props_per_level_budget: int = 40` `@export_range(10, 80)`.
-- [ ] **No knob outside those ten exists on any of the three classes.** In
+- [x] **No knob outside those ten exists on any of the three classes.** In
       particular: `buckets_required` and `water_duration` are **not** on
       `WateringTuning`; `interact_radius` is **not** on it either; `oxygen_capacity`
       is **not** on `OxygenTuning`; `mass`, `friction`, `bounce`, `linear_damp` and
       `angular_damp` are **not** on `PropTuning`.
-- [ ] Each script carries the D6.4 doc comment stating which knobs are deliberately
+- [x] Each script carries the D6.4 doc comment stating which knobs are deliberately
       absent and why, so a future author does not "complete" the set.
-- [ ] No `GravityTuning` class is created (D6.7).
-- [ ] All three scripts are warning-clean under gdUnit4's warnings-as-errors test
+- [x] No `GravityTuning` class is created (D6.7).
+- [x] All three scripts are warning-clean under gdUnit4's warnings-as-errors test
       discovery — confirmed by running the suite, not by inspection.
-- [ ] All three files carry static types on every property (project standard).
+- [x] All three files carry static types on every property (project standard).
 
 ---
 
@@ -143,10 +143,16 @@ must cover, recorded here so the two stories cannot drift apart.*
 
 ### Smoke check for this story
 
-- [ ] The project opens in the Godot 4.7.1 editor with no script parse error.
-- [ ] `WateringTuning`, `OxygenTuning` and `PropTuning` all appear in the editor's
+- [x] The project opens in the Godot 4.7.1 editor with no script parse error.
+      Verified 2026-08-25 by a real editor process (`--headless --editor`), which
+      completed its filesystem scan and plugin initialization with no parse error.
+- [x] `WateringTuning`, `OxygenTuning` and `PropTuning` all appear in the editor's
       "Create New Resource" dialog — proof the `class_name` registration took.
-- [ ] The gdUnit4 suite still discovers and runs. A discovery failure means one of
+      Verified 2026-08-25 by reading `ProjectSettings.get_global_class_list()`, the
+      list that dialog is built from. The dialog itself was not opened — see the
+      Implementation Record. Evidence:
+      `production/qa/evidence/editor-facts-probe-2026-08-25.md`.
+- [x] The gdUnit4 suite still discovers and runs. A discovery failure means one of
       the three scripts carries a warning.
 
 ### Cases owed to Story 005 (V4 — every default matches its GDD §7 default)
@@ -199,7 +205,10 @@ ownership guarantee with no error.
 - The automated proof of the ten defaults lands with Story 005
   (`tests/unit/tuning/tuning_resources_test.gd`)
 
-**Status**: [ ] Not yet created
+**Status**: [x] `production/qa/smoke-2026-08-24.md` (automated suite and structural
+checks) and `production/qa/evidence/editor-facts-probe-2026-08-25.md` (the three
+`class_name` registrations). The permanent automated proof of the ten defaults lives
+in Story 005's `tests/unit/tuning/tuning_resources_test.gd`.
 
 ---
 
@@ -209,3 +218,45 @@ ownership guarantee with no error.
   code-side clamp. Nothing here is blocked if Story 001 slips, but the ADR sequences
   it first and it is cheap.
 - Unlocks: Story 003 (a `.tres` cannot be authored before its script exists)
+
+---
+
+## Implementation Record — 2026-08-25
+
+**Status: all nine acceptance criteria met.** The three scripts landed earlier in
+the sprint. This record closes the paperwork, which had not been written.
+
+### Verification performed
+
+| AC | How it was verified |
+|---|---|
+| Directories exist | `src/scripts/tuning/` and `src/resources/tuning/` both present |
+| Watering: four knobs, defaults, ranges | Script read plus a headless property-list dump. Exact match. |
+| Oxygen: five knobs | Same. Exact match. |
+| Prop: three knobs | Same. `props_per_level_budget` reports `TYPE_INT`. |
+| No knob outside the ten | The probe printed every property carrying `PROPERTY_USAGE_SCRIPT_VARIABLE` on all three resources. Only those ten appeared. The named absences — `buckets_required`, `water_duration`, `interact_radius`, `oxygen_capacity`, `mass`, `friction`, `bounce`, `linear_damp`, `angular_damp` — are all confirmed absent. |
+| D6.4 doc comment on each script | Present on all three. Each names the knobs it deliberately excludes and why. |
+| No `GravityTuning` | `ProjectSettings.get_global_class_list()` reports it unregistered. |
+| Warning-clean under discovery | Full gdUnit4 suite green on 2026-08-25: 178 cases, 0 errors, 0 failures, 0 orphans, exit 0. gdUnit4 treats a GDScript warning as an error at discovery, so a green run is the proof. |
+| Static types on every property | All ten declared `: float` or `: int`. |
+
+### Method substitution on the smoke check
+
+Smoke item 2 asks for the editor's Create New Resource dialog. The dialog was
+never opened. Three routes to an editor observation fail on this machine:
+
+1. The windowed editor segfaults.
+2. A headless editor starts, but the godot-ai MCP plugin disables itself in
+   headless mode (`addons/godot_ai/plugin.gd:211`), so no session registers and
+   no editor tool can be driven.
+3. Only a headless probe script remains.
+
+The probe reads `ProjectSettings.get_global_class_list()`, which is the list the
+dialog is built from. This proves the registration the check exists to prove. It
+does not prove the dialog draws it. Full detail and the limitation statement:
+`production/qa/evidence/editor-facts-probe-2026-08-25.md`.
+
+### Nothing was modified
+
+The probe only loads and reads. No source file, scene or resource changed during
+verification.

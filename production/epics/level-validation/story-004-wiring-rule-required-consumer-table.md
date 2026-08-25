@@ -66,27 +66,27 @@ guard at first use. The two checks are complementary and neither subsumes the ot
 *From ADR-0003 D3.3, ADR-0010 D10.9 and V10, ADR-0011 D11.7, and ADR-0003 Validation
 Criterion 1, scoped to this story:*
 
-- [ ] The required-consumer set is expressed as a **single constant table** in
+- [x] The required-consumer set is expressed as a **single constant table** in
       `level_validation.gd` — one entry per export name — not as one hand-written
       branch per consumer. Adding a consumer must be a one-line table edit.
-- [ ] The table holds four rows, each required because its owning ADR is Accepted:
+- [x] The table holds four rows, each required because its owning ADR is Accepted:
       `player` (ADR-0002), `goal` (ADR-0002), `hud` (ADR-0010), `level_bounds`
       (ADR-0011). See Implementation Notes for the ADR-lag flag on the last two.
-- [ ] `V-WIRING` fires when a required export is empty, unset, or `null`.
-- [ ] `V-WIRING` fires when a required export does not resolve to a live node.
-- [ ] `V-WIRING` fires **once per unwired consumer**, and each finding names the
+- [x] `V-WIRING` fires when a required export is empty, unset, or `null`.
+- [x] `V-WIRING` fires when a required export does not resolve to a live node.
+- [x] `V-WIRING` fires **once per unwired consumer**, and each finding names the
       export so an author can find it.
-- [ ] `V-WIRING` does **not** check `OxygenDrain` — ADR-0002 part 4 makes it a *child*
+- [x] `V-WIRING` does **not** check `OxygenDrain` — ADR-0002 part 4 makes it a *child*
       of `LevelRoot`, not a `NodePath` export, so there is no path to resolve. Its
       binding failure mode is covered by ADR-0002's per-consumer guard.
-- [ ] The table carries an inline comment stating D3.3's admission rule — a consumer
+- [x] The table carries an inline comment stating D3.3's admission rule — a consumer
       becomes required when its owning ADR is Accepted — so the next author adds a row
       rather than asking.
-- [ ] **The combined report-all-failures test** (ADR-0003 Validation Criterion 1): a
+- [x] **The combined report-all-failures test** (ADR-0003 Validation Criterion 1): a
       synthetic level breaching every rule implemented so far returns one finding per
       code, not one and not a partial set. Scope this to the five rules live after
       stories 002-004; stories 006's two rules join it when they land.
-- [ ] `level_validation.gd` and the test file are warning-clean under the headless
+- [x] `level_validation.gd` and the test file are warning-clean under the headless
       gdUnit4 run.
 
 ---
@@ -216,7 +216,9 @@ during implementation.*
 exist and pass. AC-6 is the direct test of ADR-0003 Validation Criterion 1, the
 report-all-failures guarantee.
 
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/unit/level/level_validation_wiring_test.gd` exists and passes. Verified
+2026-08-25 in a full headless gdUnit4 run: 178 cases, 0 errors, 0 failures, 0 flaky,
+0 skipped, 0 orphans, exit 0. This file contributes 13 cases.
 
 ---
 
@@ -225,3 +227,39 @@ report-all-failures guarantee.
 - Depends on: **Stories 001, 002 and 003** must all be DONE — AC-6 asserts every rule
   from those stories fires together.
 - Unlocks: Story 005.
+
+---
+
+## Implementation Record — 2026-08-25
+
+**Status: all nine acceptance criteria met.** The code landed earlier in the
+sprint. This record closes the paperwork, which had not been written.
+
+### Verification performed
+
+| AC | How it was verified |
+|---|---|
+| A single constant table | `const REQUIRED_CONSUMERS: Array[String]` in `src/scripts/level_validation.gd`. One definition, one call site. |
+| Four rows, each traced to an Accepted ADR | `player` and `goal` (ADR-0002), `hud` (ADR-0010 D10.9), `level_bounds` (ADR-0011 D11.7). Each row is annotated with its ADR in the table comment. Asserted by `test_required_consumer_table_holds_exactly_four_rows`. |
+| Fires on empty, unset or `null` | `test_wiring_fires_once_per_unwired_consumer`, `test_wiring_fires_when_the_export_is_absent_entirely`, `test_wiring_fires_on_an_empty_node_path_export`. |
+| Fires when the export does not resolve to a live node | `test_wiring_fires_when_a_consumer_points_at_a_freed_node` and `test_wiring_fires_on_a_node_path_that_points_nowhere`. |
+| Fires once per unwired consumer, each named | `test_wiring_fires_for_each_of_the_four_consumers_individually`. |
+| `OxygenDrain` is excluded | `test_oxygen_drain_is_not_in_the_table`. The table comment records the reason: ADR-0002 part 4 makes it a child of `LevelRoot`, not an export, so this rule has no path to resolve. Its binding failure mode is covered by the ADR-0002 per-consumer guard instead. |
+| The D3.3 admission rule is stated inline | The comment above the table states it: a consumer becomes required when the ADR that introduces it is Accepted, and the row lands in the same changeset as that ADR. |
+| The combined report-all-failures test | `test_a_level_breaching_every_implemented_rule_reports_every_code` — ADR-0003 Validation Criterion 1. `test_the_unimplemented_rules_never_fire` is its counterpart, confirming `V-PROP-BUDGET` and `V-BOUNDS` stay silent until story 006. |
+| Warning-clean under headless gdUnit4 | Full suite green 2026-08-25: 178 cases, 0 errors, 0 failures, 0 orphans, exit 0. |
+
+### Note on the two accepted authoring shapes
+
+`_check_wiring` accepts both a `NodePath` export and a direct typed node
+reference. ADR-0003 D3.3 describes `NodePath` exports, but `main.gd` today uses
+direct typed references such as `@export var player: Player`. Accepting only one
+shape would have reported every level of the other shape as unwired. Both paths
+are covered: `test_wiring_passes_on_node_paths_that_resolve` and
+`test_wiring_passes_when_every_consumer_resolves`.
+
+`test_wiring_does_not_call_methods_on_the_resolved_node` guards the rule's
+boundary — this checks wiring, not binding, because under D3.1 `validate()` runs
+at step (a) and `bind()` at step (c).
+
+`tests/unit/level/level_validation_wiring_test.gd` contributes 13 cases.

@@ -36,7 +36,7 @@ goal: "Land the Foundation layer's data and validation base — collision regist
 start: "2026-08-18"
 end: "2026-08-31"
 generated: "2026-08-18"
-updated: "2026-08-24"
+updated: "2026-08-25"
 
 stories:
   # ── collision-layer-registry ────────────────────────────────────────────────
@@ -245,6 +245,16 @@ stories:
     blocker: ""
     completed: "2026-08-23"
 
+  - id: "GA-001"
+    name: "GravityAuthority autoload and guards"
+    file: "production/epics/gravity-authority/story-001-gravity-authority-autoload-and-guards.md"
+    priority: should-have
+    status: done
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.44
+    blocker: ""
+    completed: "2026-08-24"
+
   - id: "LS-0"
     name: "Create stories for the level-state epic"
     file: "production/epics/level-state/EPIC.md"
@@ -261,11 +271,15 @@ stories:
 # not re-discovered next sprint. They are NOT part of Sprint 1 and must not be
 # counted in its burndown.
 #
-# GA-001..GA-007 — the gravity-authority epic. Cut at the sprint plan's own
-#   declared cut line. Planned at 1.75 d as a single task; the 7 Ready story
-#   files total 22.5 h ≈ 2.83 d, a ~60% under-estimate. Depends on ARCH-1.
+# GA-002..GA-007 — the gravity-authority epic. Cut at the sprint plan's own
+#   declared cut line. Planned at 1.75 d as a single task; the 7 story files
+#   totalled 22.5 h ≈ 2.83 d, a ~60% under-estimate. Depends on ARCH-1.
 #
-#     GA-001  GravityAuthority autoload and guards            M (3-4 h)  0.44
+#   GA-001 IS NOT CUT. It was completed and committed in 783953b on 2026-08-24,
+#   working ahead of the cut line, and now carries its own row above. Removed
+#   from this block on 2026-08-25 — completed work must not sit in a cut block.
+#   The remaining six total 2.39 d.
+#
 #     GA-002  Direction easing and the exported rate          S (2-3 h)  0.31
 #     GA-003  Player gravity component becomes a consumer     L (4 h)    0.50
 #     GA-004  Zones report to the authority, clear the        M (3 h)    0.38
@@ -273,7 +287,7 @@ stories:
 #     GA-005  Level default gravity and reset on load         M (3 h)    0.38
 #     GA-006  Default-space gravity write                     M (3-4 h)  0.44
 #     GA-007  Prop registry and the force-wake pass           M (3 h)    0.38
-#                                                             total      2.83
+#                                                             total      2.39
 #
 # LV-005  Wire validate() into LevelRoot._ready() at step (a)  M  0.30
 #   blocked: the level-state epic must land first. LevelState and OxygenState do

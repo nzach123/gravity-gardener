@@ -57,23 +57,23 @@ warning fails the whole gdUnit4 suite at discovery.
 *From `suit-oxygen.md` §5 and AC7, `gravity.md` R7, ADR-0001 and ADR-0003 D3.1/D3.3,
 scoped to this story:*
 
-- [ ] `V-OXY-CAP` fires when `LevelRoot.oxygen_capacity <= 0`, in the ADR-0003 D3.4
+- [x] `V-OXY-CAP` fires when `LevelRoot.oxygen_capacity <= 0`, in the ADR-0003 D3.4
       shape: `[V-OXY-CAP] oxygen_capacity is 0.0; must be > 0 (suit-oxygen.md §5)`.
-- [ ] `V-GRAV-EXPORT` fires when `default_gravity_direction` is the zero vector.
-- [ ] `V-GRAV-EXPORT` fires when `default_gravity_multiplier <= 0`.
-- [ ] A level breaching both gravity conditions returns a finding naming both, or two
+- [x] `V-GRAV-EXPORT` fires when `default_gravity_direction` is the zero vector.
+- [x] `V-GRAV-EXPORT` fires when `default_gravity_multiplier <= 0`.
+- [x] A level breaching both gravity conditions returns a finding naming both, or two
       findings — pick one and assert it; do not return only the first condition
       found.
-- [ ] Both rules read the exports via `Node.get()` and treat an **absent** export as
+- [x] Both rules read the exports via `Node.get()` and treat an **absent** export as
       a breach of the same rule, with a finding that says the export is missing
       rather than reporting a misleading value. See Implementation Notes — this is a
       decision this story makes, not one ADR-0003 states.
-- [ ] A level breaching `V-OXY-CAP` and `V-GRAV-EXPORT` together returns findings for
+- [x] A level breaching `V-OXY-CAP` and `V-GRAV-EXPORT` together returns findings for
       both in one call.
-- [ ] A clean level returns empty from `validate()`.
-- [ ] `grep -n "is_debug_build" src/scripts/level_validation.gd` still returns nothing
+- [x] A clean level returns empty from `validate()`.
+- [x] `grep -n "is_debug_build" src/scripts/level_validation.gd` still returns nothing
       (ADR-0003 Validation Criterion 3).
-- [ ] `level_validation.gd` and the test file are warning-clean under the headless
+- [x] `level_validation.gd` and the test file are warning-clean under the headless
       gdUnit4 run.
 
 ---
@@ -194,7 +194,9 @@ exports, so the tests do not wait on `level-state` or `gravity-authority`.
 `suit-oxygen.md` AC7, which is typed **Logic** and is therefore a BLOCKING gate
 under `.claude/docs/coding-standards.md`.
 
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/unit/level/level_validation_root_export_rules_test.gd` exists and passes. Verified
+2026-08-25 in a full headless gdUnit4 run: 178 cases, 0 errors, 0 failures, 0 flaky,
+0 skipped, 0 orphans, exit 0. This file contributes 14 cases.
 
 ---
 
@@ -204,3 +206,26 @@ under `.claude/docs/coding-standards.md`.
   the two may be taken in either order.
 - Unlocks: Story 005. Also supplies `gravity-authority` and `level-state` with a
   load-time gate for the exports they add.
+
+---
+
+## Implementation Record — 2026-08-25
+
+**Status: all nine acceptance criteria met.** The code landed earlier in the
+sprint. This record closes the paperwork, which had not been written.
+
+### Verification performed
+
+| AC | How it was verified |
+|---|---|
+| `V-OXY-CAP` on non-positive capacity | `test_oxy_cap_fires_on_zero_capacity`, `test_oxy_cap_fires_on_negative_capacity`, with `test_oxy_cap_does_not_fire_just_above_zero` guarding the boundary. |
+| `V-GRAV-EXPORT` on a zero direction | `test_grav_export_fires_on_a_zero_direction_vector`. `test_grav_export_accepts_a_non_down_direction` confirms the rule checks magnitude, not orientation. |
+| `V-GRAV-EXPORT` on a non-positive multiplier | `test_grav_export_fires_on_a_zero_multiplier`, `test_grav_export_fires_on_a_negative_multiplier`. |
+| Both gravity halves reported together | `test_grav_export_reports_both_halves_when_both_are_wrong`. |
+| Absent export treated as a breach, via `Node.get()` | All three exports are read with `level.get(...)` and a `null` result emits a distinct "is missing" finding. Covered by `test_oxy_cap_fires_when_the_export_is_absent`, `test_grav_export_fires_twice_when_both_exports_are_absent`, and `test_oxy_cap_absent_finding_says_missing_rather_than_reporting_a_value` — the last one guards against an absent export being reported as a spurious `0`. |
+| Both rules report in one call | `test_a_bare_root_breaches_both_rules_at_once`. |
+| A clean level returns empty | `test_oxy_cap_passes_on_a_positive_capacity`, `test_grav_export_passes_on_valid_exports`. |
+| `is_debug_build` grep still returns nothing | Run 2026-08-25 against the current file. No match. |
+| Warning-clean under headless gdUnit4 | Full suite green 2026-08-25: 178 cases, 0 errors, 0 failures, 0 orphans, exit 0. |
+
+`tests/unit/level/level_validation_root_export_rules_test.gd` contributes 14 cases.

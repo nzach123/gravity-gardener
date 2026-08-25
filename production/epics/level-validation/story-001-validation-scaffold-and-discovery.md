@@ -69,30 +69,36 @@ reference. **Do not re-search them** — ADR-0003 states this explicitly.
 
 *From ADR-0003 D3.2, D3.4, D3.5 and Validation Criterion 6, scoped to this story:*
 
-- [ ] `src/scripts/level_validation.gd` exists, declaring `class_name LevelValidation
+- [x] `src/scripts/level_validation.gd` exists, declaring `class_name LevelValidation
       extends RefCounted`, with the doc comment block from ADR-0003 §Key Interfaces
       (including the "do NOT substitute `Node.find_children()`" warning).
-- [ ] All **seven** stable code constants are declared, in the manifest's order:
+- [x] All **seven** stable code constants are declared, in the manifest's order:
       `V_BUCKET_SUM`, `V_PLANT_MIN`, `V_OXY_CAP`, `V_GRAV_EXPORT`, `V_PROP_BUDGET`,
       `V_WIRING`, `V_BOUNDS`. The last three are declared now and consumed by later
       stories — this discharges the epic's "specified with its constant in place"
       condition for `V-PROP-BUDGET`.
-- [ ] `static func validate(level: Node) -> PackedStringArray` exists and returns an
+- [x] `static func validate(level: Node) -> PackedStringArray` exists and returns an
       empty array. It contains **no** rule logic yet — rules arrive in stories
       002-004 and 006.
-- [ ] `static func count_buckets(level: Node) -> int` returns the number of `Bucket`
+      **CLAUSE SUPERSEDED 2026-08-25.** The signature and return type hold. The
+      "no rule logic yet" half was a point-in-time condition at story 001 close,
+      and stories 002, 003 and 004 landed their rules on top of it in the same
+      sprint, exactly as this AC's own forward reference anticipated.
+      `validate()` now dispatches to three rule helpers. V-PROP-BUDGET and
+      V-BOUNDS remain unimplemented, awaiting story 006.
+- [x] `static func count_buckets(level: Node) -> int` returns the number of `Bucket`
       instances anywhere in the subtree, at any depth.
-- [ ] Discovery is a private hand-rolled recursive helper over `get_children()`,
+- [x] Discovery is a private hand-rolled recursive helper over `get_children()`,
       matching by `node is <Class>`. It carries an inline comment citing ADR-0003
       D3.2 and F3 so a future reader does not "simplify" it to `find_children()`.
-- [ ] `validate()` pushes no errors, mutates nothing, and returns an equal result on
+- [x] `validate()` pushes no errors, mutates nothing, and returns an equal result on
       a second call over the same tree (ADR-0003 Validation Criterion 6).
-- [ ] Both `level_validation.gd` and its test file are warning-clean under the
+- [x] Both `level_validation.gd` and its test file are warning-clean under the
       headless gdUnit4 run (F10). Run the documented command locally before calling
       this story done.
-- [ ] `grep -n "is_debug_build" src/scripts/level_validation.gd` returns nothing
+- [x] `grep -n "is_debug_build" src/scripts/level_validation.gd` returns nothing
       (ADR-0003 Validation Criterion 3, D3.6).
-- [ ] `grep -nE "^[^#]*(get_nodes_in_group|find_children)[[:space:]]*\(" src/scripts/level_validation.gd`
+- [x] `grep -nE "^[^#]*(get_nodes_in_group|find_children)[[:space:]]*\(" src/scripts/level_validation.gd`
       returns nothing — i.e. no **call site**. *(Amended 2026-08-24: the grep was
       unscoped and required the bare identifiers to be absent, which AC-1 makes
       impossible — the ADR-0003 doc block AC-1 mandates contains the string
@@ -219,7 +225,9 @@ exist and pass under the headless gdUnit4 run:
   --ignoreHeadlessMode -a res://tests/unit
 ```
 
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/unit/level/level_validation_scaffold_test.gd` exists and passes. Verified
+2026-08-25 in a full headless gdUnit4 run: 178 cases, 0 errors, 0 failures, 0 flaky,
+0 skipped, 0 orphans, exit 0. This file contributes 11 cases.
 
 ---
 
@@ -227,3 +235,34 @@ exist and pass under the headless gdUnit4 run:
 
 - Depends on: None. `class_name Plant` and `class_name Bucket` already exist.
 - Unlocks: Stories 002, 003, 004, 006 — every rule story builds on this scaffold.
+
+---
+
+## Implementation Record — 2026-08-25
+
+**Status: all nine acceptance criteria met.** The code landed earlier in the
+sprint. This record closes the paperwork, which had not been written.
+
+### Verification performed
+
+| AC | How it was verified |
+|---|---|
+| File and class declaration | `src/scripts/level_validation.gd`, `class_name LevelValidation extends RefCounted`. The ADR-0003 doc block is present, including the "Do NOT substitute `Node.find_children()`" warning and its `owned` defaults-to-true rationale. |
+| Seven constants, in manifest order | Declared in exactly the required order: `V_BUCKET_SUM`, `V_PLANT_MIN`, `V_OXY_CAP`, `V_GRAV_EXPORT`, `V_PROP_BUDGET`, `V_WIRING`, `V_BOUNDS`. Asserted by `test_all_seven_finding_codes_are_declared`. |
+| `validate()` signature | `static func validate(level: Node) -> PackedStringArray`. See the superseded-clause note on the AC itself. |
+| `count_buckets()` at any depth | `static func count_buckets(level: Node) -> int`. Covered by `test_count_buckets_finds_buckets_at_any_depth` and `test_count_buckets_finds_nodes_with_no_owner` — the second is the one that would fail if discovery were ever "simplified" to `find_children()`. |
+| Hand-rolled recursion, with rationale comment | `_collect` / `_collect_into` recurse over `get_children()` and match with `is_instance_of`. The comment above `_collect` cites D3.2 and F3 and states both reasons: group membership is invisible bookkeeping, and `get_nodes_in_group()` is a `SceneTree` method unavailable on an untreed level. |
+| No errors, no mutation, idempotent | `test_validate_is_idempotent`, `test_validate_does_not_mutate_the_level`, `test_validate_returns_empty_on_a_null_level`. |
+| Warning-clean under headless gdUnit4 | Full suite green 2026-08-25: 178 cases, 0 errors, 0 failures, 0 orphans, exit 0. gdUnit4 treats a GDScript warning as an error at discovery, so a green run is the proof. |
+| `is_debug_build` grep returns nothing | Run 2026-08-25. No match. |
+| Scoped call-site grep returns nothing | Run 2026-08-25 with the amended pattern. No match. The rationale comments mentioning `find_children()` and `get_nodes_in_group()` correctly do not match, because `^[^#]*` stops at the `#`. |
+
+### The one clause that no longer holds
+
+AC-3 required `validate()` to contain no rule logic. Stories 002, 003 and 004
+landed their rules on top of it inside the same sprint, which the AC's own
+forward reference — "rules arrive in stories 002-004 and 006" — anticipated.
+`validate()` now dispatches to `_check_watering_economy`, `_check_root_exports`
+and `_check_wiring`. The clause was a sequencing condition at story-001 close,
+not a permanent property, so it is annotated on the AC rather than treated as a
+failure. `V-PROP-BUDGET` and `V-BOUNDS` still have no branch, awaiting story 006.
