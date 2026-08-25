@@ -4,7 +4,7 @@
 > **GDD**: design/gdd/level-flow.md
 > **Architecture Module**: No dedicated module. Behaviour spans `LevelRoot` (Foundation), `OxygenDrain` (Core) and `Goal` (Feature) — see Scope note
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories level-outcomes`
+> **Stories**: 7 — see the Stories table below (6 Ready, 1 Blocked)
 
 ## Overview
 
@@ -26,13 +26,23 @@ instead of advisory.
 
 `level-flow.md` was authored 2026-08-17, after `architecture.md` v1.0 and after the
 52-requirement TR baseline was frozen. It therefore has **no architecture module of
-its own and no TR IDs**. Requirements below trace to GDD rule anchors (R1–R10)
-instead of TR IDs. `systems-index.md` places it in the Core tier; the code it
-governs lives in `LevelRoot`, `OxygenDrain` and `Goal`.
+its own**. `systems-index.md` places it in the Core tier; the code it governs lives
+in `LevelRoot`, `OxygenDrain` and `Goal`.
 
-This is a real traceability gap, not a formatting choice. Closing it properly means
-either extending `tr-registry.yaml` with a `flow:` group, or recording that
-`level-flow.md` traces by rule anchor. That decision is owed and is not made here.
+> **The TR half of this gap is CLOSED as of 2026-08-24.** This section previously
+> read "no architecture module of its own **and no TR IDs**", and the GDD
+> Requirements table below still traces by rule anchor. The **ARCH-1 sweep**
+> (2026-08-24) allocated **`TR-flow-001`–`010`**, one per rule R1–R10, taking the TR
+> baseline from 52 to 74. Eight of the ten entered the registry already covered by
+> ADR-0005, ADR-0014 and ADR-0002. The two that did not are `TR-flow-005` (R5 — the
+> sequence's content, a HUD element that does not exist; Presentation epic) and
+> `TR-flow-010` (R10 — the blocked design decision already on the Risks table).
+> **The stories written against this epic trace to TR IDs.** The rule anchors are
+> kept alongside them because the GDD prose is still the readable source.
+
+The remaining half of the gap — that this epic has no architecture module — is real
+and is not closed. It is why the requirements table below is anchored to GDD rules
+rather than to a module's requirement list.
 
 ## Governing ADRs
 
@@ -74,6 +84,47 @@ Traced by rule anchor, because no TR IDs exist for this system.
 | **`hud.md` E6/E9 "Unreachable" rows are wrong.** D14.5 corrects them. | Known, corrected in ADR-0014 | Apply D14.5's correction when the HUD epic lands. Do not implement against the stale `hud.md` rows. |
 | **Inter-area `body_entered` delivery order is genuinely undetermined** in the engine — the 2026-08-14 review confirmed this is a real gap, not an unknown. | Closed by design, not by verification | D5.4 removes the dependency rather than assuming an order. Stories must not reintroduce an ordering assumption between the airlock area and a hazard or plant area. |
 | **A bespoke suspension mechanism gets built instead of `SceneTree.paused`.** | Rejected alternative A | It would give `OxygenDrain` a second, non-structural way to stop — the exact property ADR-0008 was accepted for eliminating. `PauseController` stays the sole writer of `SceneTree.paused` (D14.2). |
+
+## Stories
+
+| # | Story | Type | Status | TR | ADR |
+|---|-------|------|--------|----|-----|
+| [001](story-001-continuous-completion-predicate.md) | The continuous completion predicate — `Goal` stops gating on the signal edge | Logic | Ready | `TR-flow-001` | ADR-0005 |
+| [002](story-002-transition-pending-chokepoint.md) | `_transition_pending` — the guarded chokepoint both endings route through | Logic | Ready | `TR-flow-009`, `TR-flow-007` | ADR-0005 (D5.4) |
+| [003](story-003-pause-controller-and-pause-lock.md) | `PauseController` — sole writer of `SceneTree.paused`, and the set-once pause lock | Logic | Ready | `TR-flow-004` *(mechanism)* | ADR-0014 (D14.2, D14.4) |
+| [004](story-004-terminal-sequence-driver.md) | The terminal-sequence driver — pause, hold, then transition | Integration | Ready | `TR-flow-004` | ADR-0014 (D14.1, D14.3) |
+| [005](story-005-cause-agnostic-death.md) | Cause-agnostic death — three causes, one indistinguishable sequence | Integration | Ready | `TR-flow-006` | ADR-0005 (D5.4) / ADR-0008 |
+| [006](story-006-advance-to-next-authored-level.md) | Completion advances to the next authored level | Integration | Ready | `TR-flow-010` *(not-blocked half)* | ADR-0005 |
+| [007](story-007-end-of-game-after-final-level.md) | What follows the final level — the end-of-game state | Logic | **Blocked** | `TR-flow-010` *(remainder)* | **N/A — unowned** |
+
+**Order**: 001 → 002 → 003 → 004 → 005 → 006. Story 003 is self-contained and can
+start at any time. Story 007 is Blocked on a design decision and is not schedulable.
+
+### What this epic does **not** own
+
+Named here because four adjacent pieces sit in sibling epics and `level-state`
+story 005 wrote the handover out by name.
+
+| Not here | Owner |
+|---|---|
+| The `level_complete` latch and the ordered goal handler (D5.3) | `level-state` story 005 |
+| Restart-is-reconstruction — R8 / `TR-flow-008` | `level-state` story 006 |
+| Arm-and-defer, the completion freeze, the depletion-frame outcomes | `oxygen-drain` stories 003–004 |
+| `FramePriority` constants (D5.1) | `level-state` story 003 |
+| `plant.gd` `_process` → `_physics_process` (D5.5) | Feature watering epic |
+| The sequence's **content** — E6/E9, R5 / `TR-flow-005` | Presentation HUD epic |
+| The `pause` input action binding | Blocked on `design/ux/pause-menu.md` (D14.6) |
+| The menu-screen node contract | Unowned — `interaction-patterns.md` O9 |
+
+### ⚠ Manifest gap the stories carry
+
+`docs/architecture/control-manifest.md` is version **2026-08-17** and its header
+covers ADR-0001 through ADR-0012. **ADR-0013 and ADR-0014 are not in it.** Every
+D14.x rule in stories 003 and 004 is therefore quoted from the ADR directly and
+marked as a manifest gap, because `/story-readiness`'s manifest-version comparison
+cannot detect drift in a rule the manifest does not contain. Run
+`/create-control-manifest update` before these stories are implemented, or accept
+that the ADR is the only check on them.
 
 ## Definition of Done
 

@@ -13,7 +13,7 @@ Control Manifest Version: 2026-08-17
 | [Tuning Resources](tuning-resources/EPIC.md) | Foundation | Watering / Suit Oxygen / Physics Props | `watering-system.md`, `suit-oxygen.md`, `physics-props.md` | 6 stories | Ready |
 | [Player Core](player-core/EPIC.md) | Core | Gravity (player share) | `gravity.md` | 6 stories | Ready |
 | [Oxygen Drain](oxygen-drain/EPIC.md) | Core | Suit Oxygen | `suit-oxygen.md` | 6 stories | Ready |
-| [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | Not yet created | Ready |
+| [Level Outcomes](level-outcomes/EPIC.md) | Core | Level Flow | `level-flow.md` | 7 stories | Ready |
 | [Physics Props](physics-props/EPIC.md) | Presentation | Physics Props | `physics-props.md` | 6 stories | Ready — scheduling deferred |
 
 ## Scoping notes
@@ -112,9 +112,9 @@ the D11.1 exception noted above.
 | ADR-0008 — the `LevelRoot`-ancestor `process_mode` invariant has no automated check | `oxygen-drain` | **OPEN** — scene test owed once a pause menu exists |
 | ADR-0008's Key Interfaces block declares `class_name OxygenAccessibility` on a node whose autoload singleton name is also `OxygenAccessibility`. ADR-0001 bans exactly this shape on `gravity_authority.gd` and the manifest carries that ban, but there is **no oxygen equivalent** in the manifest | `oxygen-drain` | **Flagged, not amended, 2026-08-24** — story 001 follows ADR-0001 and the prototype (which already omits `class_name`) and verifies the collision behaviour against the 4.7.1 binary. If the check confirms a hard conflict, the mechanism is a registry supersession entry or a manifest rule, not an edit to ADR-0008 |
 | `control-manifest.md` extracts **no rule from ADR-0014**, and its header is stale for ADR-0013 | *(cross-epic)* / `oxygen-drain` | **OPEN — `/create-control-manifest update` is owed.** Investigated 2026-08-24: the body cites ADR-0013 at two places, added by commit `584e1d8` without regenerating the header or bumping `Manifest Version`; ADR-0014 is cited **nowhere** (loose grep for `0014`, "pause gating", "terminal sequence" → zero hits). So this is a real regeneration, not the header edit it was first assumed to be. Bites `oxygen-drain` story 006, which has an Accepted governing ADR with no manifest rule to quote. Every story to date embeds `Manifest Version: 2026-08-17`, which `/story-readiness` checks against |
-| `level-flow.md` R10 — what follows the final level | `level-outcomes` | **BLOCKED** — design decision owed |
-| `complete_hold_duration` ⚠ unset (0.6 s proposed, 0.2–1.5 s range) | `level-outcomes` | **OPEN** — needs a human playtest, not an agent one |
-| No `pause` action exists in `project.godot` | `level-outcomes` | **Blocked** on `design/ux/pause-menu.md` |
+| `level-flow.md` R10 — what follows the final level | `level-outcomes` | **BLOCKED** — design decision owed. Now has a named home: **story 007**, written Blocked with no acceptance criteria and no test path, so the gap stays visible rather than living only in a risk table. The not-blocked half (advance to the next authored level) is story 006 |
+| `complete_hold_duration` ⚠ unset (0.6 s proposed, 0.2–1.5 s range) | `level-outcomes` | **OPEN** — needs a human playtest, not an agent one. Carried by **story 004**, which exports the value at the 0.6 s proposal and forbids recording it as chosen; evidence path `production/qa/evidence/complete-hold-duration-playtest.md` |
+| No `pause` action exists in `project.godot` | `level-outcomes` | **Blocked** on `design/ux/pause-menu.md`. **Story 003** builds the `PauseController` mechanism and binds no action — the lock and the sole-writer rule are exercised by calling the methods directly |
 | TR-gravity-010 — camera-follow / camera-rotation split specified but not applied (ADR-0013 D13.5) | `gravity-authority` | **Blocked** on a human playtest of `level_01` and `level_07` |
 | TR-watering-002 — carry scales `max_speed` only; ADR-0007 explicitly declines it | *(Feature watering)* | **GAP** — no accepted ADR owns the mechanism |
 | `PlayerWallJumpComponent` — no GDD, no TR IDs, no ADR (QQ-05) | `player-core` | **Unowned** — behaviour stories are Blocked |
