@@ -6,7 +6,7 @@
 > **Type**: Logic
 > **Estimate**: M (3-4 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: *(set by /dev-story)*
+> **Last Updated**: 2026-08-24
 
 ## Context
 
