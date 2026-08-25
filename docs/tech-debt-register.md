@@ -96,6 +96,28 @@ so the debt can be traced back to the decision that accepted it.
   to `bodies` — tracked from
   `production/epics/collision-layer-registry/story-004-collision-layer-invariant-test-suite.md`
 
+- **2026-08-25** (CI-1: live-fire verification of the ADR guards — `/dev-story`):
+  The CI test step has no equivalent of the local runner's `-c` flag, so a red CI
+  suite may stop at the first failing test and under-report. The local command
+  passes `-c` to `GdUnitCmdTool.gd` for exactly this reason;
+  `MikeSchulze/gdUnit4-action@v1` is configured in `.github/workflows/tests.yml`
+  with `godot-version`, `paths`, `timeout` and `report-name` only, and no
+  continue-past-first-failure option was identified. Not yet reproduced — every
+  CI run to date has had a GREEN suite, so the under-reporting is inferred from
+  the missing flag rather than observed. Confirm the action exposes such an
+  option before scheduling the fix. Affects the quality of CI evidence, not
+  correctness — tracked from
+  `production/qa/evidence/ci-1-live-fire-2026-08-25.md`
+- **2026-08-25** (CI-1: live-fire verification of the ADR guards — `/dev-story`):
+  `actions/checkout@v4` and `actions/upload-artifact@v4` in
+  `.github/workflows/tests.yml` target Node.js 20 and are being forced onto Node
+  24 by the runner, which logs a deprecation warning on every run. A warning, not
+  a failure; all four runs on 2026-08-25 completed normally. Resolves by bumping
+  both actions to a Node-24 release. Deferred because a version bump is an
+  unforced change to a workflow that has only just been observed working, and it
+  should be made deliberately rather than folded into CI-1 — tracked from
+  `production/qa/evidence/ci-1-live-fire-2026-08-25.md`
+
 ## Closed
 
 *(none yet)*
