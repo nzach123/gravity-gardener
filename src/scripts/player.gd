@@ -189,3 +189,28 @@ func set_gravity(direction: Vector2, multiplier: float) -> void:
 func win_level() -> void:
 	pass
 	
+
+
+# ---------------------------------------------------------------
+# CI-1 LIVE-FIRE PROBE - DELIBERATE ADR VIOLATIONS.
+#
+# This function is NEVER CALLED. It exists only so the four CI guard
+# steps have something to catch in a single run, discharging CLR-005
+# AC-5 and TUN-006's final AC. It is reverted in the very next commit.
+#
+# DO NOT COPY ANY LINE BELOW. Each one is banned on purpose.
+# ---------------------------------------------------------------
+func _ci_live_fire_probe() -> void:
+	# ADR-0004 D4.6 - runtime collision mask mutation
+	set_collision_mask_value(5, true)
+	# ADR-0006 D6.3 (V6) - tuning path literal outside src/scripts/tuning/
+	var _path: String = "res://src/resources/tuning/prop_tuning.tres"
+	# ADR-0006 D6.5 (V7) - assignment to a tuning resource property.
+	# The executable form is a PARSE ERROR ("Cannot assign a new value to a
+	# constant") because Tuning.PROP is a const, so it cannot exist in
+	# compiling code. Left as a comment: the guards deliberately do not
+	# exclude comment lines, so this is the only form of this arm that can
+	# ever be observed firing. See the CI-1 evidence doc.
+	# Tuning.PROP.prop_gravity_scale = 1.5
+	# ADR-0006 D6.5 (V7) - duplicate() on a tuning resource
+	var _dup: Resource = Tuning.PROP.duplicate()
