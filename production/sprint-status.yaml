@@ -9,77 +9,28 @@
 #   done           <->  Complete
 #   blocked        <->  Blocked
 #
-# ── 2026-08-24: expanded to one row per story file ───────────────────────────
+# ── Sprint 1's rows are archived at production/sprint-status-sprint-1.yaml ────
 #
-# Three sprint tasks were each a single row while mapping to several story
-# files. That rolled-up shape hid real work: TUN-2 read as "blocked on editor
-# checks only" while containing an unstarted story, and level-validation story
-# 005 had no row at all. Every story file now has its own row, and `status` is
-# derived from that file's own Status header, not restated here.
+# Sprint 1 does not formally close until 2026-08-31, and CLR-005 and TUN-006 are
+# still at `review`. Both are carried into this file as live rows rather than
+# left behind, so nothing depends on reading the archive.
 #
-# ID scheme: <EPIC>-<NNN>, where NNN is the story file number. Rows whose `file`
-# points at an EPIC.md or a doc path are sprint tasks with no story file —
-# story-creation runs, the architecture sweep, and the QA plan.
+# CI-1 in sprint-2.md is ONE action covering the TWO rows CLR-005 and TUN-006.
+# It is not a separate row here, because each of those stories owns its own file
+# and its own acceptance criteria. Closing CI-1 closes both rows.
 #
-# Old -> new ID mapping, so earlier commit and doc references stay traceable:
-#   CLR-1..CLR-5 -> CLR-001..CLR-005   (already 1:1; renamed for consistency)
-#   TUN-1        -> TUN-001
-#   TUN-2        -> TUN-002 .. TUN-006 (5 rows)
-#   LV-1         -> LV-001 .. LV-004   (4 rows)
-#   LV-2         -> LV-006
-#   GA-1         -> GA-001 .. GA-007   (7 rows)
-#   ARCH-1, TUN-0, LV-0, GA-0, LS-0, QA-1 unchanged — these are not stories.
-#   LV-005 is new: it had no row before.
+# Rows whose `file` points at a doc rather than a story file are sprint tasks
+# with no story file — the process items and the bug.
 
-sprint: 1
-goal: "Land the Foundation layer's data and validation base — collision registry, tuning resources, and level-load validation — so Core epics have something to build on, and close BUG-0001."
-start: "2026-08-18"
-end: "2026-08-31"
-generated: "2026-08-18"
+sprint: 2
+goal: "Complete the Foundation layer — finish the gravity authority, land level and oxygen state ownership, and close the two CI guards Sprint 1 could not verify — so the Core layer has an unblocked base and /gate-check production can be run honestly."
+start: "2026-09-01"
+end: "2026-09-14"
+generated: "2026-08-25"
 updated: "2026-08-25"
 
 stories:
-  # ── collision-layer-registry ────────────────────────────────────────────────
-  - id: "CLR-001"
-    name: "Create the CollisionLayers registry and correct project.godot naming"
-    file: "production/epics/collision-layer-registry/story-001-create-collision-layers-registry.md"
-    priority: must-have
-    status: done
-    owner: "godot-gdscript-specialist"
-    estimate_days: 0.25
-    blocker: ""
-    completed: "2026-08-23"
-
-  - id: "CLR-002"
-    name: "Fix BUG-0001 — dead kill-plane masks on levels 05 and 06"
-    file: "production/epics/collision-layer-registry/story-002-fix-bug-0001-kill-plane-masks.md"
-    priority: must-have
-    status: done
-    owner: "gameplay-programmer"
-    estimate_days: 0.25
-    blocker: ""
-    completed: "2026-08-25"
-
-  - id: "CLR-003"
-    name: "Remove vestigial PlayerArea2D and dead moving-platform mask"
-    file: "production/epics/collision-layer-registry/story-003-remove-dead-collision-configuration.md"
-    priority: must-have
-    status: done
-    owner: "godot-gdscript-specialist"
-    estimate_days: 0.15
-    blocker: ""
-    completed: "2026-08-25"
-
-  - id: "CLR-004"
-    name: "Collision layer invariant test suite"
-    file: "production/epics/collision-layer-registry/story-004-collision-layer-invariant-test-suite.md"
-    priority: must-have
-    status: done
-    owner: "qa-tester"
-    estimate_days: 0.4
-    blocker: ""
-    completed: "2026-08-23"
-
+  # ── carried from Sprint 1 — both closed by the single CI-1 run ─────────────
   - id: "CLR-005"
     name: "CI grep enforcing the D4.6 runtime-mutation ban"
     file: "production/epics/collision-layer-registry/story-005-ci-grep-runtime-mutation-ban.md"
@@ -87,80 +38,8 @@ stories:
     status: review
     owner: "devops-engineer"
     estimate_days: 0.15
-    blocker: "AC-5 — needs a scratch-branch CI run with one deliberate violation, confirmed red, then reverted. The trigger was widened to `development` on 2026-08-25 (d77337c), so the workflow can now fire; before that it never had. The run itself is still outstanding."
+    blocker: "AC-5 — needs a live CI run with one deliberate set_collision_mask_value() violation, confirmed red, then reverted. The workflow fires on push to `development`/`main` or on a PR targeting them; a scratch branch pushed alone will NOT fire it. No `gh` CLI on this machine, so opening a PR is a human web-UI action. Part of CI-1."
     completed: ""
-
-  # ── architecture ───────────────────────────────────────────────────────────
-  - id: "ARCH-1"
-    name: "Sweep hazards.md and level-flow.md into tr-registry.yaml (/architecture-review)"
-    file: "docs/architecture/tr-registry.yaml"
-    priority: must-have
-    status: done
-    owner: "technical-director"
-    estimate_days: 0.5
-    blocker: ""
-    completed: "2026-08-24"
-
-  # ── tuning-resources ───────────────────────────────────────────────────────
-  - id: "TUN-0"
-    name: "Create stories for the tuning-resources epic"
-    file: "production/epics/tuning-resources/EPIC.md"
-    priority: must-have
-    status: done
-    owner: "producer"
-    estimate_days: 0.25
-    blocker: ""
-    completed: "2026-08-23"
-
-  - id: "TUN-001"
-    name: "T4 spike — does @export_range clamp a hand-edited .tres?"
-    file: "production/epics/tuning-resources/story-001-t4-export-range-clamp-spike.md"
-    priority: must-have
-    status: done
-    owner: "godot-specialist"
-    estimate_days: 0.5
-    blocker: ""
-    completed: "2026-08-24"
-
-  - id: "TUN-002"
-    name: "Create the WateringTuning / OxygenTuning / PropTuning resource scripts"
-    file: "production/epics/tuning-resources/story-002-create-tuning-resource-scripts.md"
-    priority: must-have
-    status: done
-    owner: "godot-gdscript-specialist"
-    estimate_days: 0.3
-    blocker: ""
-    completed: "2026-08-25"
-
-  - id: "TUN-003"
-    name: "Author the three tuning .tres files"
-    file: "production/epics/tuning-resources/story-003-author-tuning-tres-files.md"
-    priority: must-have
-    status: done
-    owner: "godot-gdscript-specialist"
-    estimate_days: 0.15
-    blocker: ""
-    completed: "2026-08-25"
-
-  - id: "TUN-004"
-    name: "Create the Tuning accessor"
-    file: "production/epics/tuning-resources/story-004-create-tuning-accessor.md"
-    priority: must-have
-    status: done
-    owner: "godot-gdscript-specialist"
-    estimate_days: 0.15
-    blocker: ""
-    completed: "2026-08-24"
-
-  - id: "TUN-005"
-    name: "Tuning validation suite"
-    file: "production/epics/tuning-resources/story-005-tuning-validation-suite.md"
-    priority: must-have
-    status: done
-    owner: "godot-gdscript-specialist"
-    estimate_days: 0.3
-    blocker: ""
-    completed: "2026-08-25"
 
   - id: "TUN-006"
     name: "CI greps for V6, V7 and V8"
@@ -168,137 +47,216 @@ stories:
     priority: must-have
     status: review
     owner: "devops-engineer"
-    estimate_days: 0.2
-    blocker: "Final AC — the same scratch-branch CI run CLR-005 needs: one deliberate violation per check (V6 path literal, V7 assignment, V7 .duplicate(), V8 GravityTuning script), each confirmed red, then reverted. Unblocked by the trigger widening on 2026-08-25 (d77337c); the run is still outstanding. The blocker field was previously EMPTY, which wrongly read as no gate."
+    estimate_days: 0.20
+    blocker: "Final AC — the same run CLR-005 needs, with four violations: a res://src/resources/tuning/prop_tuning.tres literal in a gameplay script (V6), Tuning.PROP.prop_gravity_scale = 1.5 (V7), Tuning.PROP.duplicate() (V7), and a src/scripts/tuning/gravity_tuning.gd file (V8). Each confirmed red, then reverted. Part of CI-1."
     completed: ""
 
-  # ── level-validation ───────────────────────────────────────────────────────
-  - id: "LV-0"
-    name: "Create stories for the level-validation epic"
-    file: "production/epics/level-validation/EPIC.md"
+  # ── gravity-authority ─────────────────────────────────────────────────────
+  - id: "GA-002"
+    name: "Direction easing and the exported rate"
+    file: "production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md"
     priority: must-have
-    status: done
-    owner: "producer"
-    estimate_days: 0.25
+    status: ready-for-dev
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.31
     blocker: ""
-    completed: "2026-08-23"
+    completed: ""
 
-  - id: "LV-001"
-    name: "Validation scaffold and discovery"
-    file: "production/epics/level-validation/story-001-validation-scaffold-and-discovery.md"
+  - id: "GA-003"
+    name: "Player gravity component becomes a consumer"
+    file: "production/epics/gravity-authority/story-003-player-gravity-component-becomes-consumer.md"
     priority: must-have
-    status: done
-    owner: "gameplay-programmer"
-    estimate_days: 0.3
+    status: ready-for-dev
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.50
     blocker: ""
-    completed: "2026-08-25"
+    completed: ""
 
-  - id: "LV-002"
-    name: "V-BUCKET-SUM and V-PLANT-MIN rules"
-    file: "production/epics/level-validation/story-002-bucket-sum-and-plant-min-rules.md"
+  - id: "GA-004"
+    name: "Zones report to the authority, clear the Area2D override"
+    file: "production/epics/gravity-authority/story-004-zones-report-to-authority-and-clear-area-override.md"
     priority: must-have
-    status: done
-    owner: "gameplay-programmer"
-    estimate_days: 0.3
+    status: ready-for-dev
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.38
     blocker: ""
-    completed: "2026-08-25"
+    completed: ""
 
-  - id: "LV-003"
-    name: "V-OXY-CAP and V-GRAV-EXPORT rules"
-    file: "production/epics/level-validation/story-003-oxygen-capacity-and-gravity-export-rules.md"
+  - id: "GA-005"
+    name: "Level default gravity and reset on load"
+    file: "production/epics/gravity-authority/story-005-level-default-gravity-and-reset-on-load.md"
     priority: must-have
-    status: done
-    owner: "gameplay-programmer"
-    estimate_days: 0.3
+    status: ready-for-dev
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.38
     blocker: ""
-    completed: "2026-08-25"
+    completed: ""
 
-  - id: "LV-004"
-    name: "V-WIRING rule and the required-consumer table"
-    file: "production/epics/level-validation/story-004-wiring-rule-required-consumer-table.md"
+  - id: "GA-006"
+    name: "Default-space gravity write"
+    file: "production/epics/gravity-authority/story-006-default-space-gravity-write.md"
     priority: must-have
-    status: done
-    owner: "gameplay-programmer"
-    estimate_days: 0.3
-    blocker: ""
-    completed: "2026-08-25"
-
-  # ── QA ─────────────────────────────────────────────────────────────────────
-  - id: "QA-1"
-    name: "Author the sprint QA plan (/qa-plan sprint)"
-    file: "production/qa/qa-plan-sprint-1.md"
-    priority: must-have
-    status: done
-    owner: "qa-lead"
-    estimate_days: 0.25
-    blocker: ""
-    completed: "2026-08-24"
-
-  # ── story-creation runs ────────────────────────────────────────────────────
-  - id: "GA-0"
-    name: "Create stories for the gravity-authority epic"
-    file: "production/epics/gravity-authority/EPIC.md"
-    priority: should-have
-    status: done
-    owner: "producer"
-    estimate_days: 0.25
-    blocker: ""
-    completed: "2026-08-23"
-
-  - id: "GA-001"
-    name: "GravityAuthority autoload and guards"
-    file: "production/epics/gravity-authority/story-001-gravity-authority-autoload-and-guards.md"
-    priority: should-have
-    status: done
+    status: ready-for-dev
     owner: "godot-gdscript-specialist"
     estimate_days: 0.44
     blocker: ""
-    completed: "2026-08-24"
+    completed: ""
 
-  - id: "LS-0"
-    name: "Create stories for the level-state epic"
-    file: "production/epics/level-state/EPIC.md"
+  - id: "GA-007"
+    name: "Prop registry and the force-wake pass"
+    file: "production/epics/gravity-authority/story-007-prop-registry-and-force-wake-pass.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.38
+    blocker: ""
+    completed: ""
+
+  # ── level-state ───────────────────────────────────────────────────────────
+  - id: "LS-001"
+    name: "LevelState object"
+    file: "production/epics/level-state/story-001-level-state-object.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "gameplay-programmer"
+    estimate_days: 0.38
+    blocker: ""
+    completed: ""
+
+  - id: "LS-002"
+    name: "OxygenState object"
+    file: "production/epics/level-state/story-002-oxygen-state-object.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "gameplay-programmer"
+    estimate_days: 0.44
+    blocker: ""
+    completed: ""
+
+  - id: "LS-003"
+    name: "Frame priority contract"
+    file: "production/epics/level-state/story-003-frame-priority-contract.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "gameplay-programmer"
+    estimate_days: 0.13
+    blocker: ""
+    completed: ""
+
+  - id: "LS-004"
+    name: "LevelRoot construction and injection"
+    file: "production/epics/level-state/story-004-level-root-construction-and-injection.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "gameplay-programmer"
+    estimate_days: 0.50
+    blocker: ""
+    completed: ""
+
+  - id: "LS-005"
+    name: "level_complete latch"
+    file: "production/epics/level-state/story-005-level-complete-latch.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "gameplay-programmer"
+    estimate_days: 0.38
+    blocker: ""
+    completed: ""
+
+  - id: "LS-006"
+    name: "Restart is reconstruction"
+    file: "production/epics/level-state/story-006-restart-is-reconstruction.md"
+    priority: must-have
+    status: ready-for-dev
+    owner: "gameplay-programmer"
+    estimate_days: 0.31
+    blocker: ""
+    completed: ""
+
+  # ── should have ───────────────────────────────────────────────────────────
+  - id: "PP-001"
+    name: "PropBody RigidBody and registry"
+    file: "production/epics/physics-props/story-001-prop-body-rigid-body-and-registry.md"
+    priority: should-have
+    status: backlog
+    owner: "godot-gdscript-specialist"
+    estimate_days: 0.31
+    blocker: "Sequencing, not design: PropBody._ready() calls GravityAuthority.register_prop(), so GA-007 must land first. Only story 001 of physics-props is pulled forward — art-bible.md 1.3 defers the epic's content to Vertical-Slice tier, and index.md sanctions pulling this one story."
+    completed: ""
+
+  - id: "LV-005"
+    name: "Wire validate() into LevelRoot._ready() at step (a)"
+    file: "production/epics/level-validation/story-005-wire-validation-into-level-root-ready.md"
+    priority: should-have
+    status: backlog
+    owner: "gameplay-programmer"
+    estimate_days: 0.31
+    blocker: "Sequencing: this story's subject is the ORDERING between validate() and the construction of LevelState and OxygenState, so LS-004 must land first. Unblocks inside this sprint."
+    completed: ""
+
+  - id: "LV-006"
+    name: "V-PROP-BUDGET and V-BOUNDS rules"
+    file: "production/epics/level-validation/story-006-prop-budget-and-bounds-rules.md"
+    priority: should-have
+    status: backlog
+    owner: "gameplay-programmer"
+    estimate_days: 0.31
+    blocker: "Sequencing: needs class_name PropBody from PP-001, which needs GA-007. NOT unschedulable — the physics-props epic was created 2026-08-24 (c53c421) and the Sprint 1 note calling this row unschedulable is stale. Also carries an OPEN 4.7.1 unknown: reading an Area2D extent headlessly on a node instantiated but never added to a tree."
+    completed: ""
+
+  # ── nice to have ──────────────────────────────────────────────────────────
+  - id: "BUG-0002"
+    name: "Rename the MovingPlatfornm root node"
+    file: "production/qa/bugs/BUG-0002.md"
     priority: nice-to-have
-    status: done
+    status: backlog
+    owner: "gameplay-programmer"
+    estimate_days: 0.05
+    blocker: "Sequencing only: land AFTER anything that depends on CLR-003's playtest, so the fix cannot invalidate that sign-off. Five-line rename across moving_platform.tscn and its four level instances; no code references the name."
+    completed: ""
+
+  - id: "PROC-1"
+    name: "Retrospective action items 2-5"
+    file: "production/retrospectives/retro-sprint-1-2026-08-25.md"
+    priority: nice-to-have
+    status: backlog
     owner: "producer"
+    estimate_days: 0.15
+    blocker: ""
+    completed: ""
+
+  - id: "DEBT-1"
+    name: "Repay three zero-cost tech-debt items"
+    file: "docs/tech-debt-register.md"
+    priority: nice-to-have
+    status: backlog
+    owner: "godot-gdscript-specialist"
     estimate_days: 0.25
     blocker: ""
-    completed: "2026-08-24"
+    completed: ""
 
-# ── Cut to Sprint 2 on 2026-08-24 ──────────────────────────────────────────────
+# ── Totals ────────────────────────────────────────────────────────────────────
 #
-# These rows are carried here so their derived estimates and real blockers are
-# not re-discovered next sprint. They are NOT part of Sprint 1 and must not be
-# counted in its burndown.
+#   Must have    14 rows   4.88 d   (CI-1 covers the first two)
+#   Should have   3 rows   0.93 d
+#   Nice to have  3 rows   0.45 d
+#   Committed              6.26 d against 8 available
 #
-# GA-002..GA-007 — the gravity-authority epic. Cut at the sprint plan's own
-#   declared cut line. Planned at 1.75 d as a single task; the 7 story files
-#   totalled 22.5 h ≈ 2.83 d, a ~60% under-estimate. Depends on ARCH-1.
+# Sprint 1 delivered 5.84 estimate-days across 4 active days. Must Have alone is
+# below that figure. The Should Have and Nice to Have tail is the cut line.
 #
-#   GA-001 IS NOT CUT. It was completed and committed in 783953b on 2026-08-24,
-#   working ahead of the cut line, and now carries its own row above. Removed
-#   from this block on 2026-08-25 — completed work must not sit in a cut block.
-#   The remaining six total 2.39 d.
+# ── Not scheduled, and why ────────────────────────────────────────────────────
 #
-#     GA-002  Direction easing and the exported rate          S (2-3 h)  0.31
-#     GA-003  Player gravity component becomes a consumer     L (4 h)    0.50
-#     GA-004  Zones report to the authority, clear the        M (3 h)    0.38
-#             Area2D override
-#     GA-005  Level default gravity and reset on load         M (3 h)    0.38
-#     GA-006  Default-space gravity write                     M (3-4 h)  0.44
-#     GA-007  Prop registry and the force-wake pass           M (3 h)    0.38
-#                                                             total      2.39
-#
-# LV-005  Wire validate() into LevelRoot._ready() at step (a)  M  0.30
-#   blocked: the level-state epic must land first. LevelState and OxygenState do
-#   not exist, and this story's subject is the ORDERING between validate() and
-#   their construction. Scheduling block, not a design gap. Had NO row before
-#   2026-08-24 — the rolled-up LV-1 task hid it.
-#
-# LV-006  V-PROP-BUDGET and V-BOUNDS                           M  0.30
-#   (was LV-2.) Blocked on TWO prerequisites, not one. PropTuning landed in
-#   b8dba3c and satisfies the first. The second is `class_name PropBody` under
-#   ADR-0011 — no PropBody exists in src/scripts/ and NO EPIC COVERS PHYSICS
-#   PROPS. index.md files it under "Not yet epic'd". LV-006 is unschedulable
-#   until that epic exists. Earlier notes calling LV-2 "now genuinely unblocked"
-#   were wrong.
+# player-core (6 stories)     — follows gravity-authority per index.md build order.
+#                               Story 006 is Blocked: PlayerWallJumpComponent has
+#                               no GDD, no TR IDs and no ADR.
+# oxygen-drain (6 stories)    — ADR-0002 blocks it until level-state lands. Story
+#                               006 additionally has an Accepted governing ADR
+#                               (ADR-0014) with NO control-manifest rule to quote.
+#                               Run /create-control-manifest update before Sprint 3.
+# level-outcomes (7 stories)  — story 007 is Blocked on a design decision (what
+#                               follows the final level, level-flow.md R10).
+#                               Story 004's complete_hold_duration needs a HUMAN
+#                               playtest, not an agent one.
+# physics-props 002-006       — content deferred to Vertical-Slice tier by
+#                               art-bible.md 1.3 and ADR-0011's scope note.
