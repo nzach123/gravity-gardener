@@ -156,11 +156,11 @@ stories:
     name: "Tuning validation suite"
     file: "production/epics/tuning-resources/story-005-tuning-validation-suite.md"
     priority: must-have
-    status: review
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.3
-    blocker: "One negative check behaved differently from its AC: re-pointing a .tres at the wrong script is a PARSE ERROR at load, not a group 1 failure, so V1 (the GH#73615 type-identity guard) was never demonstrated red. Do not weaken V1 to a null check to make it observable."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   - id: "TUN-006"
     name: "CI greps for V6, V7 and V8"

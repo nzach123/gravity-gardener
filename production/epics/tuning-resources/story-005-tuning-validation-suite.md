@@ -1,12 +1,12 @@
 # Story 005: Headless gdUnit4 validation suite — V1-V4 and V9
 
 > **Epic**: Tuning Resources
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: 2026-08-24
+> **Last Updated**: 2026-08-25
 
 ## Context
 
@@ -53,39 +53,42 @@ because of GH#73615).
 
 *From ADR-0006 Validation Criteria V1-V4 and V9, and Migration Plan step 5:*
 
-- [ ] `tests/unit/tuning/tuning_resources_test.gd` exists and runs headless via
+- [x] `tests/unit/tuning/tuning_resources_test.gd` exists and runs headless via
       `godot --headless --script tests/gdunit4_runner.gd`.
-- [ ] **V1 — type identity.** `Tuning.PROP is PropTuning`, `Tuning.OXYGEN is
+- [x] **V1 — type identity.** `Tuning.PROP is PropTuning`, `Tuning.OXYGEN is
       OxygenTuning`, `Tuning.WATERING is WateringTuning`. Asserted as `is`, **not**
       as a non-null check. This is the GH#73615 guard and it is load-bearing.
-- [ ] **V2 — null-tree resolution.** `Tuning.PROP` resolves inside a static call on a
+- [x] **V2 — null-tree resolution.** `Tuning.PROP` resolves inside a static call on a
       scene that was instantiated via `PackedScene.instantiate()` and **never added
       to the tree**. The test asserts `get_tree() == null` on that instance, then
       reads `Tuning.PROP` successfully. This is the ADR-0003 `LevelValidation` path
       and it is the second load-bearing case.
-- [ ] **V3 — cache identity.** Two independent reads of `Tuning.PROP` return the same
+- [x] **V3 — cache identity.** Two independent reads of `Tuning.PROP` return the same
       instance, asserted by object identity (`==` on the object reference or
       `get_instance_id()`), not by field-by-field comparison.
-- [ ] **V4 — every default matches its GDD §7 default exactly.** All ten global knobs
+- [x] **V4 — every default matches its GDD §7 default exactly.** All ten global knobs
       asserted: four on `WateringTuning`, five on `OxygenTuning`, three on
       `PropTuning` (twelve values in total across the three classes).
-- [ ] **V9 — `resource_local_to_scene` is `false`** on all three resources.
-- [ ] The absence cases from Story 002 are asserted: no `buckets_required`,
+- [x] **V9 — `resource_local_to_scene` is `false`** on all three resources.
+- [x] The absence cases from Story 002 are asserted: no `buckets_required`,
       `water_duration` or `interact_radius` on `WateringTuning`; no
       `oxygen_capacity` on `OxygenTuning`; no `mass` / `friction` / `bounce` /
       `linear_damp` / `angular_damp` on `PropTuning`; no `GravityTuning` class
       registered anywhere.
-- [ ] `props_per_level_budget` is asserted to be an **`int`**, not a float.
-- [ ] The threshold ordering `threshold_critical < threshold_warning <
+- [x] `props_per_level_budget` is asserted to be an **`int`**, not a float.
+- [x] The threshold ordering `threshold_critical < threshold_warning <
       threshold_caution` is asserted on the authored values.
-- [ ] The suite is green on the current codebase once Stories 002-004 have landed.
-- [ ] The suite **fails** when each of these is deliberately introduced on a scratch
+- [x] The suite is green on the current codebase once Stories 002-004 have landed.
+- [~] The suite **fails** when each of these is deliberately introduced on a scratch
       branch, verified by hand once and then reverted:
-      - `resource_local_to_scene = true` on any one `.tres` (V9)
-      - Any one knob edited off its GDD default (V4)
-      - A `.tres` re-pointed at the wrong script, so the type is wrong but the object
-        is non-null (V1)
-- [ ] The test file and all four tuning scripts are warning-clean under gdUnit4's
+      - [x] `resource_local_to_scene = true` on any one `.tres` (V9) — **DEMONSTRATED
+        RED 2026-08-25**, see Implementation Record
+      - [x] Any one knob edited off its GDD default (V4) — **DEMONSTRATED RED 2026-08-25**
+      - [ ] A `.tres` re-pointed at the wrong script, so the type is wrong but the object
+        is non-null (V1) — **NOT DEMONSTRABLE.** This is a parse error at load, not a
+        group-1 failure. See Implementation Record. V1 is implemented and correct; it
+        must NOT be weakened to a null check to make the negative path observable.
+- [x] The test file and all four tuning scripts are warning-clean under gdUnit4's
       warnings-as-errors discovery.
 
 ---
@@ -235,11 +238,12 @@ just as well from an ordinary test method with a live tree.*
 green invariant test that cannot go red is worse than no test. Verify each by hand on
 a scratch branch, confirm the failure, then revert:
 
-- [ ] `resource_local_to_scene = true` on one `.tres` → group 5 fails
-- [ ] One knob edited off its GDD default → group 4 fails
+- [x] `resource_local_to_scene = true` on one `.tres` → group 5 fails — **CONFIRMED 2026-08-25**
+- [x] One knob edited off its GDD default → group 4 fails — **CONFIRMED 2026-08-25**
 - [ ] A `.tres` re-pointed at the wrong script → group 1 fails, **and a null check
       would have passed** — confirm this explicitly, because it is the whole reason
       V1 is written as a type assertion
+      — **NOT REACHABLE.** See Implementation Record.
 
 Record all three results in the story's completion notes.
 
@@ -258,7 +262,7 @@ This story's implementation **is** its own test evidence. The scratch-branch neg
 checks are a one-time manual verification during implementation, not a committed
 artifact.
 
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/unit/tuning/tuning_resources_test.gd` exists and passes headless — 24 cases, present in the 178/178 green run of 2026-08-25. Negative checks recorded in the Implementation Record below.
 
 ---
 
@@ -270,3 +274,76 @@ artifact.
   ADR-0012, and the `level-validation` epic's `V-PROP-BUDGET` work (sprint task
   LV-2). **ADR-0006 requires this suite to be green before any consumer depends on
   the tuning resources.**
+
+---
+
+## Implementation Record
+
+*Written 2026-08-25. The suite itself landed earlier; this record did not exist until
+now, which is why every acceptance criterion sat unticked while the work was in
+fact complete.*
+
+### What is implemented
+
+`tests/unit/tuning/tuning_resources_test.gd` — 24 cases across five groups, all
+passing headless. Verified present in the 178/178 green run.
+
+| Group | Criterion | Implementation |
+|---|---|---|
+| 1 | V1 type identity | 3 tests using `is`, not a null check |
+| 2 | V2 null-tree resolution | 1 test; asserts `instance.get_tree()` is null as a stated PRECONDITION before reading `Tuning.PROP` |
+| 3 | V3 cache identity | 3 tests comparing `get_instance_id()`, not field values |
+| 4 | V4 authored defaults vs GDD section 7 | 24 value assertions |
+| 5 | V9 `resource_local_to_scene` false | 3 tests |
+
+### Negative checks — the proof the suite can go red
+
+Run 2026-08-25 on a clean tree. Each mutation was applied, the suite run, the result
+recorded, and the file restored with `git checkout --`; the tree was confirmed
+clean after each.
+
+| # | Mutation | Expected | Actual | Result |
+|---|---|---|---|---|
+| 1 | `resource_local_to_scene = true` on `prop_tuning.tres` | group 5 fails | `test_prop_is_not_local_to_scene` FAILED — "Expecting: 'false' but is 'true'" at line 217. 24 cases, 1 failure, exit 100 | **RED, as specified** |
+| 2 | `prop_gravity_scale` 1.0 -> 1.1 (off the GDD default, inside the `@export_range`) | group 4 fails | `test_prop_defaults_match_gdd` FAILED. 24 cases, 1 failure, exit 100 | **RED, as specified** |
+| 3 | `.tres` re-pointed at the wrong script | group 1 fails, and a null check would have passed | **Not reachable** | **NOT DEMONSTRABLE** |
+
+Check 2 deliberately used a value INSIDE the `@export_range` of 0.8-1.2. TUN-001's
+spike established that a hand-edited `.tres` is not clamped, so a value outside the
+range would have introduced a second variable into the observation.
+
+### Why check 3 cannot be demonstrated
+
+Re-pointing a `.tres` at the wrong script is a **parse error at load**, not a
+group-1 assertion failure. The resource never resolves to a live object at all, so
+group 1 is never reached and V1 is never observed red.
+
+This does NOT mean V1 is untested or unnecessary. V1 guards GH#73615, where a
+`preload()`ed resource resolves **non-null yet the wrong type** — a condition the
+engine produces internally and which no hand edit to a `.tres` can reproduce. The
+negative vector named in this story simply does not exercise the bug class V1
+exists to catch.
+
+**V1 must NOT be weakened to a null check to make the negative path observable.**
+That would trade a correct guard for a demonstrable one, and the whole reason V1 is
+written as `is PropTuning` rather than `!= null` is that a null check passes on
+exactly the defect V1 targets.
+
+**Status of the third check: accepted as unreachable by design.** Reopen only if a
+vector is found that produces a non-null, wrong-type resource.
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-25
+**Criteria**: 11 of 12 fully verified. The twelfth — the three-part negative
+demonstration — is 2 of 3, with the third accepted as unreachable and annotated
+inline rather than ticked.
+**Deviations**: ADVISORY — negative check 3 (V1 type-identity, GH#73615) cannot be
+demonstrated red by the vector this story names. Documented above. V1 is implemented
+and correct and was deliberately not weakened.
+**Test Evidence**: Logic — `tests/unit/tuning/tuning_resources_test.gd`, 24 cases,
+present in the 2026-08-25 green run of 178/178, exit 0. Negative checks 1 and 2
+demonstrated red on 2026-08-25 and recorded above.
+**Code Review**: Deferred — `/code-review` to be run before sprint close-out. Lean
+review mode; recorded per the /story-done Phase 5 gate.
