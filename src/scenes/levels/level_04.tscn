@@ -319,7 +319,7 @@ position = Vector2(271, 293)
 hazard_length_blocks = 5
 
 [node name="SpikeHazard3" parent="Hazards" unique_id=1418236489 instance=ExtResource("7_ej25m")]
-position = Vector2(346, -27)
+position = Vector2(346, 30)
 rotation = 3.1415927
 hazard_length_blocks = 7
 
