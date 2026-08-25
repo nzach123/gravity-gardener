@@ -27,9 +27,10 @@ post-cutoff API. Note that `Physics 2D > Default Physics FPS` affects the number
 ease steps but not the wall-clock duration — write the test against elapsed seconds,
 not frame counts.
 
-**Performance**: One `lerp_angle` per physics frame while easing (roughly 6-7 frames
-per gravity change at 60 FPS), and zero cost once `gravity` reaches `target_gravity`.
-The idle path must return before doing any work.
+**Performance**: One `lerp_angle` per physics frame while easing — exactly 5 frames
+for a 90-degree change at 60 FPS with the 2.5-degree settle threshold (probed
+2026-08-25), not the 6-7 estimated before the threshold existed. Zero cost once
+`gravity` reaches `target_gravity`. The idle path must return before doing any work.
 
 **Control Manifest Rules (this layer)**:
 - Required: "Gravity is owned exclusively by the `GravityAuthority` autoload ...
@@ -49,6 +50,13 @@ The idle path must return before doing any work.
 
 - [ ] AC5 — a 90-degree gravity direction change completes within 100 ms and the angle
       is monotonic throughout (no overshoot, no reversal).
+      **CLAUSE CLARIFIED 2026-08-25 — "completes" means the settle snap below, not
+      `is_equal_approx`.** The pure ease never satisfies `is_equal_approx` inside
+      100 ms and is not intended to; see the settle-threshold criterion below. GDD
+      `gravity.md` AC5 is unchanged and is met at 83.3 ms.
+- [ ] The ease snaps to `target_gravity` once the remaining angle falls below
+      `DIRECTION_SETTLE_EPSILON` (2.5 degrees). This makes "settled" a single,
+      exact, testable state rather than two competing ones.
 - [ ] R3 — strength snaps. `ascent_magnitude()` and `descent_magnitude()` reach their
       new values on the *same* call to `set_gravity()`, before any ease frame runs.
 - [ ] The ease runs in `_physics_process(delta)`, never `_process(delta)`.
@@ -84,9 +92,38 @@ The idle path must return before doing any work.
   per rendered frame with no defined phase relationship to the physics step, so a write
   made there reaches integration by accident rather than by guarantee. Story 006's
   same-frame requirement (GDD AC12) depends on this loop being the physics one.
-- Guard the top of `_physics_process` with `if gravity.is_equal_approx(target_gravity): return`
-  so the steady state costs nothing. `is_equal_approx`, not `==` — floating-point
-  rotation will not land exactly on the target and an exact test never idles.
+- **Settle threshold — added 2026-08-25, resolving a spec contradiction.** After
+  computing each eased vector, snap when the remaining angle is small:
+
+  ```gdscript
+  const DIRECTION_SETTLE_EPSILON: float = 0.0436332  # 2.5 degrees, in radians
+
+  if absf(angle_difference(gravity.angle(), target_gravity.angle())) < DIRECTION_SETTLE_EPSILON:
+      gravity = target_gravity
+  ```
+
+  Then guard the top of `_physics_process` with
+  `if gravity == target_gravity: return`. Because the snap assigns the target
+  vector itself, `==` is now correct and exact — `is_equal_approx` is no longer
+  needed for the idle test.
+
+  *Why this exists.* The story previously required `is_equal_approx` to become
+  true within 100 ms. It cannot. Probed in Godot 4.7.1 on 2026-08-25 with
+  `rate = 32.0`, `delta = 1/60`, over a 90-degree change: the retained error per
+  step is `1 - 32/60 = 0.4667`, so the residual runs 42.0, 19.6, 9.15, 4.27,
+  1.99, 0.93, 0.43, 0.20 degrees — and `is_equal_approx` is STILL false at step 8
+  (133 ms). It needs roughly 19 steps (~317 ms). A correct implementation would
+  have failed QA AC-1 as written.
+
+  *Why 2.5 degrees.* It snaps at step 5 = 83.3 ms, leaving 16.7 ms of headroom
+  under GDD AC5's 100 ms and +0.51 degrees of margin over the 1.9919-degree
+  step-5 residual. **Do not use 1.0 or 2.0 degrees.** 1.0 snaps at step 6 =
+  exactly 100.0 ms — zero timing margin. 2.0 snaps at step 5 but clears the
+  residual by only +0.008 degrees, which float drift can erase. 2.5 is the
+  smallest value with margin on both axes.
+
+  This does not retune the curve. Steps 1-4 are bit-identical to the ease being
+  relocated; only the tail is truncated.
 - `direction_ease_rate` was declared in story 001. This story is where it is first
   *read*. Removing the hardcoded `32.0` is the whole of TR-gravity-011 — an exported
   field that nothing consumes does not close it.
@@ -123,9 +160,17 @@ Fixture: `initialize(2990.72, 0.390625)`, then `reset_to(Vector2.DOWN, 1.0)`.
   - Given: gravity settled at `Vector2.DOWN`, `direction_ease_rate = 32.0`
   - When: `set_gravity(Vector2.RIGHT, 1.0)`, then `_physics_process(1.0 / 60.0)` is
     called in a loop, recording `gravity.angle()` after each step
-  - Then: `gravity.is_equal_approx(target_gravity)` becomes true at accumulated elapsed
-    time <= 0.100 s, and the angular delta between consecutive samples never changes
-    sign
+  - Then: `gravity == target_gravity` becomes true at accumulated elapsed time
+    <= 0.100 s, and the angular delta between consecutive samples never changes sign
+
+    **DEFECT RESOLVED 2026-08-25.** This clause read
+    `gravity.is_equal_approx(target_gravity)`. That assertion was unsatisfiable: probed
+    in Godot 4.7.1, `is_equal_approx` is still false at step 8 (133 ms) and needs about
+    19 steps (~317 ms), so a CORRECT implementation failed it. The story carried two
+    meanings of "settled" — the visual settle its Performance note budgeted, and the
+    `is_equal_approx` settle this clause demanded. The `DIRECTION_SETTLE_EPSILON` snap
+    in Implementation Notes collapses them into one, and makes `==` exact rather than
+    approximate. Expect the snap at step 5 = 83.3 ms.
   - Edge cases: test all four 90-degree transitions (DOWN to RIGHT, RIGHT to UP, UP to
     LEFT, LEFT to DOWN) — `lerp_angle` wraps at the +/-pi boundary and a naive
     subtraction-based monotonicity check produces a false failure exactly there. Compare
@@ -171,13 +216,16 @@ Fixture: `initialize(2990.72, 0.390625)`, then `reset_to(Vector2.DOWN, 1.0)`.
     the length is constant anyway and a magnitude ease would be invisible.
 
 - **AC-7 — the settled state costs nothing**
-  - Given: gravity settled, `gravity.is_equal_approx(target_gravity)`
+  - Given: gravity settled, `gravity == target_gravity` (exact — the settle snap
+    assigns the target vector itself, so no approximate test is needed here)
   - When: `_physics_process(1.0 / 60.0)` is called 100 times
   - Then: `gravity` is bit-identical to its value before the loop, and `gravity_changed`
     did not fire
   - Edge cases: bit-identical, not approximate. A loop that recomputes `lerp_angle`
     against an already-reached target accumulates float drift, which an approximate
-    assertion would hide until it became visible in play.
+    assertion would hide until it became visible in play. The settle snap gives this
+    criterion an exact target it previously lacked: before the snap existed, `gravity`
+    was never bit-equal to anything, so "bit-identical" had no defined reference.
 
 - **AC-8 — signal fires once per change, not once per frame**
   - Given: a signal counter connected to `gravity_changed`
