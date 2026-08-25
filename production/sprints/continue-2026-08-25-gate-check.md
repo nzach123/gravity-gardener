@@ -1,34 +1,33 @@
-# Continuation Prompt — Sprint 2 Start (2026-08-25, tenth session close)
+# Continuation Prompt — The Production Gate (2026-08-25, eleventh session close)
 
 Paste the block below into a fresh Claude Code session.
 
-**Supersedes `sprint-1-closeout-continue-prompt-2026-08-25.md`**, which is fully
-consumed: `/retrospective` and `/sprint-plan new` have both run, Sprint 1 is
-closed out, and Sprint 2 is planned. That file is deleted in the same commit as
-this one.
+**Supersedes `continue-2026-08-25-sprint-2-start.md`**, which is fully consumed.
+Its Route A was CI-1, and CI-1 is done. That file is deleted in the same commit
+as this one.
 
-State at time of writing: branch `vertical-slice`, tree clean, roughly twenty
-commits unpushed — **re-derive both rather than trusting these**. Suite green at
-178/178. Sprint 1 ends 2026-08-31;
-Sprint 2 runs 2026-09-01 to 2026-09-14.
+Two things changed on 2026-08-25 that every earlier handoff document gets wrong:
 
-There is a second, task-specific prompt at
-`production/sprints/qa-plan-sprint-2-prompt.md`. Use that one if you are running
-`/qa-plan sprint` and nothing else.
+1. **CI-1 is done.** `/gate-check production` is no longer blocked.
+2. **`production/session-state/active.md` was deleted**, along with all of
+   `production/session-logs/`, by something outside the session that noticed it.
+   The cause was not identified. `active.md` has been reconstructed and says so
+   in its own first section. The Session Extracts history is gone for good.
 
 ---
 
 ## Copy from here
 
-    Resume work on branch `vertical-slice`. Sprint 1 is closed out; Sprint 2 is
-    planned and not started.
+    Resume work on branch `vertical-slice`. Sprint 1 is closed. Sprint 2 is
+    planned and starts 2026-09-01.
 
     Ground yourself first. Do not trust any status you have not checked this
-    session. Two handoff documents in this repo have already outlived the facts
+    session. Three handoff documents in this repo have already outlived the facts
     they asserted, and one of them sent a session down a wrong path.
 
-    1. Read `production/session-state/active.md` (gitignored, on disk). Its live
-       section was rewritten at the close of the tenth session and is current.
+    1. Read `production/session-state/active.md`. It was RECONSTRUCTED on
+       2026-08-25 after the original was deleted by an unidentified cause. Its
+       first section explains what was lost. Its live content is current.
     2. Read `production/sprints/sprint-2.md` — the plan you are executing.
     3. Read `production/sprint-status.yaml` — the live machine-readable rows.
        Sprint 1's are archived at `production/sprint-status-sprint-1.yaml`.
@@ -44,22 +43,27 @@ There is a second, task-specific prompt at
 
     ## Where things stand
 
-    **Sprint 1: closed out, QA verdict APPROVED WITH CONDITIONS.** 20 of 22 rows
-    done, must-have 17 of 19, 5.84 estimate-days delivered against 5.75
-    committed. No S1 or S2 bug open — BUG-0001 closed on developer playtest
-    sign-off, so the Definition of Done's bar is met.
+    **Stage: Pre-Production.** The vertical slice passed with PROCEED. The next
+    milestone is the Pre-Production to Production gate.
 
-    DO NOT re-run `/retrospective` or `/sprint-plan new`. Both are done and
-    committed (`98d681e`). DO NOT re-ask the six decisions from the older
-    prompts — all settled.
+    **Sprint 1: closed 2026-08-25, QA verdict APPROVED WITH CONDITIONS.** 20 of
+    22 rows done, must-have 17 of 19, 5.84 estimate-days against 5.75 committed.
+    Suite 178/178. No S1 or S2 bug open.
 
-    The two open Sprint 1 rows, CLR-005 and TUN-006, both close on one action:
-    **CI-1**.
+    **CI-1 IS DONE. CLR-005 and TUN-006 are closed.** Four workflow runs on
+    2026-08-25 from PR #1. Run #3 planted five violations and all four ADR guards
+    fired in one run, each naming its clause. Run #4 reverted and went green.
+    Evidence: `production/qa/evidence/ci-1-live-fire-2026-08-25.md`.
+    Cleanup is complete — branch `ci-1-live-fire` was deleted local and remote at
+    `4d16a26`, which closes PR #1 unmerged.
 
-    **Sprint 2: planned, not started.** 20 rows, 6.26 days committed against 8
-    available. Must Have alone is 4.88, below Sprint 1's proven delivery.
+    DO NOT re-run `/retrospective`, `/sprint-plan new`, or CI-1. All three are
+    done and committed. DO NOT re-ask the six decisions from the older prompts —
+    all settled.
 
-      - CI-1                  carryover, 0.35 d, HUMAN REQUIRED
+    **Sprint 2: planned, not started.** 20 rows, 6.26 days against 8 available.
+    Must Have alone is 4.88, below Sprint 1's proven delivery.
+
       - GA-002..GA-007        gravity-authority tail, 2.39 d, Must Have
       - LS-001..LS-006        level-state epic, 2.14 d, Must Have
       - PP-001 -> LV-005 -> LV-006   Should Have, 0.93 d, a strict chain
@@ -67,56 +71,49 @@ There is a second, task-specific prompt at
 
     The GA and LS tracks are independent of each other and can run side by side.
 
-    ## Pick one of three routes
+    ## Do these, in this order
 
-    ### Route A — CI-1. The highest-value thing, and it needs the developer.
+    ### 1. `/gate-check production` — the reason this session exists
 
-    This is the only work blocking `/gate-check production`, and it is the one
-    task an agent cannot finish alone.
+    This is the verdict on whether the project enters Production. It was blocked
+    only on CI-1, and CI-1 is done.
 
-    READ THIS BEFORE ATTEMPTING IT: the workflow fires on push to `development`
-    or `main`, or on a pull request TARGETING them. **A scratch branch pushed on
-    its own will NOT trigger it.** There is no `gh` CLI on this machine, so
-    opening a PR is a web-UI action by the developer. This repository has no
-    `main` branch at all — not local, not remote; `origin/HEAD` points at
-    `development`. The trigger was widened to `development` on 2026-08-25 in
-    `d77337c`; before that the job had never fired once.
+    **Declare this gap in the gate record rather than letting it pass silently:**
+    `.github/` does not exist on `development`. The workflow lives only on
+    feature branches. For a same-repo pull request GitHub runs the workflow from
+    the HEAD branch, which is the only reason the four runs happened at all. The
+    guards are proven. Their reach is not. They will never run on a push to
+    `development` until the workflow reaches that branch.
 
-    Five violations, one at a time, each confirmed red, then reverted:
+    Two more non-blocking items from the same run are already in
+    `docs/tech-debt-register.md` and should be named, not re-derived:
+    the CI test step has no `-c` equivalent so a red suite may under-report
+    (recorded as INFERRED, never reproduced — every CI run so far has been
+    green), and `actions/checkout@v4` plus `actions/upload-artifact@v4` log a
+    Node 20 deprecation warning.
 
-      - `set_collision_mask_value()` in `player.gd` -> the ADR-0004 D4.6 step
-        fails with a readable message, and the GdUnit4 step still runs or is
-        correctly short-circuited                                      (CLR-005)
-      - a `res://src/resources/tuning/prop_tuning.tres` literal in a gameplay
-        script -> V6 fails                                             (TUN-006)
-      - `Tuning.PROP.prop_gravity_scale = 1.5` -> V7 fails             (TUN-006)
-      - `Tuning.PROP.duplicate()` -> V7 fails                          (TUN-006)
-      - a `src/scripts/tuning/gravity_tuning.gd` file -> V8 fails      (TUN-006)
-
-    CI uses `MikeSchulze/gdUnit4-action@v1`, not the local command, and still
-    needs its own continue-past-first-failure fix. Confirm the run surfaces every
-    planted violation, not only the first. Record the evidence: which violation,
-    which check fired, the run URL, and the confirmation that the revert went
-    green.
-
-    ### Route B — `/qa-plan sprint`, then implementation.
+    ### 2. `/qa-plan sprint`
 
     Sprint 2 has no QA plan. The full prompt is already written at
     `production/sprints/qa-plan-sprint-2-prompt.md` — use it rather than
     improvising. Sprint 1's DoD depended on a QA plan that was still a
-    Nice-to-Have on day one and had to be promoted mid-sprint; running this
+    Nice-to-Have on day one and had to be promoted mid-sprint. Running this
     before implementation is how that does not happen twice.
 
-    ### Route C — start implementing.
+    ### 3. On 2026-09-01, start implementing
 
     `/story-readiness` on GA-002, then `/dev-story`. GA-002's unsatisfiable
     settle assertion was fixed in `41ea6fd` with a 2.5-degree snap threshold, so
     it should come back READY — confirm rather than assume. LS-001 is the other
     valid starting point and is independent of the GA track.
 
-    **Do NOT run `/gate-check production` until CI-1 is done.** A phase gate
-    resting on two CI guards nobody has seen execute is the same class of gap
-    Sprint 1 spent effort closing.
+    ## One open question for the developer
+
+    **Merge `vertical-slice` into `development`?** The branch is 77 commits
+    ahead and unmerged. This is what puts the CI guards on the trunk and closes
+    the reach gap above. It is a separate decision from the gate and it is the
+    developer's call, not the agent's. There is no `gh` CLI on this machine, so
+    opening a PR is a browser action.
 
     ## Two stale claims corrected on 2026-08-25 — do not reintroduce them
 
@@ -168,8 +165,12 @@ There is a second, task-specific prompt at
       discovery, so one warning anywhere fails the whole suite.
     - Use the Write tool, not Bash heredocs, for any file with apostrophes or
       long prose. Heredocs have mangled two sessions' worth of writes.
-    - **Nothing has been pushed.** Nothing from Sprint 1's close-out has left the
-      machine. Re-derive the commit count; do not quote one from a document.
+    - **`active.md` and `session-logs/` were deleted on 2026-08-25 by an
+      unidentified cause.** Both are gitignored. If session history matters to
+      you, the tracked record is the source of truth: `production/sprints/`,
+      `production/qa/`, `production/retrospectives/`, `production/epics/`,
+      `docs/tech-debt-register.md`, and the git log. Do not reconstruct lost
+      history from inference.
 
 ## Copy to here
 
@@ -177,24 +178,27 @@ There is a second, task-specific prompt at
 
 ## Shorter variant
 
-    Resume on `vertical-slice`. Sprint 1 is closed out (APPROVED WITH
-    CONDITIONS); Sprint 2 is planned and not started. Read
-    `production/session-state/active.md` and `production/sprints/sprint-2.md`,
-    re-derive git and test state (expect 178/178), then pick a route: CI-1 (the
-    live-fire CI run — needs a PR against `development` or a direct push, the
-    developer's call, and it blocks /gate-check), `/qa-plan sprint` (prompt ready
-    at `production/sprints/qa-plan-sprint-2-prompt.md`), or `/story-readiness`
-    GA-002 then `/dev-story`. Do not re-run /retrospective or /sprint-plan. Ask
-    before writing.
+    Resume on `vertical-slice`. Sprint 1 is closed (APPROVED WITH CONDITIONS).
+    CI-1 is DONE — CLR-005 and TUN-006 are closed, and `/gate-check production`
+    is no longer blocked. Sprint 2 is planned and starts 2026-09-01. Read
+    `production/session-state/active.md` (reconstructed 2026-08-25 after the
+    original was deleted — it explains itself) and `production/sprints/sprint-2.md`,
+    re-derive git and test state (expect 178/178), then run `/gate-check
+    production`. Declare in the record that `.github/` is absent from
+    `development`, so the proven guards do not yet run on the trunk. Then
+    `/qa-plan sprint` using the prompt at
+    `production/sprints/qa-plan-sprint-2-prompt.md`. Do not re-run /retrospective,
+    /sprint-plan, or CI-1. Ask before writing.
 
 ## Quick map of what is open
 
 | Item | Type | Blocks |
 |---|---|---|
-| CI-1 — the live-fire CI run | **human** — needs a PR or a push | CLR-005 + TUN-006, and `/gate-check` |
+| `/gate-check production` | agent work, UNBLOCKED | the Production transition |
 | `/qa-plan sprint` | agent work, prompt ready | Sprint 2 implementation |
-| GA-002…GA-007, LS-001…LS-006 | agent work | Foundation completion |
+| Merge `vertical-slice` into `development` | **human** — browser PR, 77 commits | CI guards reaching the trunk |
+| GA-002…GA-007, LS-001…LS-006 | agent work, 2026-09-01 | Foundation completion |
 | PP-001 → LV-005 → LV-006 | agent work, strict chain | LV-006 |
 | BUG-0002 (S4) | Sprint 2, nice-to-have | nothing |
-| 10 tech-debt items | backlog, no owners | nothing |
+| 12 tech-debt items | backlog, no owners | nothing |
 | `/create-control-manifest update` | owed | `oxygen-drain` story 006, Sprint 3 |
