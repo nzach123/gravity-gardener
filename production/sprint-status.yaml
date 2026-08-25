@@ -35,21 +35,21 @@ stories:
     name: "CI grep enforcing the D4.6 runtime-mutation ban"
     file: "production/epics/collision-layer-registry/story-005-ci-grep-runtime-mutation-ban.md"
     priority: must-have
-    status: review
+    status: done
     owner: "devops-engineer"
     estimate_days: 0.15
-    blocker: "AC-5 — needs a live CI run with one deliberate set_collision_mask_value() violation, confirmed red, then reverted. The workflow fires on push to `development`/`main` or on a PR targeting them; a scratch branch pushed alone will NOT fire it. No `gh` CLI on this machine, so opening a PR is a human web-UI action. Part of CI-1."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   - id: "TUN-006"
     name: "CI greps for V6, V7 and V8"
     file: "production/epics/tuning-resources/story-006-ci-greps-for-tuning-bans.md"
     priority: must-have
-    status: review
+    status: done
     owner: "devops-engineer"
     estimate_days: 0.20
-    blocker: "Final AC — the same run CLR-005 needs, with four violations: a res://src/resources/tuning/prop_tuning.tres literal in a gameplay script (V6), Tuning.PROP.prop_gravity_scale = 1.5 (V7), Tuning.PROP.duplicate() (V7), and a src/scripts/tuning/gravity_tuning.gd file (V8). Each confirmed red, then reverted. Part of CI-1."
-    completed: ""
+    blocker: ""
+    completed: "2026-08-25"
 
   # ── gravity-authority ─────────────────────────────────────────────────────
   - id: "GA-002"

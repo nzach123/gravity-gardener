@@ -62,13 +62,29 @@ ban. Match that step's shape and placement.
 - [x] The steps run in the same CI job as the existing gdUnit4 step, so a violation
       is caught in the same run as everything else.
 - [x] The steps pass on the repository as committed after Stories 002-005 land.
-- [ ] Verified once on a scratch branch, one violation per check, then reverted:
+- [x] Verified once on a scratch branch, one violation per check, then reverted:
+      **[VERIFIED 2026-08-25 — see the per-item notes]** All four planted in one
+      commit and caught in a single run (#3), then reverted (run #4 green). A
+      scratch branch alone does not fire this workflow; verification went through
+      PR #1 from `ci-1-live-fire` to `development`. Evidence:
+      `production/qa/evidence/ci-1-live-fire-2026-08-25.md`.
       - A `res://src/resources/tuning/prop_tuning.tres` literal added to a gameplay
-        script → V6 step fails
+        script → V6 step fails — **observed red, run #3**
       - `Tuning.PROP.prop_gravity_scale = 1.5` added to a gameplay script → V7 step
-        fails
-      - `Tuning.PROP.duplicate()` added to a gameplay script → V7 step fails
-      - A `src/scripts/tuning/gravity_tuning.gd` file created → V8 step fails
+        fails — **[SHAPE UNREACHABLE 2026-08-25]** This could not be planted as
+        executable code. `Tuning.PROP` is a `const`, so the line is a parse error,
+        "Cannot assign a new value to a constant", and the shape cannot exist in a
+        codebase that compiles. The V7 assignment arm is therefore a text tripwire
+        only — the same standing already recorded for V1. Verified red via the
+        commented form, which the guards deliberately do not exclude. Note the
+        alias route (`var t := Tuning.PROP` then `t.prop_gravity_scale = 1.5`) DOES
+        compile and mutate, and is matched by neither arm; ADR-0006's V7 step
+        already documents that gap. Flagged, not amended.
+      - `Tuning.PROP.duplicate()` added to a gameplay script → V7 step fails —
+        **observed red, run #3**
+      - A `src/scripts/tuning/gravity_tuning.gd` file created → V8 step fails —
+        **observed red, run #3**, on both halves: the content grep and the
+        `find -iname` file-name check
 
 ---
 
@@ -196,8 +212,8 @@ revert. Record all five results in the story's completion notes:
 - Scratch-branch verification results recorded in the story's completion notes (a
   one-time manual verification, not a committed artifact)
 
-**Status**: [x] CI steps landed and verified locally. [ ] Not yet verified by a
-real CI run — see Implementation Record.
+**Status**: [x] CI steps landed and verified locally. [x] Verified by a real CI
+run 2026-08-25 (CI-1) — `production/qa/evidence/ci-1-live-fire-2026-08-25.md`.
 
 ---
 

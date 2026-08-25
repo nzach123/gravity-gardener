@@ -57,10 +57,17 @@ silently voids the guarantee (F8)" row:*
       outside the excluded file.
 - [x] The step runs before or alongside the existing GdUnit4 test step, so a
       violation is caught in the same CI run as everything else.
-- [ ] Verified once on a scratch branch: deliberately add a
+- [x] Verified once on a scratch branch: deliberately add a
       `set_collision_mask_value()` call to any gameplay script (e.g.
       `player.gd`), confirm the new CI step fails, then revert the change.
       Record this as evidence rather than leaving it to be discovered later.
+      **[METHOD CLARIFIED 2026-08-25]** A scratch branch alone does not fire
+      this workflow — it triggers on push to `development`/`main` or on a PR
+      targeting them, and this repository has no `main`. Verified on scratch
+      branch `ci-1-live-fire` via PR #1 against `development`:
+      `set_collision_mask_value(5, true)` in `player.gd` caught by the
+      ADR-0004 D4.6 step in run #3 (red), reverted, run #4 green. Evidence:
+      `production/qa/evidence/ci-1-live-fire-2026-08-25.md`.
 
 ---
 
@@ -181,7 +188,7 @@ hand on a scratch branch.
   story's completion notes rather than as a separate test file — there is no
   gdUnit4 test for a CI workflow step.
 
-**Status**: [x] CI step landed and verified locally. [ ] Not yet verified by a real CI run - see Implementation Record.
+**Status**: [x] CI step landed and verified locally. [x] Verified by a real CI run 2026-08-25 (CI-1) - `production/qa/evidence/ci-1-live-fire-2026-08-25.md`.
 
 ---
 
