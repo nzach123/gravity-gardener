@@ -1,12 +1,12 @@
 # Story 003: Make PlayerGravityComponent a consumer; remove Player.set_gravity
 
 > **Epic**: Gravity Authority
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: L (4 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: *(set by /dev-story)*
+> **Last Updated**: 2026-08-26
 
 ## Context
 
@@ -77,6 +77,12 @@ changes. One signal connection is added at `_ready()`.
       nothing (`private_gravity_copy`).
 - [ ] The player falls, jumps and reorients exactly as before at gravity angles 0, 90,
       180 and 270 degrees (GDD AC10) — this is the regression bar for the move.
+      **DEFERRED 2026-08-26 — requires a human playtest.** Cannot be automated (the
+      coding standards place "feel" qualities outside automation) and cannot be run by
+      an agent here: the windowed Godot editor segfaults on this machine. Folded into
+      the sprint's single gravity-path playtest, which runs after GA-005 lands and is
+      signed off by qa-lead at
+      `production/qa/evidence/playtest-sprint-2-gravity-regression.md`.
 
 ---
 
@@ -254,7 +260,10 @@ sprint QA plan adds on top of them.*
   play regression, which cannot be automated (the coding standards place "feel"
   qualities outside automation)
 
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/integration/gravity/player_gravity_consumer_test.gd` — created and
+passing (32 test functions; suite 233/233 across 14 suites, exit 0, report_18, 2026-08-26).
+[ ] `production/qa/evidence/player-gravity-consumer-evidence.md` — NOT created; this is the
+AC-8 four-angle regression, deferred to the sprint playtest above.
 
 ---
 
@@ -265,3 +274,32 @@ sprint QA plan adds on top of them.*
   `update_gravity_lerp()` is deleted)
 - Unlocks: Story 004
 - Lands with: Stories 001, 002 and 004 form ADR-0001's atomic Changeset A
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-26
+**Criteria**: 7/8 passing. AC-8 (four-angle play regression) DEFERRED — human playtest
+required, folded into the post-GA-005 sprint gravity-path playtest.
+**Deviations**:
+- OUT OF SCOPE (valid, not scope creep): `src/scripts/main.gd` was edited although this
+  story's Out of Scope section assigns `main.gd` wiring to Story 004. AC-2 requires no
+  surviving `player.set_gravity` call site anywhere in `src/`, and a `connect()` to a
+  removed method is a RUNTIME error, not a parse error — it aborted `Main._ready()` and
+  failed all three `kill_area_death_test` cases until the line was removed. GA-004 then
+  replaced it with the authority wiring.
+- ADVISORY: ADR-0001's Key Interfaces prose states the component "retains ... the derived
+  basis"; AC-6 requires the opposite. The story governs — `update_derived_dirs()`, `up_dir`
+  and `right_dir` were deleted and every basis read now comes from `GravityAuthority`. A
+  second local derivation is the divergence AC-6's edge case describes. ADR erratum
+  candidate; the ADR line has NOT been amended.
+- ADVISORY: `src/scripts/debugger.gd:13` was repointed to `GravityAuthority.target_gravity`.
+  Not excluded by this story; it was a live call site of the deleted `Player.target_gravity`
+  proxy that no compiler would have caught.
+**Test Evidence**: Integration — `tests/integration/gravity/player_gravity_consumer_test.gd`
+(BLOCKING gate satisfied). AC-8 evidence doc deferred.
+**Code Review**: Complete — `/code-review` run 2026-08-26 across all seven changed files,
+verdict APPROVED WITH SUGGESTIONS, no blocking findings. One suggestion applied before
+close: `_reset_authority()` now writes `_initialized` / `_current_multiplier` directly
+instead of via `Object.set()`, which was verified against the 4.7.1 binary to fail silently
+on a renamed property and would have let the AC-3 guard pass for the wrong reason.

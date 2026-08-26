@@ -140,15 +140,51 @@ so the debt can be traced back to the decision that accepted it.
   code impact, but the manifest is the sheet programmers read for the Foundation layer, and
   Story 007's wake pass will be sized against this number — tracked from
   `production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md`
-- **2026-08-26** (GA-002: Direction easing and the exported rate): the QA-plan addendum's
-  instruction to delete `test_gravity_lerp_moves_toward_target` and
-  `test_gravity_lerp_noop_when_already_at_target` from `gravity_component_test.gd` is
-  deferred to Story 003, not skipped. `update_gravity_lerp()` is still live at
-  `player_gravity_component.gd:69` and called from `player.gd:138`, so both tests still
-  cover shipping code; deleting them now would drop real coverage. Close this when Story 003
-  removes the method — tracked from
-  `production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md`
+
+- **2026-08-26** (GA-003: Make PlayerGravityComponent a consumer): ADR-0001's Key
+  Interfaces section still reads "`PlayerGravityComponent` retains: ... and the derived
+  basis", which GA-003 AC-6 contradicts and overrides. The basis now lives only on
+  `GravityAuthority`; `update_derived_dirs()`, `up_dir` and `right_dir` were deleted from
+  the component. The ADR line is loose prose, not a rejected pattern, and has NOT been
+  amended. Raise as an ADR erratum — do not re-add a local basis, which is exactly the
+  divergence AC-6's edge case describes (it agrees at both endpoints of an ease and
+  disagrees for the ~83 ms between) — tracked from
+  `production/epics/gravity-authority/story-003-player-gravity-component-becomes-consumer.md`
+- **2026-08-26** (GA-003: Make PlayerGravityComponent a consumer): AC-8, the four-angle
+  play regression at gravity 0/90/180/270 degrees, is unverified. It cannot be automated
+  (coding standards place "feel" outside automation) and cannot be run by an agent on this
+  machine, where the windowed Godot editor segfaults. Folded into the sprint's single
+  gravity-path playtest, which runs after GA-005 and is signed off by qa-lead at
+  `production/qa/evidence/playtest-sprint-2-gravity-regression.md`. Close this when that
+  playtest is recorded — tracked from
+  `production/epics/gravity-authority/story-003-player-gravity-component-becomes-consumer.md`
+- **2026-08-26** (GA-003 / GA-004: ADR-0001 Changeset A): `GravityAuthority.gravity`
+  initializes to `Vector2.ZERO` and NOTHING seeds it at level load. `reset_to()` has zero
+  production call sites — verified by grep across `src/`. GA-003 deleted the old seed at
+  `player_gravity_component.gd:42` by design; ADR-0001 part 6 puts the replacement in
+  `LevelRoot._ready()`, which does not exist yet (LS-004 creates it; GA-005 AC-2 is the
+  fix). This has TWO distinct halves and both must be closed together:
+  (a) *First load* leaves the player INERT, not merely weightless — `apply_gravity()` adds
+  a zero vector, `up_dir`/`right_dir` are `Vector2.ZERO` so movement, jump and wall-jump
+  all get a zero basis, and `player.gd` assigns `up_direction = Vector2.ZERO`, which breaks
+  floor detection too. Observable evidence: level scenes under `scene_runner` log
+  `up_direction can't be equal to Vector2.ZERO`. It is a log line, not a test failure — the
+  suite is green — and gravity starts working the moment any zone fires.
+  (b) *Every subsequent load* inherits the PREVIOUS level's gravity, because
+  `GravityAuthority` is an autoload that survives scene changes and all three transition
+  paths (`start_menu.gd:5`, `main.gd:61` `change_level()`, `main.gd:67`
+  `reload_current_scene`) leave it untouched. Levels 2-8 and every death-restart therefore
+  begin under whatever gravity the player last triggered — precisely the regression
+  ADR-0001 part 6 exists to prevent ("a restart never inherits the gravity the player died
+  in"). Half (b) is NOT visible as a log line and will not be noticed until levels are
+  played in sequence. No interim workaround was added, by explicit developer decision on
+  2026-08-26 — tracked from
+  `production/epics/gravity-authority/story-003-player-gravity-component-becomes-consumer.md`
 
 ## Closed
 
-*(none yet)*
+- **2026-08-26** — CLOSED by GA-003. (GA-002: Direction easing and the exported rate): the
+  QA-plan addendum's instruction to delete `test_gravity_lerp_moves_toward_target` and
+  `test_gravity_lerp_noop_when_already_at_target` from `gravity_component_test.gd` was
+  deferred to Story 003. GA-003 removed `update_gravity_lerp()` and both tests; verified
+  absent from `tests/unit/gravity/gravity_component_test.gd` on 2026-08-26.

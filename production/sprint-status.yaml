@@ -66,17 +66,17 @@ stories:
     name: "Player gravity component becomes a consumer"
     file: "production/epics/gravity-authority/story-003-player-gravity-component-becomes-consumer.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.50
     blocker: ""
-    completed: ""
+    completed: "2026-08-26"
 
   - id: "GA-004"
     name: "Zones report to the authority, clear the Area2D override"
     file: "production/epics/gravity-authority/story-004-zones-report-to-authority-and-clear-area-override.md"
     priority: must-have
-    status: ready-for-dev
+    status: in-progress
     owner: "godot-gdscript-specialist"
     estimate_days: 0.38
     blocker: ""
@@ -89,7 +89,7 @@ stories:
     status: ready-for-dev
     owner: "godot-gdscript-specialist"
     estimate_days: 0.38
-    blocker: ""
+    blocker: "Cross-epic sequencing: AC-2 puts GravityAuthority.reset_to() in LevelRoot._ready(), but LevelRoot is created by LS-004. GA-005 cannot start until LS-004 lands. This is also what closes the zero-gravity-at-load gap in docs/tech-debt-register.md (2026-08-26)."
     completed: ""
 
   - id: "GA-006"

@@ -10,7 +10,7 @@ func _ready() -> void:
 	
 func _process(_delta: float) -> void:
 	var debug_string: String = ""
-	var gravity = player.target_gravity
+	var gravity: Vector2 = GravityAuthority.target_gravity
 	var y_velocity = snapped(player.velocity.y, .1)
 	var x_velocity = snapped(player.velocity.x, .1)
 	var velocity: Vector2 = Vector2(x_velocity, y_velocity)

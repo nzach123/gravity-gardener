@@ -67,14 +67,14 @@ var current_plant: Plant:
 	get: return watering_component.current_plant
 	set(v): watering_component.current_plant = v
 
-var target_gravity: Vector2:
-	get: return gravity_component.target_gravity
-
+## Screen-right axis for the current gravity orientation. Proxied from
+## `GravityAuthority` so external readers keep one call site (GDD R1).
 var right_dir: Vector2:
-	get: return gravity_component.right_dir
+	get: return GravityAuthority.right_dir
 
+## Screen-up axis for the current gravity orientation.
 var up_dir: Vector2:
-	get: return gravity_component.up_dir
+	get: return GravityAuthority.up_dir
 
 # ---------------------------------------------------------------
 # READY
@@ -84,6 +84,13 @@ func _ready() -> void:
 	scale_base = sprite.scale
 	_forward_exports()
 	gravity_component.initialize(max_speed)
+	# Seed the authority with the jump-derived baseline before anything can
+	# broadcast. Godot readies children before parents, so this lands ahead of
+	# LevelRoot._ready()'s reset_to() (ADR-0001 part 7).
+	GravityAuthority.initialize(
+		gravity_component.baseline_ascent_magnitude(),
+		gravity_component.ascent_descent_ratio()
+	)
 	jump_component.set_jump_velocity(gravity_component.jump_velocity)
 	visual_component.sprite = sprite
 
@@ -130,13 +137,9 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 
-	# 2. Derive directions from current gravity
-	gravity_component.update_derived_dirs()
-	up_direction = -gravity_component.gravity.normalized()
-
-	# 3. Smooth gravity rotation + magnitude toward target
-	gravity_component.update_gravity_lerp(delta)
-	up_direction = -gravity_component.gravity.normalized()
+	# 2. Adopt the authority's basis. The turn itself is eased by
+	#    GravityAuthority._physics_process(); nothing is derived locally.
+	up_direction = GravityAuthority.up_dir
 
 	# 4. Apply ascent/descent gravity to velocity
 	velocity = gravity_component.apply_gravity(delta, velocity, is_on_floor())
@@ -145,21 +148,21 @@ func _physics_process(delta: float) -> void:
 	if wall_jump_component.enable_wall_jump:
 		velocity = wall_jump_component.try(
 			delta, velocity, is_on_floor(), is_on_wall(),
-			gravity_component.up_dir,
+			GravityAuthority.up_dir,
 			func(): return get_wall_normal()
 		)
 
 	# 6. Jump (coyote, buffer, release, landing)
 	velocity = jump_component.update(
 		delta, velocity, is_on_floor(),
-		gravity_component.up_dir, gravity_component.right_dir
+		GravityAuthority.up_dir, GravityAuthority.right_dir
 	)
 
 	# 7. Lateral movement
 	var input_axis: float = Input.get_axis("move_left", "move_right")
 	velocity = movement_component.apply(
 		delta, velocity, is_on_floor(),
-		gravity_component.right_dir, gravity_component.up_dir,
+		GravityAuthority.right_dir, GravityAuthority.up_dir,
 		input_axis, camera_rotation_enabled
 	)
 
@@ -169,22 +172,13 @@ func _physics_process(delta: float) -> void:
 	# 9. Visuals
 	visual_component.update(
 		delta, velocity, is_on_floor(),
-		gravity_component.right_dir, gravity_component.up_dir,
-		input_axis, gravity_component.gravity, camera_rotation_enabled
+		GravityAuthority.right_dir, GravityAuthority.up_dir,
+		input_axis, GravityAuthority.gravity, camera_rotation_enabled
 	)
 
 # ---------------------------------------------------------------
 # EXTERNAL API
 # ---------------------------------------------------------------
-## Change gravity. Called by GravityZone.gravity_changed.
-## [param direction] is the new down-vector; [param multiplier] scales the
-## baseline strength (1.0 = normal).
-func set_gravity(direction: Vector2, multiplier: float) -> void:
-	gravity_component.set_gravity(direction, multiplier)
-	# jump_velocity is fixed under GDD R5, so this is a no-op today. Kept so the
-	# facade stays correct if launch speed ever becomes gravity-dependent again.
-	jump_component.set_jump_velocity(gravity_component.jump_velocity)
-
 ## Called when the player reaches the level goal.
 func win_level() -> void:
 	pass

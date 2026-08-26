@@ -24,8 +24,13 @@ func _ready() -> void:
 		
 	var gravityzone = get_tree().get_nodes_in_group("gravityzone")
 	for zone in gravityzone:
-		zone.gravity_changed.connect(player.set_gravity)
-		zone.gravity_changed.connect(_rotate_camera_to_gravity)
+		# Zones declare; the authority owns (ADR-0001 part 2). A zone never
+		# reaches the player — `zone_targets_player_directly` is forbidden.
+		zone.gravity_changed.connect(GravityAuthority.set_gravity)
+	# Connected ONCE, deliberately outside the loop above: the camera follows
+	# the authority's single broadcast, not each zone's own signal. Inside the
+	# loop this would connect N times and one zone entry would start N tweens.
+	GravityAuthority.gravity_changed.connect(_rotate_camera_to_gravity)
 	
 	# Initialize plant count for watering mechanic
 	GameManager.reset_level_state()

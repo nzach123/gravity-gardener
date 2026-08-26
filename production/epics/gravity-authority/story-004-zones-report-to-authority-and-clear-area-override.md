@@ -6,7 +6,7 @@
 > **Type**: Integration
 > **Estimate**: M (3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: *(set by /dev-story)*
+> **Last Updated**: 2026-08-26
 
 ## Context
 
