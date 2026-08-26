@@ -1,7 +1,7 @@
 # Story 004: Zones report to the authority; clear the Area2D gravity override
 
 > **Epic**: Gravity Authority
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: M (3 hours)
@@ -47,20 +47,20 @@ over this area was **RESOLVED 2026-08-14** (`= 1` / `= 2`) and owes this story n
 
 *From GDD `design/gdd/gravity.md` R2, R7, R9 and AC6/AC7, scoped to this story:*
 
-- [ ] `main.gd` no longer connects any zone to `player.set_gravity`. Zones reach
+- [x] `main.gd` no longer connects any zone to `player.set_gravity`. Zones reach
       `GravityAuthority.set_gravity()` and nothing else.
-- [ ] `main.gd` connects `_rotate_camera_to_gravity` to
+- [x] `main.gd` connects `_rotate_camera_to_gravity` to
       `GravityAuthority.gravity_changed`, not to each zone's own signal.
-- [ ] `gravity_zone.tscn` no longer declares `gravity_space_override` (line 12) or
+- [x] `gravity_zone.tscn` no longer declares `gravity_space_override` (line 12) or
       `gravity` (line 13) on the `Area2D` root.
-- [ ] No other `Area2D` in the project sets `gravity_space_override` or `gravity`.
-- [ ] R7 / AC7 — a zone authored with a zero-length direction or a multiplier <= 0 is
+- [x] No other `Area2D` in the project sets `gravity_space_override` or `gravity`.
+- [x] R7 / AC7 — a zone authored with a zero-length direction or a multiplier <= 0 is
       rejected at the authority and leaves gravity unchanged. The zone itself performs
       no validation of its own.
-- [ ] R2 / AC6 — the player leaving a zone retains that zone's gravity indefinitely.
+- [x] R2 / AC6 — the player leaving a zone retains that zone's gravity indefinitely.
       There is no exit handler on `GravityZone`.
-- [ ] R2 — entering a zone changes gravity globally, not for the entering body only.
-- [ ] `GravityZone` keeps `zone_gravity_direction`, `zone_gravity_multiplier` and
+- [x] R2 — entering a zone changes gravity globally, not for the entering body only.
+- [x] `GravityZone` keeps `zone_gravity_direction`, `zone_gravity_multiplier` and
       `get_zone_gravity_direction()`. `zone_priority` stays exported and unread.
 
 ---
@@ -188,6 +188,12 @@ assertions are file reads.*
   - Pass condition: indistinguishable from the pre-migration build. Any change means the
     rewire touched behaviour, which is out of scope and Blocked.
   - Record to `production/qa/evidence/gravity-zone-wiring-evidence.md`.
+  - **DEFERRED at close (2026-08-26), deliberately left unticked.** This check needs a
+    human at a running build and the windowed Godot editor segfaults on this machine.
+    It folds into the sprint's single gravity-path playtest, run after GA-005 lands —
+    evidence `production/qa/evidence/playtest-sprint-2-gravity-regression.md`, sign-off
+    qa-lead. That file does not exist yet. See the advisory in Completion Notes: this
+    check is currently the ONLY runtime proof of AC-1 and AC-2.
 
 **Estimated test count**: ~26 assertions.
 
@@ -215,7 +221,11 @@ sprint QA plan adds on top of them.*
 - `production/qa/evidence/gravity-zone-wiring-evidence.md` — camera-rewire
   no-change check
 
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/integration/gravity/gravity_zone_wiring_test.gd` — created and
+passing (28 test functions; suite 233/233 across 14 suites, exit 0, report_20, 2026-08-26).
+[ ] `production/qa/evidence/gravity-zone-wiring-evidence.md` — NOT created; the
+camera-rewire no-change check is manual and folds into the post-GA-005 sprint
+gravity-path playtest.
 
 ---
 
@@ -225,3 +235,39 @@ sprint QA plan adds on top of them.*
   (`Player.set_gravity()` must be gone before its wiring is removed)
 - Unlocks: Story 005
 - Lands with: Stories 001, 002 and 003 form ADR-0001's atomic Changeset A
+
+---
+
+## Completion Notes
+**Completed**: 2026-08-26
+**Criteria**: 8/8 automated criteria passing. The **manual camera-rewire no-change check
+is DEFERRED** — it requires a human at a running build, and the windowed Godot editor
+segfaults on this machine. It folds into the post-GA-005 sprint gravity-path playtest
+(`production/qa/evidence/playtest-sprint-2-gravity-regression.md`, sign-off qa-lead).
+**Deviations**:
+- ADVISORY — **AC-1 and AC-2 are proven ONLY by source-text matching.** No test anywhere
+  in the suite instantiates `src/scripts/main.gd` or runs its `_ready()`; this was verified
+  across all 14 suites. Wrapping either `connect()` in `if false:` leaves every assertion in
+  `gravity_zone_wiring_test.gd` passing while no zone ever reaches the authority and the
+  camera never rotates. **Consequence: the deferred manual camera check above is currently
+  the only runtime proof that these two criteria hold. It is not bookkeeping.** The fix is
+  NOT a live-wiring test against `main.gd` — LS-004 deletes that file. The fix is to make
+  `LevelRoot`'s own wiring test behavioural when LS-004 lands, and that obligation is
+  carried forward there.
+- NOTE (not a deviation) — `src/scripts/gravity_zone.gd` was **not modified at all**. AC-5
+  (no zone-local validation) and AC-6 (no `body_exited` handler) were already satisfied by
+  the authored source, so the story's "validation is removed if any exists" instruction had
+  nothing to remove. Both are now guarded by source-grep assertions rather than left to
+  assumption.
+- NOTE — **this story fixed a real shipped defect.** The camera handler was previously
+  connected INSIDE the zone loop, so N zones produced N connections and one zone entry
+  started N concurrent 0.6 s tweens. It is now connected exactly once, outside the loop, and
+  an indentation-structural test (`test_the_camera_connection_sits_outside_the_zone_loop`)
+  guards the fix against a future re-indent.
+**Test Evidence**: Integration — `tests/integration/gravity/gravity_zone_wiring_test.gd`,
+28 test functions, `.uid` sidecar present (BLOCKING gate satisfied). Full suite 233/233
+across 14 suites, exit 0, report_20, 2026-08-26. Manual camera evidence doc deferred as
+above.
+**Code Review**: Complete — `/code-review` was run 2026-08-26 across all seven changed
+files in a single pass covering both GA-003 and GA-004. Verdict APPROVED WITH SUGGESTIONS,
+no blocking findings. Not re-run at close; nothing in the changeset moved after the review.

@@ -180,6 +180,58 @@ so the debt can be traced back to the decision that accepted it.
   played in sequence. No interim workaround was added, by explicit developer decision on
   2026-08-26 — tracked from
   `production/epics/gravity-authority/story-003-player-gravity-component-becomes-consumer.md`
+- **2026-08-26** (LS-001: `LevelState` — the injectable level-scoped state object):
+  ADR-0002's A2-01 correction at `adr-0002-level-state-ownership.md:246-248` states
+  "Assignment to a getter-only property raises a runtime error, which is what makes the
+  guarantees below properties of the type rather than rules to police." **This is false
+  for Godot 4.7.1.** Probed against the binary in four shapes — `Object.set()`, a
+  `Variant`-typed reference, a statically-typed reference, and an in-script typed direct
+  assignment. All four PARSE, all four leave the backing field unchanged, and NONE raises
+  a parse error or a runtime error. An out-of-bounds array read placed in the same script
+  body raised loudly, so the silence is real and not a capture artefact. Evidence:
+  `production/qa/evidence/getter-only-assignment-probe-2026-08-26.md`. Split the claim in
+  two: the **safety** half HOLDS (external code cannot corrupt the object, so building
+  `LevelState` and `OxygenState` as specified is still correct), while the **detection**
+  half DOES NOT (the write is discarded silently, which is exactly the failure mode A2-01
+  claimed getter-only properties remove — a caller writing
+  `level_state.goal_unlocked = true` gets a no-op with no diagnostic). Two consequences
+  already absorbed: LS-001's assignment criterion (QA case AC-4) is ANNOTATED in the story
+  rather than reworded, and the
+  2026-08-25 QA-plan addendum bullet requiring the test to assert "raises a runtime error,
+  not merely that the value is unchanged" is unsatisfiable against a correct
+  implementation and is annotated in place. **This applies equally to LS-002
+  (`OxygenState`), which uses the same pattern and the same ADR paragraph at `:291` —
+  read this row before writing that story's assignment test.** Raise as an ADR-0002
+  erratum; the ADR is Accepted and has NOT been amended. Do NOT "fix" this by adding
+  error-raising setters without a decision, which would deviate from ADR-0002's Key
+  Interfaces — that option was considered and declined on 2026-08-26 in favour of
+  annotating — tracked from
+  `production/epics/level-state/story-001-level-state-object.md`
+- **2026-08-26** (LS-001, incidental): `Object.set()` returns `void` in Godot 4.7.1;
+  capturing its return value is itself a script error ("Trying to get a return value of a
+  method that returns \"void\""). This corrects an earlier session note describing `set()`
+  as returning `null`. Low impact, recorded so the wrong version is not re-derived —
+  tracked from `production/qa/evidence/getter-only-assignment-probe-2026-08-26.md`
+- **2026-08-26** (LS-002: `OxygenState`): `OxygenState._init()` reads `tuning.drain_rate`
+  with no null guard, so a null `tuning` crashes rather than reporting through
+  `push_error()`. The Foundation manifest's "guard not-bound with `push_error()`" rule is
+  written for `bind()`, not for constructors, so this is NOT a manifest violation and was
+  deliberately left unfixed to keep LS-002 inside its stated scope (decision 2026-08-26).
+  Low impact today: LS-004 is the only planned caller and passes `Tuning.OXYGEN`, which is
+  a `preload` constant that fails at parse time if the file is missing. Revisit if any
+  second construction site appears — tracked from
+  `production/epics/level-state/story-002-oxygen-state-object.md`
+- **2026-08-26** (LS-002, incidental — docs conflict, not code): two live and CONFLICTING
+  test-function naming rules exist in the repo. `.claude/rules/test-standards.md:8` says
+  `test_[system]_[scenario]_[expected_result]`, and its frontmatter is `paths: tests/**`,
+  which `.claude/docs/rules-reference.md:3` describes as automatically enforced for
+  matching files. `.claude/docs/coding-standards.md:44` says `test_[scenario]_[expected]`
+  and is the file CLAUDE.md actually imports. **Every existing suite in the repo follows
+  `coding-standards.md`**, so the code is consistent and no test needs renaming; the rules
+  file is the outlier. Left unresolved because picking the survivor is a standards
+  decision, not an implementation one. Resolve by deleting the duplicated line from one of
+  the two files rather than by editing tests — tracked from
+  `production/epics/level-state/story-002-oxygen-state-object.md`
 
 ## Closed
 

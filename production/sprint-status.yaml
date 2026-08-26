@@ -76,11 +76,11 @@ stories:
     name: "Zones report to the authority, clear the Area2D override"
     file: "production/epics/gravity-authority/story-004-zones-report-to-authority-and-clear-area-override.md"
     priority: must-have
-    status: in-progress
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.38
     blocker: ""
-    completed: ""
+    completed: "2026-08-26"
 
   - id: "GA-005"
     name: "Level default gravity and reset on load"
@@ -117,21 +117,21 @@ stories:
     name: "LevelState object"
     file: "production/epics/level-state/story-001-level-state-object.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.38
     blocker: ""
-    completed: ""
+    completed: "2026-08-26"
 
   - id: "LS-002"
     name: "OxygenState object"
     file: "production/epics/level-state/story-002-oxygen-state-object.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.44
     blocker: ""
-    completed: ""
+    completed: "2026-08-26"
 
   - id: "LS-003"
     name: "Frame priority contract"

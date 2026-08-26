@@ -1,12 +1,12 @@
 # Story 002: `OxygenState` — capacity validated at construction, drain-only
 
 > **Epic**: Level State Ownership
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (3-4 h)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-26
 
 ## Context
 
@@ -65,30 +65,58 @@ on one GDScript warning at discovery. One addition specific to this type:
 
 *From `design/gdd/suit-oxygen.md`, scoped to this story:*
 
-- [ ] **AC3** — no game action increases `remaining`. There is no setter, no
+- [x] **AC3** — no game action increases `remaining`. There is no setter, no
       refill and no `reset()`
-- [ ] **AC6, arithmetic half** — with `drain_rate` 1.0, draining a fixed timestep
+- [x] **AC6, arithmetic half** — with `drain_rate` 1.0, draining a fixed timestep
       repeatedly for `capacity` seconds of accumulated delta brings `remaining` to
       exactly zero, within float tolerance. *(The wall-clock half is the
       `oxygen-drain` epic — this story owns the arithmetic, not the loop.)*
-- [ ] **AC7** — an `OxygenState` cannot be constructed with `capacity <= 0`
-- [ ] **AC4 / AC5, lifetime half** — the type has no way to refill or reset in
+- [x] **AC7** — an `OxygenState` cannot be constructed with `capacity <= 0`
+- [x] **AC4 / AC5, lifetime half** — the type has no way to refill or reset in
       place, so "restart refills" and "oxygen does not carry between levels"
       hold by object lifetime. *(The restart behaviour itself is story 006.)*
-- [ ] **AC10, logic half** — `threshold_changed` fires at the `OxygenTuning`
+- [x] **AC10, logic half** — `threshold_changed` fires at the `OxygenTuning`
       bands (0.50 / 0.25 / 0.10) and never re-fires for a band already entered.
       *(The feedback the player sees is the Presentation HUD epic.)*
-- [ ] `depleted` emits exactly once
-- [ ] `drain()` is unconditional — it contains no state checks, so no caller can
+- [x] `depleted` emits exactly once
+- [x] `drain()` is unconditional — it contains no state checks, so no caller can
       construct a safe state (`suit-oxygen.md` R2, AC1)
-- [ ] Assignment to `capacity`, `remaining`, `fraction` or `band` from outside the
+- [x] Assignment to `capacity`, `remaining`, `fraction` or `band` from outside the
       class raises a runtime error rather than succeeding silently
+
+      > **ANNOTATED 2026-08-26 — the second half of this criterion is
+      > unsatisfiable in Godot 4.7.1. Do not reword it and do not implement
+      > around it.** Assignment to a getter-only property is discarded
+      > **silently**. It raises no parse error and no runtime error. LS-001
+      > probed this against the binary in four shapes — `Object.set()`, a
+      > `Variant`-typed reference, a statically-typed reference, and an
+      > in-script typed direct assignment. All four behave the same way.
+      > Evidence: `production/qa/evidence/getter-only-assignment-probe-2026-08-26.md`.
+      > Register row: `docs/tech-debt-register.md` (ADR-0002 erratum,
+      > 2026-08-26), which names LS-002 directly.
+      >
+      > **The half that HOLDS**: external code cannot change the value. Build
+      > the type exactly as ADR-0002 specifies.
+      > **The half that DOES NOT hold**: the caller gets no diagnostic.
+      >
+      > **What to assert instead**: after an external write to `capacity`,
+      > `remaining`, `fraction` or `band`, the value read back is unchanged.
+      > **Do NOT add error-raising setters.** That option was considered and
+      > declined on 2026-08-26, because it deviates from ADR-0002 Key
+      > Interfaces. This criterion is met by the unchanged-value assertion.
 
 ---
 
 ## Implementation Notes
 
 *Derived from ADR-0002 Key Interfaces (`:262-320`):*
+
+> **ANNOTATED 2026-08-26.** Implement the getter-only **shape** below. Do not
+> implement the **rationale** the ADR gives for it. ADR-0002 `:291` repeats the
+> A2-01 claim that assignment to a getter-only property raises a runtime error.
+> That claim is false in 4.7.1 (see the final acceptance criterion). The shape
+> is still correct, for the safety reason, not the detection reason. **Add no
+> setters, and no error-raising setters.**
 
 ```gdscript
 class_name OxygenState extends RefCounted
@@ -198,7 +226,10 @@ func drain(delta: float) -> void
 - **AC-5 — `remaining` never increases by any path**
   - Given: a constructed `OxygenState`
   - When: a script assigns to `remaining`, `capacity`, `fraction` or `band`
-  - Then: the assignment fails at runtime
+  - Then: ~~the assignment fails at runtime~~ **ANNOTATED 2026-08-26**: the
+    assignment is discarded silently. The probe this case asks for is already
+    done — see the annotation on the final acceptance criterion above. Assert
+    that the value read back is unchanged. Do not assert an error.
   - Edge cases: as in story 001's AC-4 — probe the actual 4.7.1 behaviour before
     writing the assertion. Also assert `drain(-1.0)` cannot be used as a refill.
     **A negative delta is the obvious back door into AC3** and the GDD does not
@@ -239,7 +270,7 @@ sprint QA plan adds on top of them.*
 Same runner notes as story 001: `--import` first, both binary paths,
 `_console.exe`, `-c`, and both `-a` roots.
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — 29 test functions, `.uid` present
 
 ---
 
@@ -249,3 +280,79 @@ Same runner notes as story 001: `--import` first, both binary paths,
   they landed with the `tuning-resources` epic in commit `b8dba3c`.
 - Unlocks: Story 004 (injection), and the Core `oxygen-drain` epic, which cannot
   start without this type.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-08-26
+**Criteria**: 8/8 passing, 0 deferred, 0 untested.
+**Test Evidence**: `tests/unit/level_state/oxygen_state_test.gd` — 29 test
+functions, `.uid` present. Suite 286/286 across 16 suites, 0 errors, 0 failures,
+0 flaky, 0 skipped, 0 orphans, exit 0 (`reports/report_27`). Baseline before this
+story was 257 across 15 suites; the delta of +29 matches the new test count
+exactly. Verified in the main session, not merely reported by the executor.
+**Code Review**: Complete. `/code-review` (lean) ran on both files and returned
+APPROVED WITH SUGGESTIONS, with no required changes. Two suggestions were applied
+before close; the third was logged as tech debt rather than fixed.
+
+### Decisions recorded at implementation
+
+1. **Construction-failure shape** — `push_error()` plus a permanently-depleted
+   object: capacity and remaining both `0.0`, band `CRITICAL`, `fraction` guarding
+   the divide so it returns `0.0` rather than producing NAN. Never `assert()`; the
+   control manifest forbids it for guards because it compiles out of release
+   exports. `LevelValidation` reports the same breach at load under `V-OXY-CAP`.
+2. **Multi-band crossing** — a single `drain()` crossing two or more bands emits
+   `threshold_changed` ONCE, carrying the final band only. A skipped band is never
+   entered, so it never fires. The GDD does not specify this; it is a decision.
+3. **Exact-boundary side** — NOT a decision. See the correction below.
+
+### Correction to this story and to the sprint QA plan
+
+The story's AC-4 edge-case note and the 2026-08-25 QA-plan addendum in
+`production/qa/qa-plan-sprint-2.md` both state that the exact-boundary side is
+undecided and must be picked by the implementer. **Both are wrong.**
+`design/gdd/suit-oxygen.md:97` states the rule verbatim:
+`nominal > 0.50 · caution <= 0.50 · warning <= 0.25 · critical <= 0.10`.
+The boundary belongs to the LOWER band. The implementation matches the GDD, so no
+code changed — but the two documents still carry the incorrect claim and were
+deliberately left uncorrected at close. Fix them before anyone treats either as
+authority on what is and is not specified.
+
+### Deviations
+
+- **Constructor parameter is `initial_capacity`, not `capacity`** as ADR-0002 Key
+  Interfaces spells it. Forced: a parameter sharing a property's name shadows it,
+  and gdUnit4 escalates that warning to a discovery-time failure for the whole
+  suite. Identical to the deviation LS-001 had to make. Type, arity and call shape
+  are unchanged, and GDScript has no named arguments, so no caller is affected.
+- **AC7 is met in the decided shape, not by making construction fail.** GDScript
+  cannot fail an `_init()`.
+- **The final acceptance criterion's "raises a runtime error" half is
+  unsatisfiable** in 4.7.1 and was ANNOTATED before implementation rather than
+  reworded or silently ticked. The satisfiable half — the value is unchanged after
+  an external write — is asserted, with a `LevelState.carrying_bucket` negative
+  control proving the assertion is not vacuous.
+- **No null guard on the `tuning` parameter.** Logged as tech debt rather than
+  fixed, to keep this story inside its stated scope.
+
+### Consequence LS-004 must carry
+
+An object poisoned by a non-positive capacity starts at zero, never crosses zero,
+and therefore **never emits `depleted`**. Consumers must READ `remaining` when
+they bind rather than wait for the signal. This mirrors the `goal_unlocked_changed`
+consequence recorded at LS-001's close: neither state object emits anything at
+construction, because a signal emitted inside `_init()` cannot be received.
+
+### Post-review hardening (test-only, applied before close)
+
+- `test_the_band_thresholds_are_not_hardcoded_in_the_source` matched only the
+  padded literals `"0.50"` / `"0.25"` / `"0.10"`. A hardcode written `0.5` or `0.1`
+  — the idiomatic spelling, and the spelling `oxygen_tuning.gd` itself uses — was
+  invisible to it, so the guard passed against two thirds of the violation it
+  exists to catch. Both short forms were added. Found independently by the
+  orchestrator and the qa-tester review.
+- `test_drain_decrements_before_any_branch_in_its_source` recognised the decrement
+  only as `_remaining =`. It now accepts `_remaining -=` as well, so a
+  behaviour-preserving refactor cannot fail a compliant implementation.

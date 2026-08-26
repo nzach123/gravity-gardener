@@ -1,12 +1,12 @@
 # Story 001: `LevelState` — the injectable level-scoped state object
 
 > **Epic**: Level State Ownership
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M (3 h)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-26
 
 ## Context
 
@@ -37,6 +37,29 @@ signals are pre-4.4 and unchanged through 4.7. Two engine facts govern the shape
   — the original ADR text claimed a guarantee the language does not give. Implement
   the corrected text at `adr-0002-level-state-ownership.md:247-249` and `:291`
   verbatim. **Do not re-derive the mechanism from the pre-correction wording.**
+  > **ANNOTATED 2026-08-26 — the middle sentence above is FALSE for Godot 4.7.1
+  > and this note is now half wrong.** "Assignment to a getter-only property raises
+  > a runtime error instead" does not happen. The write is **silently discarded**:
+  > probed against the 4.7.1 binary in four shapes (`Object.set()`, a `Variant`-typed
+  > reference, a statically-typed reference, and an in-script typed direct
+  > assignment) — all four parse, all four leave the backing field unchanged, none
+  > raises. An out-of-bounds control in the same script body raised loudly, so the
+  > silence is real. Evidence:
+  > `production/qa/evidence/getter-only-assignment-probe-2026-08-26.md`.
+  >
+  > **What survives**: the first two sentences, and the instruction to build the
+  > type exactly as ADR-0002 specifies. External code still cannot corrupt the
+  > object, so the *safety* guarantee holds and getter-only is still the right
+  > shape. What fails is *detection* — the caller gets a no-op with no diagnostic,
+  > which is the very failure mode A2-01 claimed getter-only properties remove.
+  >
+  > **LS-002 read this first.** `OxygenState` uses the same pattern and the ADR
+  > paragraph at `:291` carries the same false claim, so "implement `:291`
+  > verbatim" now means *implement the getter-only shape, not the stated rationale*.
+  > Do NOT add error-raising setters to make the original wording true — that option
+  > was considered and declined on 2026-08-26 in favour of annotating. ADR-0002 is
+  > Accepted and has NOT been amended; the erratum row is in
+  > `docs/tech-debt-register.md`.
 - **gdUnit4 treats a GDScript warning as an error at test discovery.** One warning
   in this file fails the whole suite at compile time, not just this file's tests.
   `var x := <Variant expression>` is the shape that has bitten this project before —
@@ -63,19 +86,30 @@ signals are pre-4.4 and unchanged through 4.7. Two engine facts govern the shape
 
 *From `design/gdd/watering-system.md`, scoped to this story:*
 
-- [ ] **AC6** — `goal_unlocked` becomes true exactly when `buckets_consumed`
+- [x] **AC6** — `goal_unlocked` becomes true exactly when `buckets_consumed`
       reaches `buckets_total`, and never before
-- [ ] **AC8, lifetime half** — the type has no `reset()` and no way to clear state
+- [x] **AC8, lifetime half** — the type has no `reset()` and no way to clear state
       in place. *(The restart behaviour itself is story 006; this story makes the
       alternative unrepresentable.)*
-- [ ] `buckets_consumed` never decreases and never exceeds `buckets_total`
-- [ ] `buckets_total` is immutable after construction
-- [ ] Assignment to `buckets_total`, `buckets_consumed`, `goal_unlocked` or
+- [x] `buckets_consumed` never decreases and never exceeds `buckets_total`
+- [x] `buckets_total` is immutable after construction
+- [x] Assignment to `buckets_total`, `buckets_consumed`, `goal_unlocked` or
       `level_complete` from outside the class raises a runtime error rather than
       succeeding silently
-- [ ] `carrying_bucket` is genuinely read-write — it is the one field that is not
+      > **ANNOTATED 2026-08-26 — the engine does not do this.** Probed against the
+      > 4.7.1 binary in four shapes (`Object.set()`, `Variant`-typed reference,
+      > statically-typed reference, in-script typed direct assignment). The write is
+      > **silently discarded** every time: no parse error, no runtime error, backing
+      > field unchanged. An out-of-bounds control in the same script raised loudly,
+      > so the silence is real and not a capture artefact. Evidence:
+      > `production/qa/evidence/getter-only-assignment-probe-2026-08-26.md`.
+      > **The safety half of this AC holds and is what gets tested** — external code
+      > cannot corrupt the object. The "raises a runtime error" half is false for
+      > 4.7.1 and is an ADR-0002:246-248 erratum candidate. The AC text above is
+      > left as approved and is NOT reworded.
+- [x] `carrying_bucket` is genuinely read-write — it is the one field that is not
       getter-only
-- [ ] `bucket_consumed(consumed, total)` and `goal_unlocked_changed(unlocked)` are
+- [x] `bucket_consumed(consumed, total)` and `goal_unlocked_changed(unlocked)` are
       emitted, and `goal_unlocked_changed` fires once, on the transition only
 
 ---
@@ -208,6 +242,13 @@ sprint QA plan adds on top of them.*
 - Assert that external assignment **raises a runtime error**, not merely that
   the value is unchanged. A silently-ignored write and a rejected write look
   identical from the outside, and only one of them satisfies the AC.
+  > **ANNOTATED 2026-08-26 — unsatisfiable in 4.7.1, superseded in practice.** The
+  > engine produces exactly the silently-ignored write this bullet rules out, so
+  > against a *correct* implementation this assertion fails. The test asserts the
+  > observable truth instead: the value is unchanged after an external write, with
+  > `carrying_bucket` as an assignable negative control proving the test can still
+  > distinguish a protected field from an unprotected one. See the probe evidence
+  > cited on AC-5.
 
 ---
 
@@ -222,7 +263,16 @@ Run the documented headless command from `tests/README.md` — both binary paths
 `-a res://tests/integration`. Run `--headless --path . --import` first to generate
 the new test file's `.uid` sidecar.
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — verified 2026-08-26
+
+`tests/unit/level_state/level_state_test.gd` exists with its `.uid` sidecar and
+24 test functions. Full-suite run on 2026-08-26: **257 test cases, 15/15 suites,
+0 errors, 0 failures, 0 flaky, 0 skipped, 0 orphans, exit 0** (`reports/report_25`).
+
+Command note, corrected in practice: the run used `-a res://tests` — a single
+root covering both `unit` and `integration` — rather than the two separate `-a`
+arguments described above. `-c` was kept; without it the runner stops at the
+first failure and a red run under-reports.
 
 ---
 
@@ -231,3 +281,74 @@ the new test file's `.uid` sidecar.
 - Depends on: None. This is the epic's root story.
 - Unlocks: Story 004 (nothing can be injected until it exists), Story 005 (the
   latch needs the backing field)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-08-26
+**Criteria**: 7/7 passing. None deferred, none untested — every criterion has at
+least one covering test in `tests/unit/level_state/level_state_test.gd`.
+**Test Evidence**: Logic — `tests/unit/level_state/level_state_test.gd`,
+257/257 suite green across 15/15 suites, 0 orphans, exit 0 (`reports/report_25`).
+**Code Review**: Complete. `/code-review` (lean) on 2026-08-26 returned APPROVED
+WITH SUGGESTIONS across `godot-gdscript-specialist` and `qa-tester`.
+
+### Deviations
+
+**1. ADR-0002 A2-01 erratum — the ADR's stated rationale is false for 4.7.1.**
+`adr-0002-level-state-ownership.md:246-248` claims assignment to a getter-only
+property "raises a runtime error". It does not — the write is **silently
+discarded**. Probed in four shapes with a live error channel proven in the same
+run. Evidence:
+`production/qa/evidence/getter-only-assignment-probe-2026-08-26.md`; erratum row
+in `docs/tech-debt-register.md`. **Safety holds** (external code cannot corrupt
+the object, so the getter-only shape is still correct and was built as specified);
+**detection does not** (the caller gets a no-op with no diagnostic). Consequences
+absorbed rather than reworded: the assignment AC and the 2026-08-25 QA-plan
+addendum bullet are both ANNOTATED in place, and the Engine Notes carrying the
+same claim were annotated at close. ADR-0002 is Accepted and has NOT been amended.
+**LS-002 (`OxygenState`) inherits this** — same pattern, same paragraph at `:291`.
+
+**2. ADVISORY — `_init` parameter renamed.** The parameter is
+`initial_buckets_total`, not `buckets_total` as ADR-0002's Key Interfaces spells
+it. The ADR spelling shadows the property of that name, and `SHADOWED_VARIABLE`
+is a default-on warning that gdUnit4 escalates to a discovery-time error failing
+the entire suite. Type, arity and call shape are unchanged, and GDScript has no
+named arguments, so no caller can be affected — verified: `LevelState` currently
+has zero callers.
+
+**3. OUT OF SCOPE, ACCEPTED — negative-total clamp.** `_init` clamps a negative
+`initial_buckets_total` to 0 and emits `push_error()`. The story and ADR-0002 say
+only that callers must pass `>= 0`, making a negative a caller bug with no defined
+behaviour. Kept by explicit developer decision on 2026-08-26 because the silent
+alternative is worse: with no clamp `_goal_unlocked = (0 >= -3)` is true, so a
+mis-authored level would unlock its goal at construction with no diagnostic at
+all. Covered by the last two tests in the file.
+
+**4. IN SCOPE, ADDED AT REVIEW — signal emission order test.** The code review
+found that the relative order of `bucket_consumed` and `goal_unlocked_changed`
+within a single `consume_bucket()` call was observable to consumers but pinned by
+no test. Added `test_bucket_consumed_is_emitted_before_goal_unlocked_changed`
+with a shared order-preserving recorder (suite 256 → 257). No AC required it;
+LS-004 binds both signals and would depend on the order.
+
+### Design consequence for LS-004
+
+`goal_unlocked_changed` is **never emitted at construction**, because a signal
+emitted inside `_init()` cannot be received — nothing is connected yet. A level
+built with `buckets_total == 0` is therefore unlocked from construction with **no
+signal ever firing**. **Consumers must READ `goal_unlocked` when they bind, not
+rely on the signal alone.** A consumer that only connects will never unlock a
+zero-bucket level. This is documented on the signal and asserted by
+`test_zero_total_never_emits_goal_unlocked_changed`.
+
+### Rejected review finding
+
+`godot-gdscript-specialist` raised an INFO note that the private backing fields
+precede the public properties, violating a "public variables before private
+variables" section-order rule in `.claude/docs/coding-standards.md`. **That rule
+does not exist** — the file was checked and contains no member-ordering rule of
+any kind. Finding dropped, no change made. This is the sixth finding in this
+project to rest on an assumed project config; verify config-dependent severities
+against the file before acting on them.
