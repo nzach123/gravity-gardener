@@ -850,12 +850,40 @@ inferred from where the value happens to be read.
 
 ## Open Questions
 
+> **Table audited 2026-08-25** by `/gate-check production`
+> (`production/gate-checks/gate-check-2026-08-25-production.md`). Four rows were
+> stale: they described questions their own governing ADRs had already closed,
+> which made the table misleading in both directions — resolved questions read
+> as open, while the one genuinely urgent row read as no more pressing than the
+> stale ones around it. Those four moved to **Resolved** below. Two rows are
+> genuinely open. QQ-07 is parked by design and is not a gap.
+
 | ID | Summary | Priority | Resolution path |
 |---|---|---|---|
-| QQ-01 | `watering-system.md` §6 and `suit-oxygen.md` §6 assign state to `GameManager`; D2 reassigns it to `LevelState` / `OxygenState`. The GDDs need amending. | High | `/propagate-design-change` after ADR-0002 |
-| QQ-02 | D7 keeps jump constants on `Player`, so `gravity.md` §5's init-order hazard stays live. The guard in `GravityAuthority` is mandatory, and the GDD edge case must not be removed. | High | ADR-0001 |
-| QQ-03 | All 8 existing levels need `default_gravity_*` exports (D6), plus bucket-economy migration and computed `oxygen_capacity`. `systems-index.md` confirms every level still uses the old one-bucket model and no `O_level` has been computed. | High | Level migration epic, after ADR-0001/0002/0003 |
-| QQ-04 | No pause menu exists, but `suit-oxygen.md` §5 requires drain to halt on pause. Oxygen currently cannot be paused at all. | Medium | ADR-0010 |
-| QQ-05 | Wall jump, moving platforms and spike hazards are implemented but have no GDD, no TR IDs and therefore no ADR coverage. They are load-bearing traversal mechanics with no design authority. | Medium | `/reverse-document` or accept as undocumented |
-| QQ-06 | No `game-concept.md` or pillars document exists. The four GDDs are internally consistent, so nothing is blocked today, but a conflict between them has no authority to appeal to. | Low | `/brainstorm` if it becomes a blocker |
-| QQ-07 | `TR-gravity-008` (`zone_priority`) stays parked. If a future design needs regional gravity, D1's global broadcast and props R9 must both be revisited before it becomes implementable. | Low | Revisit only on a design change |
+| QQ-03 | All 8 existing levels need `default_gravity_*` exports (D6), plus bucket-economy migration and computed `oxygen_capacity`. `systems-index.md` confirms every level still uses the old one-bucket model and no `O_level` has been computed. Re-verified 2026-08-25: `grep -lE 'default_gravity\|oxygen_capacity'` across `level_01.tscn` … `level_08.tscn` returns **zero** hits. | High | **UNOWNED — no such epic exists.** There are nine epics and none covers level migration. Ranked concern **1** of the 2026-08-25 production gate: pillars 2 and 3 are not true of the built game. Needs a level-migration epic, or an explicit row in the "Not yet epic'd" table of `production/epics/index.md` so it stops being invisible. Does not block Sprint 2 (Foundation only, authors no levels); compounds if new level content is authored first. |
+| QQ-05 | Wall jump and moving platforms are implemented but carry **no behavioural ADR** and **zero** TR-registry entries — `src/scripts/components/player_wall_jump_component.gd` and `src/scripts/moving_platform.gd`. They are load-bearing traversal mechanics with no design authority. `production/epics/index.md:120` marks `PlayerWallJumpComponent` "Unowned", and `player-core` story 006 is Blocked on this with no owner. | Medium | `/reverse-document`, or accept as undocumented |
+| QQ-07 | `TR-gravity-008` (`zone_priority`) stays parked. If a future design needs regional gravity, D1's global broadcast and props R9 must both be revisited before it becomes implementable. | Low | Revisit only on a design change — parked deliberately, per `production/epics/index.md:127` |
+
+**Two corrections to QQ-05, both made 2026-08-25 and both narrowing it:**
+
+1. The row previously read "no ADR coverage". **ADR-0004 does cover moving
+   platforms** for collision-layer allocation. The accurate claim is that they
+   have no *behavioural* ADR — which changes the finding's shape, not its
+   conclusion.
+2. The row previously included **spike hazards**. They do not belong here:
+   `hazards.md` carries 10 `TR-hazards` IDs. Those IDs have no ADR owner, but
+   that is a **documented deliberate deferral** to the Feature run (see the
+   "Core" scoping note in `production/epics/index.md`), not an absence of design
+   authority.
+
+### Resolved
+
+Kept rather than deleted, so the evidence that closed each one travels with the
+table instead of living only in a gate report.
+
+| ID | Original question | Closed by | Evidence |
+|---|---|---|---|
+| QQ-01 | `watering-system.md` §6 and `suit-oxygen.md` §6 assign state to `GameManager`; D2 reassigns it to `LevelState` / `OxygenState`. The GDDs need amending. | Both GDD ownership lines amended 2026-08-14 | Closed in the body of this document at §165-166 |
+| QQ-02 | D7 keeps jump constants on `Player`, so `gravity.md` §5's init-order hazard stays live. | ADR-0001 (Accepted), decision part 7 | `adr-0001-gravity-ownership-and-global-broadcast.md:216`; already cited as a closed build-order constraint at `production/epics/index.md:86` |
+| QQ-04 | No pause menu exists, but `suit-oxygen.md` §5 requires drain to halt on pause. Oxygen currently cannot be paused at all. | ADR-0010 (Accepted) | `adr-0010:167-183` — `PauseController` owns `SceneTree.paused`, and the process-mode table gives oxygen's pause-halt a structural mechanism. The remaining pause-menu UI is `level-outcomes` story 003, a Presentation asset, not a Foundation/Core unknown |
+| QQ-06 | No `game-concept.md` or pillars document exists. | The document exists | Reverse-documented 2026-08-15; 443 lines, pillars at §202. The row asserted the absence of a file that was already on disk |

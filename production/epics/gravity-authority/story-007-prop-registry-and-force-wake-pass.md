@@ -208,6 +208,23 @@ Fixture: an initialized authority (`initialize(2990.72, 0.390625)`) settled at
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Freed-object semantics, probed in GDScript 4.7.1**: `== null` is **TRUE**
+  for a freed object, and `as` errors. The freed-prop case must use
+  `is_instance_valid()`. Do not write the null check that looks equivalent — it
+  passes for the wrong reason.
+- **Assert the margin, not only the pass** *(retro action item 4)*. Run the wake
+  pass **at** `props_per_level_budget` (40), not below it, and record the
+  measured time against the 16.6 ms frame budget rather than only that it
+  passed.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

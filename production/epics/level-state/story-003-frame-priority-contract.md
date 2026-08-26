@@ -171,6 +171,20 @@ story guards is a value drifting in an inspector, which no behavioural test sees
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Order-dependent tests are exactly the ones that pass for the wrong reason.**
+  Add one case that **deliberately mis-orders** the three priorities in a local
+  fixture and confirms the assertion goes red. A test that would still be green
+  with all three constants set to the same value is not testing anything, and
+  this story's entire subject is an ordering.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

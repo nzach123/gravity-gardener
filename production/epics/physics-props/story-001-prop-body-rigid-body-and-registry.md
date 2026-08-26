@@ -174,6 +174,21 @@ these — do not invent new test cases during implementation.*
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Scope guard**: only story 001 of `physics-props` is in Sprint 2.
+  `art-bible.md` §1.3 defers the epic's content to Vertical-Slice tier. **Do not
+  write test cases for stories 002-006.**
+- **Sequencing**: `PropBody._ready()` calls `GravityAuthority.register_prop()`,
+  so **GA-007 must land first**. A test written before GA-007 fails for a reason
+  that is not this story's defect, which is the most expensive kind of red.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

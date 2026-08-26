@@ -195,6 +195,22 @@ these — do not invent new test cases during implementation.*
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **The `architecture.md` amendment is a gating AC** and is the easiest one in
+  the sprint to skip, because it is a documentation edit sitting inside a code
+  story. `/story-done` must confirm that steps (a) and (b) were actually swapped
+  in the §Frame update path init block. The published order is defective as
+  written; leaving it is how the next reader implements the bug again.
+- **Assert the six-step sequence as a recorded order**, not as six independent
+  facts. Six passing existence checks do not prove an ordering.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration

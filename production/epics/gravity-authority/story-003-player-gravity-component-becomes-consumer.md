@@ -221,6 +221,30 @@ Fixture: a `Player` instantiated headless with the GDD section 4 current values
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Read Finding 1 of the sprint QA plan before writing a line of this test.**
+- `tests/unit/gravity/gravity_component_test.gd` holds **26 cases** and is the
+  only characterization of pre-migration gravity behaviour that exists anywhere.
+  The four `test_apply_gravity_*` cases are this story's **R4 regression bar**:
+  they may be re-pointed at the new call path, but **their expected values may
+  not change**. A changed value is a retune, not a relocation, and violates AC4.
+- **Every removed case needs a named disposition** — migrated to a named file,
+  deduped against an existing case in `gravity_authority_contract_test.gd`, or
+  deleted because its subject no longer exists. "It no longer compiles" is not a
+  disposition.
+- **Suite-count reconciliation is gating.** Record at `/story-done`: count
+  before, count after, per-case disposition. The count will drop below 178, and
+  a drop is otherwise indistinguishable from tests silently disappearing.
+- **Manual**: this story is part of the sprint's single gravity-path playtest,
+  run after GA-005 lands. Do not mark it Complete before that session signs off.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration

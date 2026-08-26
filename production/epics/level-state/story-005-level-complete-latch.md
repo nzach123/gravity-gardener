@@ -187,6 +187,22 @@ before the scene change is exactly the implicit ordering this ADR exists to remo
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- Assert that the latch **cannot be cleared** by enumerating the public surface
+  **by reflection**, rather than by checking the setters you already know about.
+  The AC is "no method, property or path sets it back to false" — a check
+  against a known list cannot establish that.
+- **Do not tick `watering-system.md` AC13 or `suit-oxygen.md` AC8 anywhere
+  against this story.** Both require `OxygenDrain` and close in the
+  `oxygen-drain` epic, against the latch this story provides.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

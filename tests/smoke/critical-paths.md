@@ -28,7 +28,9 @@
 
 ## Data Integrity
 
-14. GameManager resets level state (plants watered, bucket, goal unlock) on restart
+14. Restarting a level clears watering progress, bucket carry and goal-unlock state
+    (asserts the observable behaviour, not the mechanism: LS-006 replaces
+    reset-in-place with reconstruction and deletes GameManager.reset_level_state)
 15. Level transitions preserve the correct plant/watered state per level
 
 ## Performance

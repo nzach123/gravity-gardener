@@ -236,6 +236,32 @@ with default `gravity_scale = 1.0` in a headless scene, and `Tuning.PROP` loaded
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Discharging ADR-0001 Verification 2 needs all four of these, or the fallback
+  is taken deliberately:**
+  1. Same-frame adoption asserted against the 4.7.1 binary.
+  2. The same assertion at a **modified physics tick rate** (e.g. 30, not only
+     the default 60). A guarantee that holds only at 60 FPS is a coincidence of
+     the tick rate, not a phase guarantee, and a one-frame lag is invisible to
+     any test that settles first.
+  3. The **asleep-body case** run and its result recorded, with the expected
+     non-wake left **unrepaired** — it is what motivates GA-007.
+  4. The observed result, the date and the engine build written into ADR-0001's
+     Verification Required field **and** the `TR-gravity-012` note in
+     `docs/architecture/tr-registry.yaml`.
+- **If the probe comes back negative**, record the negative result and take the
+  named dirty-flag fallback deliberately, at its stated cost of one frame of
+  stale space gravity at load. Do not quietly widen the test until it passes.
+- `/story-done` **must not close this story** while ADR-0001's Verification
+  Required field still reads "Item 2 remains".
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration

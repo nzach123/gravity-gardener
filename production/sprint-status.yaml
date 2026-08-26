@@ -27,7 +27,7 @@ goal: "Complete the Foundation layer — finish the gravity authority, land leve
 start: "2026-09-01"
 end: "2026-09-14"
 generated: "2026-08-25"
-updated: "2026-08-25"
+updated: "2026-08-26"
 
 stories:
   # ── carried from Sprint 1 — both closed by the single CI-1 run ─────────────
@@ -56,11 +56,11 @@ stories:
     name: "Direction easing and the exported rate"
     file: "production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.31
     blocker: ""
-    completed: ""
+    completed: "2026-08-26"
 
   - id: "GA-003"
     name: "Player gravity component becomes a consumer"

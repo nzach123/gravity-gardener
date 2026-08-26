@@ -196,6 +196,21 @@ these and does not invent new ones during implementation.*
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- Assert "no `reset()` and no way to clear state in place" **by reflection over
+  the method list**, not by reading the source. A source grep for `reset` passes
+  on a method named `clear()`.
+- Assert that external assignment **raises a runtime error**, not merely that
+  the value is unchanged. A silently-ignored write and a rejected write look
+  identical from the outside, and only one of them satisfies the AC.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

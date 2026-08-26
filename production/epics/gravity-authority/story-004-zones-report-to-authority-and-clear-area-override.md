@@ -193,6 +193,20 @@ assertions are file reads.*
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Manual**: smoke checks 6 and 7 are this story's regression surface and
+  neither is automatable. They fold into the sprint's single gravity-path
+  playtest, run after GA-005 lands — evidence
+  `production/qa/evidence/playtest-sprint-2-gravity-regression.md`, sign-off
+  qa-lead.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration

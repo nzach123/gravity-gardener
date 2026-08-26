@@ -182,6 +182,25 @@ Three process constraints on it:
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- `tests/unit/gamemanager/gamemanager_test.gd` must be **updated, not left
+  alone** — it exercises `reset_level_state()`, which this story deletes. Apply
+  the same per-case reconciliation Finding 1 of the sprint QA plan requires of
+  GA-003: count before, count after, disposition per removed case.
+- **Smoke check 14 was amended on 2026-08-25** to assert the observable restart
+  behaviour instead of naming `GameManager.reset_level_state()`, so it stays
+  correct across this story. **Do not repair it by restoring the method** — that
+  is the outcome the amendment exists to prevent.
+- **Manual**: folds into the sprint's single playtest session; smoke checks 13
+  and 14 are its surface.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration

@@ -1,12 +1,12 @@
 # Story 002: Direction easing in _physics_process with an exported ease rate
 
 > **Epic**: Gravity Authority
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (2-3 hours)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: *(set by /dev-story)*
+> **Last Updated**: 2026-08-26
 
 ## Context
 
@@ -48,29 +48,29 @@ for a 90-degree change at 60 FPS with the 2.5-degree settle threshold (probed
 
 *From GDD `design/gdd/gravity.md` R3, section 4, section 5 and AC5, scoped to this story:*
 
-- [ ] AC5 — a 90-degree gravity direction change completes within 100 ms and the angle
+- [x] AC5 — a 90-degree gravity direction change completes within 100 ms and the angle
       is monotonic throughout (no overshoot, no reversal).
       **CLAUSE CLARIFIED 2026-08-25 — "completes" means the settle snap below, not
       `is_equal_approx`.** The pure ease never satisfies `is_equal_approx` inside
       100 ms and is not intended to; see the settle-threshold criterion below. GDD
       `gravity.md` AC5 is unchanged and is met at 83.3 ms.
-- [ ] The ease snaps to `target_gravity` once the remaining angle falls below
+- [x] The ease snaps to `target_gravity` once the remaining angle falls below
       `DIRECTION_SETTLE_EPSILON` (2.5 degrees). This makes "settled" a single,
       exact, testable state rather than two competing ones.
-- [ ] R3 — strength snaps. `ascent_magnitude()` and `descent_magnitude()` reach their
+- [x] R3 — strength snaps. `ascent_magnitude()` and `descent_magnitude()` reach their
       new values on the *same* call to `set_gravity()`, before any ease frame runs.
-- [ ] The ease runs in `_physics_process(delta)`, never `_process(delta)`.
-- [ ] The ease uses `direction_ease_rate` from the export. No literal `32.0` appears
+- [x] The ease runs in `_physics_process(delta)`, never `_process(delta)`.
+- [x] The ease uses `direction_ease_rate` from the export. No literal `32.0` appears
       anywhere in `gravity_authority.gd` outside the export's default value
       (TR-gravity-011).
-- [ ] Changing `direction_ease_rate` changes the observed ease duration — a smaller
+- [x] Changing `direction_ease_rate` changes the observed ease duration — a smaller
       rate produces a measurably slower rotation.
-- [ ] The magnitude half of the old `update_gravity_lerp()` is gone. No `move_toward`
+- [x] The magnitude half of the old `update_gravity_lerp()` is gone. No `move_toward`
       on `gravity.length()` exists on the authority (GDD section 5, "Gravity magnitude
       easing" row).
-- [ ] Once `gravity` equals `target_gravity`, `_physics_process` returns without
+- [x] Once `gravity` equals `target_gravity`, `_physics_process` returns without
       recomputing the angle or re-emitting.
-- [ ] `gravity_changed` fires on the `set_gravity()` / `reset_to()` call, not once per
+- [x] `gravity_changed` fires on the `set_gravity()` / `reset_to()` call, not once per
       ease frame — consumers receive the *target* direction and multiplier, and read the
       eased `gravity` themselves.
 
@@ -240,13 +240,33 @@ Fixture: `initialize(2990.72, 0.390625)`, then `reset_to(Vector2.DOWN, 1.0)`.
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Assert the margin, not only the pass** *(retro action item 4)*. The settle
+  snap at step 5 = **83.3 ms** against GDD AC5's **100 ms** leaves **16.7 ms of
+  headroom**, and the 2.5-degree threshold clears the 1.9919-degree retained
+  residual by **+0.51 degrees**. Write both numbers into the assertions, so a
+  later `direction_ease_rate` change that erodes either one fails loudly instead
+  of passing at zero margin.
+- **Suite-count reconciliation is gating.** This story deletes the two
+  `test_gravity_lerp_*` cases in `tests/unit/gravity/gravity_component_test.gd`,
+  because `update_gravity_lerp()` ceases to exist. Record at `/story-done`: the
+  suite count before, the count after, and that disposition. Sprint baseline is
+  178/178.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic
 **Required evidence**:
 - `tests/unit/gravity/gravity_authority_easing_test.gd` — must exist and pass
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — 13 test cases, all green (2026-08-26)
 
 ---
 
@@ -255,3 +275,63 @@ Fixture: `initialize(2990.72, 0.390625)`, then `reset_to(Vector2.DOWN, 1.0)`.
 - Depends on: Story 001 (the authority node, its API, and the `direction_ease_rate`
   export must exist)
 - Unlocks: Story 003, Story 006
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-08-26
+**Criteria**: 9/9 passing (none deferred, none untested — every criterion maps to an
+asserting test in `gravity_authority_easing_test.gd`)
+**Test Evidence**: Logic — `tests/unit/gravity/gravity_authority_easing_test.gd`,
+13 test cases, all passing. `.uid` sidecar generated via `--import`.
+**Code Review**: Complete — `/code-review` run 2026-08-26, verdict APPROVED WITH
+SUGGESTIONS. One reported BLOCKING finding (misplaced `@warning_ignore` annotations
+failing test discovery) was verified and downgraded to INFO: `project.godot` sets no
+`unsafe_*` warning levels, the suite runs green, and the identical placement exists in
+all seven other test files — it is a project-wide convention, not a defect introduced here.
+
+### Suite reconciliation (gating, per the QA-plan addendum)
+
+| | Suites | Cases |
+|---|---|---|
+| Before | 11 | 178 |
+| After | 12 | **191** |
+| Delta | +1 | +13 new, **0 deleted** |
+
+Exit code 0 — 0 errors, 0 failures, 0 flaky, 0 orphans (`reports/report_8`).
+Settle snap fires at step 5 = 83.333 ms on all four 90-degree transitions; the
+180-degree flip settles at step 6 = 100.0 ms.
+
+### Deviations (all advisory — logged to `docs/tech-debt-register.md`)
+
+1. **The addendum's test deletion is deferred, not done.** The QA-plan addendum asked
+   GA-002 to delete `test_gravity_lerp_moves_toward_target` and
+   `test_gravity_lerp_noop_when_already_at_target` from `gravity_component_test.gd`.
+   Verified they must not be deleted yet: `update_gravity_lerp()` is still live at
+   `player_gravity_component.gd:69` and still called from `player.gd:138`, so both
+   tests cover real shipping code. This story's **Out of Scope** section assigns that
+   removal to Story 003 and outranks the addendum. This is why the delta shows 0
+   deletions rather than -2.
+2. **Addendum rounding corrected.** The addendum quotes 16.7 ms headroom and +0.51
+   degrees of residual margin; the measured values are 16.667 ms and 0.50806 degrees.
+   The addendum rounds up in both places, so assertion floors set at the quoted figures
+   would fail a correct implementation by ~33 microseconds and ~0.002 degrees. Floors
+   are set at 0.01666 and 0.508.
+3. **`control-manifest.md:170` is stale.** It still budgets the prop wake pass at
+   "~6-7 frames per gravity change". The settle epsilon makes it 5. Doc drift only —
+   no code impact, and this story's own Performance note already states 5.
+4. **`direction_ease_rate` has no range floor.** Set to 0 or negative, `clampf` yields
+   0, the residual never shrinks, the settle epsilon never trips, and the turn freezes
+   silently with no diagnostic — unlike every other externally-supplied value here,
+   which is guarded. The export *declaration* is Story 001's scope, so this is a
+   follow-up rather than a GA-002 fix.
+5. **`_settle_steps()` lacks a ceiling assertion.** It caps at `SETTLE_STEP_CEILING`
+   and returns that count, so a non-terminating slow-rate ease would still read as
+   "more steps than fast" and pass `test_a_lower_ease_rate_takes_strictly_more_steps`.
+   Its sibling `_run_transition()` does assert the ceiling.
+
+No blocking deviations. ADR-0001 decision parts 1, 3 and 4a verified compliant, as is
+every Foundation-layer control manifest rule: scene autoload, no `class_name`, ease in
+`_physics_process` with no `_process` declared, no `private_gravity_copy`, no
+`GravityTuning` resource, and `push_error` rather than `assert` in the guards.

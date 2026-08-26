@@ -217,6 +217,28 @@ implements against these — do not invent new test cases during implementation.
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **This story carries an OPEN 4.7.1 unknown**: reading an `Area2D` extent from
+  a `CollisionShape2D` on a node instantiated by `PackedScene.instantiate()` but
+  **never added to a tree**. This is **not covered by ADR-0003 E1-E3**. Probe it
+  against the binary before any `V-BOUNDS` assertion depends on it.
+- **If it does not hold headlessly, report it as a finding against this story.**
+  Do **not** substitute a hardcoded rect, and do **not** gate the rule behind
+  `OS.is_debug_build()` — the control manifest forbids the latter outright and
+  ADR-0003 Validation Criterion 3 covers the call site too.
+- **Two boundary decisions to decide and assert:** exactly at budget is **VALID**
+  (the rule is `count <= budget` — assert at 40 **and** at 41); and a prop
+  **exactly on the bounds edge** is inclusive or exclusive — pick one, document
+  it in the code, assert it.
+- **The case most likely to be forgotten, because it lives in another file**:
+  extend story 004's combined report-all-failures test (AC-6) to **seven** codes.
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

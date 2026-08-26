@@ -213,6 +213,23 @@ func drain(delta: float) -> void
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Two boundary decisions that must be decided and asserted, not looked up:**
+  1. A drain step landing **exactly** on a band boundary (0.50 / 0.25 / 0.10) —
+     which side does the boundary belong to? Pick, document, assert.
+  2. A single `drain()` large enough to **cross two bands at once** — one
+     `threshold_changed` emission, or two? Either is defensible; an
+     undocumented choice is not.
+- **AC6's arithmetic half**: state the float tolerance explicitly. Do not use a
+  bare `==` against zero.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Logic

@@ -118,6 +118,37 @@ so the debt can be traced back to the decision that accepted it.
   should be made deliberately rather than folded into CI-1 — tracked from
   `production/qa/evidence/ci-1-live-fire-2026-08-25.md`
 
+- **2026-08-26** (GA-002: Direction easing and the exported rate): `direction_ease_rate`
+  is exported with no `@export_range` floor and no runtime guard. Set to 0 or negative,
+  `clampf(rate * delta, 0.0, 1.0)` yields 0, `lerp_angle` returns the current angle every
+  frame, the residual never shrinks so `DIRECTION_SETTLE_EPSILON` never trips, and the
+  turn freezes silently with no diagnostic — unlike `initialize()` and `_accepts()`, which
+  both refuse and `push_error` on non-positive input. Deferred because the export
+  *declaration* belongs to Story 001, not GA-002 — tracked from
+  `production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md`
+- **2026-08-26** (GA-002: Direction easing and the exported rate): `_settle_steps()` in
+  `tests/unit/gravity/gravity_authority_easing_test.gd` caps its loop at
+  `SETTLE_STEP_CEILING` (240) and returns that count without asserting the loop exited via
+  settlement. A defect that stopped the ease terminating at a lower rate would return 240,
+  still greater than the fast path's 5, so `test_a_lower_ease_rate_takes_strictly_more_steps`
+  would pass on a broken ease. The sibling helper `_run_transition()` does assert the
+  ceiling; apply the same assertion — tracked from
+  `production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md`
+- **2026-08-26** (GA-002: Direction easing and the exported rate): `control-manifest.md:170`
+  still budgets the prop wake pass at "~6-7 frames per gravity change" at 60 FPS. The
+  2.5-degree settle epsilon added 2026-08-25 makes it 5 frames. Documentation drift with no
+  code impact, but the manifest is the sheet programmers read for the Foundation layer, and
+  Story 007's wake pass will be sized against this number — tracked from
+  `production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md`
+- **2026-08-26** (GA-002: Direction easing and the exported rate): the QA-plan addendum's
+  instruction to delete `test_gravity_lerp_moves_toward_target` and
+  `test_gravity_lerp_noop_when_already_at_target` from `gravity_component_test.gd` is
+  deferred to Story 003, not skipped. `update_gravity_lerp()` is still live at
+  `player_gravity_component.gd:69` and called from `player.gd:138`, so both tests still
+  cover shipping code; deleting them now would drop real coverage. Close this when Story 003
+  removes the method — tracked from
+  `production/epics/gravity-authority/story-002-direction-easing-and-exported-rate.md`
+
 ## Closed
 
 *(none yet)*

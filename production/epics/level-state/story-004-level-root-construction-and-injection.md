@@ -232,6 +232,19 @@ not a running game.*
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **"Refuses to operate before `bind()`" has two halves and needs two separate
+  assertions**: the `push_error()` **and** the early `return`. A `push_error`
+  that falls through still runs the body, and a test that only captures the
+  error message passes on that defect.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration

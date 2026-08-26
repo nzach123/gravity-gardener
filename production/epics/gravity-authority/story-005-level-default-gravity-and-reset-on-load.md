@@ -199,6 +199,25 @@ path. The reload case needs a real `SceneTree`; the export-coverage case is a fi
 
 ---
 
+### QA-plan addendum — 2026-08-25
+
+*Added by `/qa-plan sprint` (`production/qa/qa-plan-sprint-2.md`). The cases
+above are unchanged and remain authoritative; this block records only what the
+sprint QA plan adds on top of them.*
+
+- **Manual**: this story closes the gravity migration, so the sprint's one human
+  playtest session runs after it lands. Smoke check 13 is its regression
+  surface. Evidence
+  `production/qa/evidence/playtest-sprint-2-gravity-regression.md`, sign-off
+  qa-lead. **An agent-driven session does not settle it** — the bar is
+  "indistinguishable from before", which needs a before-memory.
+- **Scope guard.** Adding `default_gravity_direction` and
+  `default_gravity_multiplier` to the eight level scenes does **not** migrate
+  them to the multi-bucket / computed-`O_level` model. QQ-03 stays open and
+  unowned. Do not record it as closed by this story.
+
+---
+
 ## Test Evidence
 
 **Story Type**: Integration
