@@ -1,12 +1,12 @@
 # Story 003: `FramePriority` — the const-only physics ordering contract
 
 > **Epic**: Level State Ownership
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1 h)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-26
 
 ## Context
 

@@ -137,7 +137,7 @@ stories:
     name: "Frame priority contract"
     file: "production/epics/level-state/story-003-frame-priority-contract.md"
     priority: must-have
-    status: ready-for-dev
+    status: in-progress
     owner: "gameplay-programmer"
     estimate_days: 0.13
     blocker: ""
