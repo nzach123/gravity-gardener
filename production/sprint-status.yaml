@@ -137,11 +137,11 @@ stories:
     name: "Frame priority contract"
     file: "production/epics/level-state/story-003-frame-priority-contract.md"
     priority: must-have
-    status: in-progress
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.13
     blocker: ""
-    completed: ""
+    completed: "2026-08-26"
 
   - id: "LS-004"
     name: "LevelRoot construction and injection"

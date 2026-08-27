@@ -31,6 +31,12 @@ const SRC_ROOT: String = "res://src"
 const MIN_SRC_SCRIPTS: int = 20
 const MIN_SRC_SCENES: int = 15
 const MIN_GLOBAL_CLASSES: int = 3
+# The AC-5 scan narrows `src/**/*.gd` to the scripts that actually declare a
+# `_physics_process` callback, and searches only those. That inner filter is its
+# own vacuity surface: if it ever selects nothing, the scan reads no file and
+# still reports green. 28 scripts narrow to 2 today (gravity_authority.gd and
+# player.gd). LS-004 and GA-005 each add more, so this margin grows.
+const MIN_PHYSICS_PROCESS_SCRIPTS: int = 2
 
 
 # -- helpers ------------------------------------------------------------------
@@ -64,14 +70,41 @@ func _text_of(path: String) -> String:
 	return FileAccess.get_file_as_string(path)
 
 
-# Source with comment-only lines stripped, so a rule quoted in a doc comment
-# cannot satisfy or break a source scan. frame_priority.gd's own doc comment
-# names `process_priority` several times; without this it would self-report.
+# Drops a trailing `#` comment, respecting string literals so a `#` inside a
+# quoted value cannot truncate real code and hide a violation behind it.
+func _strip_trailing_comment(line: String) -> String:
+	var quote: String = ""
+	var index: int = 0
+	while index < line.length():
+		var character: String = line[index]
+		if quote != "":
+			if character == "\\":
+				index += 2      # an escaped character cannot close the literal
+				continue
+			if character == quote:
+				quote = ""
+		elif character == "\"" or character == "'":
+			quote = character
+		elif character == "#":
+			return line.substr(0, index)
+		index += 1
+	return line
+
+
+# Source with comments stripped, so a rule quoted in a doc comment cannot
+# satisfy or break a source scan. frame_priority.gd's own doc comment names
+# `process_priority` several times; without this it would self-report.
+#
+# TRAILING comments are stripped too, not only comment-only lines. Comment text
+# describes a defect rather than committing it: `do_thing()  # process_priority
+# = 100 before the fix` is a note about the past, and a scan that flags it
+# reports a violation that is not in the code.
 func _code_of(script_path: String) -> String:
 	var code: PackedStringArray = PackedStringArray()
 	for line: String in _text_of(script_path).split("\n"):
-		if not line.strip_edges().begins_with("#"):
-			code.append(line)
+		if line.strip_edges().begins_with("#"):
+			continue
+		code.append(_strip_trailing_comment(line))
 	return "\n".join(code)
 
 
@@ -89,9 +122,15 @@ func _files_under(directory: String, suffix: String) -> PackedStringArray:
 # property. Narrow at the identifier boundary so the physics spelling cannot be
 # reached, and wide on the assignment forms a real author would write: bare,
 # `self.`-qualified, member-qualified, and the reflective `set("...")` route.
+#
+# `[-+*/]?=` also reaches the compound spellings (`+=`, `-=`), which the bare
+# `=` form missed entirely. The `(?!=)` lookahead keeps `==` OUT: a comparison
+# READS the property, orders nothing, and is not the defect. Flagging it would
+# turn this guard red over correct code, and a guard that cries wolf gets
+# deleted -- which is the end this whole file exists to prevent.
 func _process_priority_offenders(text: String) -> PackedStringArray:
 	var pattern: RegEx = _regex(
-		"(?:^|[^A-Za-z0-9_])process_priority\\s*="
+		"(?:^|[^A-Za-z0-9_])process_priority\\s*[-+*/]?=(?!=)"
 		+ "|set\\(\\s*&?\"process_priority\"")
 	var offenders: PackedStringArray = PackedStringArray()
 	for line: String in text.split("\n"):
@@ -244,7 +283,8 @@ func test_frame_priority_is_declared_on_its_own_script_not_on_level_root() -> vo
 
 func test_frame_priority_holds_exactly_three_constants() -> void:
 	var script: GDScript = load(FRAME_PRIORITY_SCRIPT_PATH)
-	var constant_names: Array = script.get_script_constant_map().keys()
+	var constant_names: Array[String] = []
+	constant_names.assign(script.get_script_constant_map().keys())
 	# A fourth constant added later must fail this test -- that is the point.
 	# ADR-0005 gives Goal no row: it resolves at the physics-query phase, which
 	# is a different point in the frame, not a different priority.
@@ -364,6 +404,7 @@ func test_no_physics_process_script_orders_with_process_priority() -> void:
 		.is_greater_equal(MIN_SRC_SCRIPTS)
 
 	var offenders: PackedStringArray = PackedStringArray()
+	var scanned: int = 0
 	for path: String in scripts:
 		var code: String = _code_of(path)
 		# AC-5 permits process_priority on a node that genuinely orders
@@ -371,8 +412,20 @@ func test_no_physics_process_script_orders_with_process_priority() -> void:
 		# what needs ordering, so the physics callback is the qualifier.
 		if not code.contains("func _physics_process"):
 			continue
+		scanned += 1
 		for line: String in _process_priority_offenders(code):
 			offenders.append("%s: %s" % [path, line])
+
+	# The floor above proves the scripts were READ. This proves the filter just
+	# above actually SELECTED some of them. Without it the scan can narrow to
+	# nothing and still report green, which looks identical to a clean repo.
+	assert_int(scanned) \
+		.override_failure_message(
+			"Only %d script(s) under %s declare a _physics_process callback, "
+			% [scanned, SRC_ROOT] + "so the AC-5 scan searched almost nothing "
+			+ "and would pass vacuously.") \
+		.is_greater_equal(MIN_PHYSICS_PROCESS_SCRIPTS)
+
 	assert_array(offenders) \
 		.override_failure_message(
 			"A script with a _physics_process callback assigns "
@@ -392,6 +445,10 @@ func test_process_priority_matcher_flags_synthetic_violations() -> void:
 		"\t_drain.process_priority = 100",
 		"\tset(\"process_priority\", 0)",
 		"\tset(&\"process_priority\", 0)",
+		# Compound assignment. The bare `=` matcher missed both of these
+		# silently, which is the worse direction for a guard to fail in.
+		"\tprocess_priority += 10",
+		"\tprocess_priority -= 5",
 	])
 	for line: String in violations:
 		assert_array(_process_priority_offenders(line)) \
@@ -417,9 +474,48 @@ func test_process_priority_matcher_ignores_the_physics_spelling() -> void:
 			.is_empty()
 
 	# And the real frame_priority.gd source, whose doc comment names the
-	# forbidden property repeatedly, must survive the same scan once comment-only
-	# lines are stripped.
+	# forbidden property repeatedly, must survive the same scan once comment
+	# text is stripped.
 	assert_array(_process_priority_offenders(_code_of(FRAME_PRIORITY_SCRIPT_PATH))) \
 		.override_failure_message(
 			"frame_priority.gd itself was flagged by the AC-5 matcher.") \
 		.is_empty()
+
+
+func test_process_priority_matcher_ignores_reads_and_comments() -> void:
+	# The other direction of the same hazard. Every case here is CORRECT code
+	# that a careless matcher reports as a violation. A guard that fires on
+	# correct code is deleted by the next person it blocks, so a false positive
+	# costs the guard its life just as surely as a false negative costs it its
+	# purpose.
+
+	# Arrange -- a comparison READS the property. It orders nothing.
+	var reads: PackedStringArray = PackedStringArray([
+		"\tif node.process_priority == 5:",
+		"\tif process_priority != 0:",
+	])
+
+	# Act / Assert
+	for line: String in reads:
+		assert_array(_process_priority_offenders(line)) \
+			.override_failure_message(
+				"The AC-5 matcher flagged a non-assignment read: %s" % [line]) \
+			.is_empty()
+
+	# A trailing comment must be gone before the matcher ever sees the line.
+	var commented: String = "\tdo_thing()  # process_priority = 100 before the fix"
+	assert_array(_process_priority_offenders(_strip_trailing_comment(commented))) \
+		.override_failure_message(
+			"A trailing comment that merely MENTIONS process_priority was "
+			+ "reported as a violation.") \
+		.is_empty()
+
+	# But stripping must not run away at a `#` inside a string literal, or it
+	# would truncate the line and hide a real violation sitting after it.
+	var hash_inside_string: String = "\tvar c: String = \"#FF0000\"; process_priority = 5"
+	assert_array(_process_priority_offenders(
+			_strip_trailing_comment(hash_inside_string))) \
+		.override_failure_message(
+			"Comment stripping cut the line at a # inside a string literal and "
+			+ "swallowed a real violation that followed it.") \
+		.has_size(1)

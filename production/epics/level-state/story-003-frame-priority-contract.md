@@ -1,7 +1,7 @@
 # Story 003: `FramePriority` — the const-only physics ordering contract
 
 > **Epic**: Level State Ownership
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S (1 h)
@@ -169,6 +169,29 @@ story guards is a value drifting in an inspector, which no behavioural test sees
   - Edge cases: `process_physics_priority` contains `process_priority` as a
     substring. A naive search reports every correct assignment as a violation.
 
+  > **ANNOTATION — 2026-08-26 (`/story-done`). The edge-case note directly above
+  > is factually wrong. It is left as written, not reworded, because it is an
+  > approved criterion.**
+  >
+  > `process_physics_priority` does **not** contain `process_priority` as a
+  > substring: in `process_physics_priority`, `process_` is followed by
+  > `physics_`, not by `priority`. Verified against the strings, not recalled.
+  >
+  > The hazard the note points at is real, and is one step broader than stated.
+  > A matcher on `priority` or `_priority` — which is what a grep actually
+  > reaches for — **does** flag every correct assignment, turning the guard
+  > permanently red. A guard that fires on correct code gets deleted by the next
+  > person it blocks, so this is a live risk to the guard's survival, not a
+  > cosmetic error.
+  >
+  > `_process_priority_offenders()` in `tests/unit/level_state/frame_priority_test.gd`
+  > was written against the real hazard and is proved in **both** directions:
+  > `test_process_priority_matcher_flags_synthetic_violations` (8 violating
+  > spellings, including the compound `+=` and `-=` forms) and
+  > `test_process_priority_matcher_ignores_the_physics_spelling` /
+  > `test_process_priority_matcher_ignores_reads_and_comments` (correct
+  > assignments, comparison reads, and trailing comments, none flagged).
+
 ---
 
 ### QA-plan addendum — 2026-08-25
@@ -191,7 +214,9 @@ sprint QA plan adds on top of them.*
 **Required evidence**:
 - `tests/unit/level_state/frame_priority_test.gd` — must exist and pass
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/level_state/frame_priority_test.gd`,
+18 test functions. Full-suite run 2026-08-26: 304 cases, 17/17 suites, 0 failures,
+0 errors, 0 flaky, 0 orphans, exit 0 (`reports/report_31`).
 
 ---
 
@@ -201,3 +226,53 @@ sprint QA plan adds on top of them.*
 - Unlocks: `gravity-authority`, `player-core` and `oxygen-drain` can each state
   their priority contract. None of the three is blocked from *starting* by this
   story, but all three need it before their ordering can be asserted.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-08-26
+**Criteria**: 5/5 passing. None deferred, none untested.
+**Test Evidence**: Logic story — `tests/unit/level_state/frame_priority_test.gd`,
+18 test functions. Full suite 304 cases / 17 suites / 0 failures / 0 errors /
+0 flaky / 0 orphans, exit 0 (`reports/report_31/results.xml`, read directly).
+**Code Review**: Complete — `/code-review` returned APPROVED WITH SUGGESTIONS.
+No required changes. All four suggestions were applied to the test file and
+re-verified green; `src/scripts/frame_priority.gd` was not modified.
+
+**Deviations (both ADVISORY, neither blocking):**
+
+1. **AC-5's edge-case note is factually wrong.** See the dated ANNOTATION under
+   AC-5 above. The criterion text is preserved verbatim; the correction is
+   additive. The shipped matcher was built against the real hazard.
+2. **AC-4 scan scope.** The criterion says "the repository"; the test scans
+   `src/` only — 19 of the 44 `.tscn` in the tree. Verified repo-wide by hand at
+   closure: zero matches anywhere, so the narrowing changes no outcome today.
+   The unscanned 25 are `addons/` and `tests/` fixtures.
+
+**Guard hardening applied at code review** (test file only):
+
+- The AC-5 matcher missed compound assignment (`process_priority += 10`) and
+  false-positived on comparison (`== 5`). Pattern widened to
+  `process_priority\s*[-+*/]?=(?!=)`; both directions now have synthetic
+  fixtures. The false negative is the more serious of the two — a real violation
+  passed the guard silently.
+- `_code_of()` stripped comment-only lines but not TRAILING comments, so a line
+  merely mentioning the property was reported as a violation. Added
+  `_strip_trailing_comment()`, which respects string literals so a `#` inside a
+  quoted value cannot truncate a line and hide a real violation behind it.
+- The AC-5 scan's inner filter (`func _physics_process`) had no vacuity floor,
+  unlike every other scan in the file. 28 scripts narrow to **2** today
+  (`gravity_authority.gd`, `player.gd`). Added `MIN_PHYSICS_PROCESS_SCRIPTS = 2`
+  and an assertion on the filtered count. LS-004 and GA-005 both raise this
+  margin.
+
+**Finding noted and stopped on, per AC-4's own instruction:** no CI grep step was
+added to `.github/workflows/tests.yml`. The AC-4 and AC-5 scans would sit
+naturally beside the existing ADR-0004 D4.6 and ADR-0006 V6/V7/V8 steps there.
+Adding them is a separate decision.
+
+**Call sites remain unlanded, by design.** The three
+`process_physics_priority = FramePriority.*` assignments belong to
+`gravity-authority`, `player-core` and `oxygen-drain`. None of those nodes exists
+in its ADR-final form yet.
