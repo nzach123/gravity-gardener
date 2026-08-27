@@ -3,6 +3,18 @@ class_name Plant
 
 signal plant_watered
 
+## One COMPLETED pour. `LevelRoot._ready()` connects this to
+## `LevelState.consume_bucket()`; the plant itself receives no state object and
+## never decides the level is over (`plant_decides_level_outcome` is forbidden).
+##
+## Declared here ahead of ADR-0009, which will move the emit out of
+## `_complete_watering()` and into `receive_pour()` so it fires once per BUCKET
+## poured rather than once per PLANT completed. The two agree only while
+## `buckets_required == 1`, so that is a behaviour change, not a rename — and it
+## is the only change ADR-0009 needs to make here. Same precedent as
+## `buckets_required` below.
+signal pour_completed
+
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_area_2d: Area2D = $InteractArea2D
 
@@ -76,6 +88,7 @@ func _complete_watering() -> void:
 	animated_sprite_2d.speed_scale = 1.0
 	animated_sprite_2d.play("Filled")
 	plant_watered.emit()
+	pour_completed.emit()
 	
 	# Update GameManager
 	var gm = GameManager

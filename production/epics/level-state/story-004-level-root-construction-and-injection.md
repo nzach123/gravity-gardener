@@ -6,7 +6,7 @@
 > **Type**: Integration
 > **Estimate**: L (4 h)
 > **Manifest Version**: 2026-08-17
-> **Last Updated**: (set by /dev-story when implementation begins)
+> **Last Updated**: 2026-08-26
 
 ## Context
 
@@ -71,6 +71,17 @@ specialist review rather than recalled from training data:
 - [ ] `LevelRoot._ready()` constructs `LevelState(buckets_total)` and
       `OxygenState(capacity, tuning)` from its own `@export`s, at step (a) — before
       any binding
+  - **ANNOTATION 2026-08-26 (`/story-readiness`), criterion text unchanged.**
+    "from its own `@export`s" holds for two of the three arguments only.
+    `main.gd` declares `player`, `goal`, `bucket`, `next_level` and the two
+    camera flags — no `oxygen_capacity`. **This story ADDS
+    `@export var oxygen_capacity: float`.** `level_validation.gd:115` already
+    reads `level.get("oxygen_capacity")` and V-OXY-CAP reports it missing, so
+    the export is the shape validation expects. `oxygen_tuning.gd:2` names it
+    the per-level difficulty dial. **`tuning` is NOT an export.** It comes from
+    `Tuning.OXYGEN`, the only sanctioned route (ADR-0006 D6.3, `tuning.gd:12-15`).
+    `OxygenState._init` dereferences `tuning.drain_rate` on the next line
+    (`oxygen_state.gd:102`), so a null export crashes at construction.
 - [ ] `buckets_total` is seeded from `LevelValidation.count_buckets()`, the same
       primitive `validate()` uses, and **not** from a group count
 - [ ] `Player` / `PlayerWateringComponent`, `Goal`, `HUD` and `OxygenDrain` each
@@ -79,11 +90,33 @@ specialist review rather than recalled from training data:
       `push_error()` **and** an early `return`
 - [ ] Each `Plant.pour_completed` is connected by `LevelRoot` to
       `LevelState.consume_bucket()`; `Plant` receives no state object at all
+  - **ANNOTATION 2026-08-26 (`/story-readiness`), criterion text unchanged.**
+    `Plant.pour_completed` appears in 8 documents and **zero `.gd` files**.
+    `plant.gd:4` declares `plant_watered`, emitted at `plant.gd:78` inside
+    `_complete_watering()` — once per plant fully watered. ADR-0009 `:96` gives
+    `pour_completed` to `receive_pour()` — once per bucket poured. The two
+    agree only while `buckets_required == 1`, so this is not a rename.
+    **Decision, approved 2026-08-26: this story DECLARES `signal pour_completed`
+    on `plant.gd` and emits it beside `plant_watered` in `_complete_watering()`.**
+    `LevelRoot` connects `pour_completed`, as the criterion states. ADR-0009
+    later moves the emit into `receive_pour()`, and that is the only change it
+    needs. This follows the precedent at `plant.gd:12-18`, where
+    `buckets_required` was declared ahead of ADR-0009 for the same reason.
+    `Plant` still receives no state object and still holds no reference to one.
+    `plant_decides_level_outcome` stays forbidden.
 - [ ] `OxygenDrain` is a child of `LevelRoot`, not of `Player`
 - [ ] Every bound consumer is a descendant of `LevelRoot` *(the A2-03 invariant —
       see Implementation Notes)*
 - [ ] The existing group-based discovery in `main.gd` for plants is replaced by a
       recursive type scan
+  - **ANNOTATION 2026-08-26 (`/story-readiness`), criterion text unchanged.**
+    The criterion changes the DISCOVERY only. It does not change what the result
+    feeds. `main.gd:37-38` assigns `GameManager.plants_total`, and
+    `plant.gd:83-84` reads that to unlock the goal. Story 006 owns the
+    `GameManager` deletion, so **the assignment stays** — replace
+    `get_nodes_in_group("plants")` with the recursive type scan and keep the
+    line after it. `plant.gd:23`'s `add_to_group("plants")` also stays. It is
+    not this story's file.
 
 ---
 
@@ -153,6 +186,21 @@ The corrected order, which supersedes `architecture.md` lines 386-397:
   bound, because the Presentation epic is the one most likely to break it.
 - **`@export var next_level: PackedScene` and the camera exports on `main.gd` are
   not this story's concern.** Leave them alone.
+- **`main.gd` declares `class_name LevelRoot` (approved 2026-08-26).** It is a
+  bare `extends Node2D` today, while every ADR, test comment and this story name
+  `LevelRoot`. No existing code matches `main.gd` by type, so the risk is low.
+  The integration test can then build its synthetic tree by type instead of by
+  scene path.
+- **The `hud` export is declared and left unassigned (approved 2026-08-26).**
+  `level_validation.gd:43` already lists `hud` in `REQUIRED_CONSUMERS`, so the
+  export is the shape validation expects. `validate()` runs from tests only
+  today, so an unassigned export has no runtime consequence. Declaring the
+  export is not the same as inventing a stub node: nothing binds to it, and the
+  bind site stays a commented seam. Do NOT create a HUD node.
+- **Performance budget: nothing affected.** Construction, binding, and the plant
+  and bucket type scans all run once, in `_ready()`, at level load. This story
+  adds nothing to `_process` or `_physics_process`. The 16.6 ms frame budget is
+  not touched.
 
 ---
 

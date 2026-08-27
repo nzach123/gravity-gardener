@@ -182,4 +182,40 @@ func _physics_process(delta: float) -> void:
 ## Called when the player reaches the level goal.
 func win_level() -> void:
 	pass
+
+
+# ---------------------------------------------------------------
+# LEVEL STATE INJECTION (ADR-0002 part 3)
+# ---------------------------------------------------------------
+# Injected by LevelRoot._ready() at step (c). _ready() runs bottom-up, so this is
+# still null during THIS node's _ready() — never read it there
+# (`state_access_before_bind` is forbidden).
+var _level_state: LevelState = null
+var _bound: bool = false
+
+
+## Receives this level's [LevelState] from `LevelRoot._ready()`. Called exactly
+## once per level, after every child is ready.
+func bind(level_state: LevelState) -> void:
+	_level_state = level_state
+	_bound = true
+
+
+## Whether the player is currently carrying a bucket, read from the injected
+## [LevelState].
+##
+## There is no caller yet by design. The reader that arrives later is ADR-0009's
+## `PlayerWateringComponent`, which owns pickup, pour and release; this accessor
+## exists so that component reads level state through its host rather than
+## reaching for a global.
+##
+## Refuses to operate before [method bind] has run: `push_error()` LOGS but does
+## not pause execution, so the early `return` is what actually prevents the null
+## dereference. `assert()` is not used — it compiles out of release exports and
+## this guard would silently vanish from the shipped build (ADR-0002, A2-02).
+func is_carrying_bucket() -> bool:
+	if not _bound:
+		push_error("Player: is_carrying_bucket() called before bind()")
+		return false
+	return _level_state.carrying_bucket
 	

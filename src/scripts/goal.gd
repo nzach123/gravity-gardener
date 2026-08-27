@@ -10,6 +10,31 @@ signal player_reached_goal
 
 var is_unlocked: bool = false
 
+# Injected by LevelRoot._ready() at step (c) (ADR-0002 part 3). Because _ready()
+# runs bottom-up, this is still null during THIS node's _ready() — never read it
+# there (`state_access_before_bind` is forbidden).
+var _level_state: LevelState = null
+var _bound: bool = false
+
+
+## Receives this level's [LevelState] from `LevelRoot._ready()`. Called exactly
+## once per level, after every child is ready.
+func bind(level_state: LevelState) -> void:
+	_level_state = level_state
+	_bound = true
+
+
+## The single read of level unlock state. Refuses to operate before [method bind]
+## has run: `push_error()` LOGS but does not pause execution, so the early
+## `return` is what actually prevents the null dereference. `assert()` is not
+## used — it compiles out of release exports and this guard would silently vanish
+## from the shipped build (ADR-0002, A2-02).
+func _is_goal_unlocked() -> bool:
+	if not _bound:
+		push_error("Goal: _is_goal_unlocked() called before bind()")
+		return false
+	return _level_state.goal_unlocked
+
 
 func _ready() -> void:
 	goal_area_2d.body_entered.connect(_on_body_entered)
@@ -21,9 +46,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if not is_unlocked:
-		
-		var gm = GameManager
-		if gm and gm.goal_unlocked:
+		if _is_goal_unlocked():
 			print("unlocked")
 			is_unlocked = true
 			goal_animated_sprite_2d.play("goal_open")
@@ -37,6 +60,5 @@ func _process(_delta: float) -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
-		var gm = GameManager
-		if gm and gm.goal_unlocked:
+		if _is_goal_unlocked():
 			player_reached_goal.emit()
